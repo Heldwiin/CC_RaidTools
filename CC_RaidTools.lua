@@ -46,7 +46,7 @@ function C.SkinButton(button)
     button:HookScript("OnLeave",function(self) self._ccrtBg:SetColorTexture(0.045,0.045,0.055,0.94) end)
 end
 
--- Checkbox/toggle inspired by the visual style used by Atrocity Essentials.
+-- Checkbox/toggle using the same toggle geometry and textures as Atrocity Essentials.
 function C.SkinCheckBox(box)
     if not box or box._ccrtSkin then return end
     box._ccrtSkin=true
@@ -54,63 +54,69 @@ function C.SkinCheckBox(box)
     box:EnableMouse(true)
     box:RegisterForClicks("LeftButtonUp")
 
-    box:SetBackdrop({
-        bgFile="Interface\\Buttons\\WHITE8X8",
-        edgeFile="Interface\\Buttons\\WHITE8X8",
-        edgeSize=1,
-    })
-    box:SetBackdropBorderColor(0,0,0,1)
+    local CHECK_TEXTURE="Interface\\AddOns\\atrocityEssentials\\Media\\GUITextures\\ok-iconBlack.tga"
+    local CROSS_TEXTURE="Interface\\AddOns\\atrocityEssentials\\Media\\GUITextures\\cross-small.png"
+    local TOGGLE_WIDTH,TOGGLE_HEIGHT=48,24
+    local KNOB_SIZE,KNOB_PADDING=22,1
+    local OFF_POSITION=KNOB_PADDING
+    local ON_POSITION=TOGGLE_WIDTH-KNOB_SIZE-KNOB_PADDING
+
+    box:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
+    box:SetBackdropColor(0.035,0.035,0.045,1)
+    box:SetBackdropBorderColor(0.10,0.10,0.14,1)
 
     local knob=CreateFrame("Frame",nil,box,"BackdropTemplate")
-    knob:SetSize(22,22)
-    knob:SetPoint("LEFT",box,"LEFT",1,0)
-    knob:SetBackdrop({
-        bgFile="Interface\\Buttons\\WHITE8X8",
-        edgeFile="Interface\\Buttons\\WHITE8X8",
-        edgeSize=1,
-    })
-    knob:SetBackdropColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.4)
-    knob:SetBackdropBorderColor(0,0,0,1)
+    knob:SetSize(KNOB_SIZE,KNOB_SIZE)
+    knob:SetPoint("LEFT",box,"LEFT",OFF_POSITION,0)
+    knob:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
+    knob:SetBackdropBorderColor(0.08,0.08,0.12,1)
 
-    local mark=knob:CreateFontString(nil,"OVERLAY","GameFontNormalLarge")
-    mark:SetPoint("CENTER",0,0)
-    mark:SetJustifyH("CENTER")
-    mark:SetJustifyV("MIDDLE")
-    mark:SetText("×")
-    mark:SetTextColor(0.18,0.18,0.32,1)
+    local knobTexture=knob:CreateTexture(nil,"ARTWORK")
+    knobTexture:SetAllPoints()
+    knobTexture:SetColorTexture(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.6)
+
+    local checkmark=knob:CreateTexture(nil,"OVERLAY")
+    checkmark:SetSize(KNOB_SIZE,KNOB_SIZE)
+    checkmark:SetPoint("CENTER",knob,"CENTER",0,0)
+    checkmark:SetTexture(CHECK_TEXTURE)
+    checkmark:SetVertexColor(1,1,1,1)
+    checkmark:Hide()
+
+    local crossmark=knob:CreateTexture(nil,"OVERLAY")
+    crossmark:SetSize(KNOB_SIZE,KNOB_SIZE)
+    crossmark:SetPoint("CENTER",knob,"CENTER",0,0)
+    crossmark:SetTexture(CROSS_TEXTURE)
+    crossmark:SetVertexColor(1,1,1,0.8)
+    crossmark:Show()
 
     local click=CreateFrame("Button",nil,box)
-    click:SetAllPoints()
+    click:SetAllPoints(box)
     click:RegisterForClicks("LeftButtonUp")
-    click:SetScript("OnClick",function(self)
+    click:SetScript("OnClick",function()
         box:SetChecked(not box:GetChecked())
         if box._ccrtRefresh then box:_ccrtRefresh() end
-        if box:GetScript("OnClick") then
-            box:GetScript("OnClick")(box)
-        end
+        local handler=box:GetScript("OnClick")
+        if handler then handler(box) end
     end)
 
     local hover=box:CreateTexture(nil,"HIGHLIGHT")
-    hover:SetAllPoints()
-    hover:SetColorTexture(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.12)
-    hover:SetDrawLayer("HIGHLIGHT",0)
+    hover:SetAllPoints(box)
+    hover:SetTexture("Interface\\Buttons\\WHITE8X8")
+    hover:SetVertexColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.15)
+    hover:SetAlpha(0.15)
 
     local function refresh(self)
         local on=self:GetChecked() and true or false
         if on then
-            box:SetBackdropColor(C.BRAND_R*0.5,C.BRAND_G*0.5,C.BRAND_B*0.5,1)
-            knob:ClearAllPoints()
-            knob:SetPoint("RIGHT",box,"RIGHT",-1,0)
-            knob:SetBackdropColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.8)
-            mark:SetText("✓")
-            mark:SetTextColor(1,1,1,1)
+            box:SetBackdropColor(C.BRAND_R*0.55,C.BRAND_G*0.55,C.BRAND_B*0.65,1)
+            knob:ClearAllPoints(); knob:SetPoint("LEFT",box,"LEFT",ON_POSITION,0)
+            knobTexture:SetColorTexture(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.6)
+            checkmark:Show(); crossmark:Hide()
         else
-            box:SetBackdropColor(0.055,0.055,0.12,1)
-            knob:ClearAllPoints()
-            knob:SetPoint("LEFT",box,"LEFT",1,0)
-            knob:SetBackdropColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.4)
-            mark:SetText("×")
-            mark:SetTextColor(0.18,0.18,0.32,1)
+            box:SetBackdropColor(0.035,0.035,0.045,1)
+            knob:ClearAllPoints(); knob:SetPoint("LEFT",box,"LEFT",OFF_POSITION,0)
+            knobTexture:SetColorTexture(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.6)
+            checkmark:Hide(); crossmark:Show()
         end
     end
 
