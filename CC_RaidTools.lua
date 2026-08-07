@@ -926,7 +926,7 @@ local function BuildUI()
     raidCheckChk:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -605)
     raidCheckChk.text = raidCheckChk:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     raidCheckChk.text:SetPoint("LEFT", raidCheckChk, "RIGHT", 2, 0)
-    raidCheckChk.text:SetText("Afficher le Ready Check lors d'un appel")
+    raidCheckChk.text:SetText("Check Buffs /appel")
     raidCheckChk:SetChecked(AutoPromoteDB.raidCheckEnabled and true or false)
     if raidCheckChk._ccrtRefresh then raidCheckChk:_ccrtRefresh() end
     raidCheckChk:SetScript("OnClick", function(self)
