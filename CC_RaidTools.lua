@@ -90,7 +90,6 @@ local function RestoreMainFramePosition()
     if p and p.point then
         mainFrame:SetPoint(p.point,UIParent,p.relativePoint or p.point,p.x or 0,p.y or 0)
     else
-        -- Première ouverture : légèrement décalée à droite du centre pour éviter de masquer le centre de l'écran.
         mainFrame:SetPoint("CENTER",UIParent,"CENTER",260,0)
     end
 end
@@ -137,5 +136,5 @@ end
 local coreEvents=CreateFrame("Frame")
 coreEvents:RegisterEvent("ADDON_LOADED")
 coreEvents:SetScript("OnEvent",function(_,event,arg1)
-    if event=="ADDON_LOADED" and arg1==ADDON_NAME then C.InitDB(); print("|cff33ff99[CC RaidTools]|r v1.1 chargé") end
+    if event=="ADDON_LOADED" and arg1==ADDON_NAME then C.InitDB(); print("|cff33ff99[CC RaidTools]|r v1.0 chargé") end
 end)
