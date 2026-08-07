@@ -1,7 +1,6 @@
 -- CC RaidTools - Invite Tool
 -- Invitation des membres de guilde par rang, sans dépendance à MRT.
 
-local ADDON_NAME = ...
 local BRAND_R, BRAND_G, BRAND_B = 0.451, 0.506, 1
 local inviteFrame
 local rankChecks = {}
@@ -9,8 +8,8 @@ local discoveredInviteRanks = {}
 
 local function InitInviteDB()
     if not AutoPromoteDB then AutoPromoteDB = {} end
-    if not AutoPromoteDB.inviteTool then AutoPromoteDB.inviteTool = {} end
-    if not AutoPromoteDB.inviteTool.ranks then AutoPromoteDB.inviteTool.ranks = {} end
+    AutoPromoteDB.inviteTool = AutoPromoteDB.inviteTool or {}
+    AutoPromoteDB.inviteTool.ranks = AutoPromoteDB.inviteTool.ranks or {}
     if AutoPromoteDB.inviteTool.onlineOnly == nil then AutoPromoteDB.inviteTool.onlineOnly = true end
     if AutoPromoteDB.inviteTool.autoRaid == nil then AutoPromoteDB.inviteTool.autoRaid = true end
 end
@@ -27,8 +26,8 @@ local function SkinButton(b)
     if b.Left then b.Left:Hide() end
     if b.Middle then b.Middle:Hide() end
     if b.Right then b.Right:Hide() end
-    b:SetNormalTexture("")
-    b:SetPushedTexture("")
+    if b.SetNormalTexture then b:SetNormalTexture("") end
+    if b.SetPushedTexture then b:SetPushedTexture("") end
     local bg = b:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.045, 0.045, 0.055, 0.96)
@@ -48,13 +47,18 @@ local function CreateCheck(parent, label, x, y)
     b:SetBackdropColor(0.035, 0.035, 0.045, 1)
     b:SetBackdropBorderColor(0, 0, 0, 1)
 
-    local mark = b:CreateTexture(nil, "ARTWORK")
-    mark:SetPoint("TOPLEFT", 3, -3)
-    mark:SetPoint("BOTTOMRIGHT", -3, 3)
-    mark:SetColorTexture(BRAND_R, BRAND_G, BRAND_B, 0.85)
+    local mark = b:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    mark:SetPoint("CENTER", 0, 0)
+    mark:SetText("X")
+    mark:SetTextColor(1, 1, 1)
     mark:Hide()
-    b:HookScript("OnClick", function(self) if self:GetChecked() then mark:Show() else mark:Hide() end end)
-    b:HookScript("OnShow", function(self) if self:GetChecked() then mark:Show() else mark:Hide() end end)
+
+    local function Refresh(self)
+        if self:GetChecked() then mark:Show() else mark:Hide() end
+    end
+    b._ccrtRefresh = Refresh
+    b:HookScript("OnClick", Refresh)
+    b:HookScript("OnShow", Refresh)
 
     local text = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     text:SetPoint("LEFT", b, "RIGHT", 7, 0)
@@ -66,30 +70,47 @@ end
 local function RefreshRanks()
     wipe(discoveredInviteRanks)
     if not IsInGuild() then return end
-    if C_GuildInfo and C_GuildInfo.GuildRoster then C_GuildInfo.GuildRoster() elseif GuildRoster then GuildRoster() end
+    if C_GuildInfo and C_GuildInfo.GuildRoster then
+        C_GuildInfo.GuildRoster()
+    elseif GuildRoster then
+        GuildRoster()
+    end
     local n = GetNumGuildMembers and GetNumGuildMembers() or 0
     for i = 1, n do
         local _, rankName, rankIndex = GetGuildRosterInfo(i)
-        if rankName and rankIndex ~= nil then discoveredInviteRanks[rankIndex] = rankName end
+        if rankName and rankIndex ~= nil then
+            discoveredInviteRanks[rankIndex] = rankName
+        end
     end
 end
 
 local function IsAlreadyGrouped(name)
     local short = name and name:match("^([^%-]+)")
     if not short then return false end
-    for i = 1, GetNumGroupMembers() do
-        local unit = IsInRaid() and ("raid" .. i) or (i == GetNumGroupMembers() and "player" or "party" .. i)
-        local n = UnitName(unit)
-        if n and n == short then return true end
+    if UnitName("player") == short then return true end
+    if IsInRaid() then
+        for i = 1, GetNumGroupMembers() do
+            if UnitName("raid" .. i) == short then return true end
+        end
+    elseif IsInGroup() then
+        for i = 1, GetNumSubgroupMembers() do
+            if UnitName("party" .. i) == short then return true end
+        end
     end
-    return UnitName("player") == short
+    return false
 end
 
 local function InviteSelectedRanks()
     InitInviteDB()
     RefreshRanks()
-    if not IsInGuild() then print("|cff33ff99[CC RaidTools]|r Vous n'êtes pas dans une guilde.") return end
-    if InCombatLockdown() then print("|cff33ff99[CC RaidTools]|r Impossible d'inviter pendant le combat.") return end
+    if not IsInGuild() then
+        print("|cff33ff99[CC RaidTools]|r Vous n'êtes pas dans une guilde.")
+        return
+    end
+    if InCombatLockdown() then
+        print("|cff33ff99[CC RaidTools]|r Impossible d'inviter pendant le combat.")
+        return
+    end
 
     local invited = 0
     local n = GetNumGuildMembers and GetNumGuildMembers() or 0
@@ -97,7 +118,11 @@ local function InviteSelectedRanks()
         local name, _, rankIndex, _, _, _, _, _, online = GetGuildRosterInfo(i)
         if name and AutoPromoteDB.inviteTool.ranks[rankIndex] and (online or not AutoPromoteDB.inviteTool.onlineOnly) then
             if not IsAlreadyGrouped(name) then
-                C_PartyInfo.InviteUnit(name)
+                if C_PartyInfo and C_PartyInfo.InviteUnit then
+                    C_PartyInfo.InviteUnit(name)
+                elseif InviteUnit then
+                    InviteUnit(name)
+                end
                 invited = invited + 1
             end
         end
@@ -105,7 +130,9 @@ local function InviteSelectedRanks()
 
     if AutoPromoteDB.inviteTool.autoRaid and not IsInRaid() then
         C_Timer.After(2, function()
-            if IsInGroup() and not IsInRaid() and UnitIsGroupLeader("player") then ConvertToRaid() end
+            if IsInGroup() and not IsInRaid() and UnitIsGroupLeader("player") and ConvertToRaid then
+                ConvertToRaid()
+            end
         end)
     end
     print("|cff33ff99[CC RaidTools]|r " .. invited .. " invitation(s) envoyée(s).")
@@ -114,6 +141,7 @@ end
 local function BuildInviteFrame()
     if inviteFrame then return inviteFrame end
     InitInviteDB()
+
     inviteFrame = CreateFrame("Frame", "CCRTInviteToolFrame", UIParent, "BackdropTemplate")
     inviteFrame:SetSize(390, 470)
     inviteFrame:SetPoint("CENTER")
@@ -148,11 +176,19 @@ local function BuildInviteFrame()
 
     local online = CreateCheck(inviteFrame, "Uniquement les joueurs en ligne", 18, -380)
     online:SetChecked(AutoPromoteDB.inviteTool.onlineOnly)
-    online:SetScript("OnClick", function(self) AutoPromoteDB.inviteTool.onlineOnly = self:GetChecked() and true or false end)
+    if online._ccrtRefresh then online:_ccrtRefresh() end
+    online:SetScript("OnClick", function(self)
+        AutoPromoteDB.inviteTool.onlineOnly = self:GetChecked() and true or false
+        if self._ccrtRefresh then self:_ccrtRefresh() end
+    end)
 
     local raid = CreateCheck(inviteFrame, "Convertir automatiquement en raid", 18, -407)
     raid:SetChecked(AutoPromoteDB.inviteTool.autoRaid)
-    raid:SetScript("OnClick", function(self) AutoPromoteDB.inviteTool.autoRaid = self:GetChecked() and true or false end)
+    if raid._ccrtRefresh then raid:_ccrtRefresh() end
+    raid:SetScript("OnClick", function(self)
+        AutoPromoteDB.inviteTool.autoRaid = self:GetChecked() and true or false
+        if self._ccrtRefresh then self:_ccrtRefresh() end
+    end)
 
     local invite = CreateFrame("Button", nil, inviteFrame, "UIPanelButtonTemplate")
     invite:SetSize(160, 28)
@@ -168,21 +204,26 @@ end
 local function PopulateRanks()
     local f = BuildInviteFrame()
     RefreshRanks()
-    for _, row in ipairs(rankChecks) do row.box:Hide(); row.text:Hide() end
+
+    for _, row in ipairs(rankChecks) do
+        row.box:Hide()
+        row.text:Hide()
+    end
     wipe(rankChecks)
+
     local indexes = {}
     for idx in pairs(discoveredInviteRanks) do indexes[#indexes + 1] = idx end
     table.sort(indexes)
+
     local y = -4
     for _, idx in ipairs(indexes) do
         local rankName = discoveredInviteRanks[idx]
         local box, text = CreateCheck(f.rankChild, rankName, 4, y)
         box:SetChecked(AutoPromoteDB.inviteTool.ranks[idx] and true or false)
-        if box:GetChecked() then box:GetScript("OnShow")(box) end
+        if box._ccrtRefresh then box:_ccrtRefresh() end
         box:SetScript("OnClick", function(self)
             AutoPromoteDB.inviteTool.ranks[idx] = self:GetChecked() and true or nil
-            -- actualise le skin custom
-            self:Hide(); self:Show()
+            if self._ccrtRefresh then self:_ccrtRefresh() end
         end)
         rankChecks[#rankChecks + 1] = { box = box, text = text }
         y = y - 27
@@ -192,13 +233,20 @@ end
 
 local function ToggleInviteTool()
     local f = BuildInviteFrame()
-    if f:IsShown() then f:Hide() else PopulateRanks(); f:Show() end
+    if f:IsShown() then
+        f:Hide()
+    else
+        PopulateRanks()
+        f:Show()
+    end
 end
 
-SLASH_CCRTINVITE1 = "/ccinvite"
-SlashCmdList.CCRTINVITE = ToggleInviteTool
+-- Slash command. Le nom de SlashCmdList est volontairement unique.
+SLASH_CCRTINVITETOOL1 = "/ccinvite"
+SlashCmdList["CCRTINVITETOOL"] = function()
+    ToggleInviteTool()
+end
 
--- API interne pour permettre au panneau principal CCRT d'ouvrir le module.
 _G.CCRT_ToggleInviteTool = ToggleInviteTool
 _G.CCRT_InviteSelectedRanks = InviteSelectedRanks
 
@@ -207,5 +255,9 @@ event:RegisterEvent("PLAYER_LOGIN")
 event:RegisterEvent("GUILD_ROSTER_UPDATE")
 event:SetScript("OnEvent", function(_, evt)
     InitInviteDB()
-    if evt == "PLAYER_LOGIN" then RefreshRanks() end
+    if evt == "PLAYER_LOGIN" or evt == "GUILD_ROSTER_UPDATE" then
+        RefreshRanks()
+    end
 end)
+
+print("|cff7381FF[CC RaidTools]|r Invite Tool chargé. Commande : /ccinvite")
