@@ -4,6 +4,7 @@
 local BRAND_R, BRAND_G, BRAND_B = 0.451, 0.506, 1
 local inviteEvent = CreateFrame("Frame")
 local uiInjected = false
+local uiWatcher
 
 local function InitInviteDB()
     if not AutoPromoteDB then AutoPromoteDB = {} end
@@ -36,24 +37,29 @@ local function SkinCheckBox(box)
     x:SetPoint("CENTER", 0, 0)
     x:SetText("X")
     x:SetTextColor(1, 1, 1)
-    box._ccrtX = x
 
     local function Refresh(self)
         x:SetShown(self:GetChecked() and true or false)
     end
+
     box._ccrtRefresh = Refresh
     box:HookScript("OnShow", Refresh)
     Refresh(box)
 end
 
+local function NormalizeMessage(msg)
+    if not msg then return "" end
+    return msg:gsub("^%s+", ""):gsub("%s+$", ""):lower()
+end
+
 local function InjectInviteUI()
     InitInviteDB()
+
     local mainFrame = _G.CCRaidToolsFrame
-    if not mainFrame or uiInjected then return end
+    if not mainFrame or uiInjected then return false end
     uiInjected = true
 
-    -- On ajoute une petite zone Invite Tool au bas de la fenêtre /ccrt.
-    -- La fenêtre est légèrement agrandie uniquement pour cette section.
+    -- Cette section fait partie de la fenêtre principale /ccrt : aucune seconde fenêtre.
     local oldWidth, oldHeight = mainFrame:GetSize()
     mainFrame:SetSize(oldWidth, math.max(oldHeight, 705))
 
@@ -66,8 +72,6 @@ local function InjectInviteUI()
     enabled:SetSize(20, 20)
     enabled:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -660)
     SkinCheckBox(enabled)
-    enabled:SetChecked(AutoPromoteDB.inviteTool.enabled and true or false)
-    enabled:_ccrtRefresh()
 
     local enabledText = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     enabledText:SetPoint("LEFT", enabled, "RIGHT", 4, 0)
@@ -84,39 +88,63 @@ local function InjectInviteUI()
     keyword:SetMaxLetters(20)
     keyword:SetFontObject("ChatFontNormal")
     keyword:SetTextInsets(5, 5, 0, 0)
-    keyword:SetText(AutoPromoteDB.inviteTool.keyword or "inv")
     SkinEditBox(keyword)
+
+    local function RefreshInviteSettings()
+        InitInviteDB()
+        enabled:SetChecked(AutoPromoteDB.inviteTool.enabled and true or false)
+        if enabled._ccrtRefresh then enabled:_ccrtRefresh() end
+        keyword:SetText(AutoPromoteDB.inviteTool.keyword or "inv")
+    end
 
     enabled:SetScript("OnClick", function(self)
         AutoPromoteDB.inviteTool.enabled = self:GetChecked() and true or false
-        self:_ccrtRefresh()
+        if self._ccrtRefresh then self:_ccrtRefresh() end
     end)
 
     local function SaveKeyword()
-        local value = keyword:GetText() or ""
-        value = value:gsub("^%s+", ""):gsub("%s+$", ""):lower()
+        local value = NormalizeMessage(keyword:GetText())
         if value == "" then value = "inv" end
         AutoPromoteDB.inviteTool.keyword = value
         keyword:SetText(value)
         keyword:ClearFocus()
     end
+
     keyword:SetScript("OnEnterPressed", SaveKeyword)
+    keyword:SetScript("OnEscapePressed", function(self)
+        self:SetText(AutoPromoteDB.inviteTool.keyword or "inv")
+        self:ClearFocus()
+    end)
     keyword:SetScript("OnEditFocusLost", SaveKeyword)
 
     mainFrame.inviteEnabled = enabled
     mainFrame.inviteKeyword = keyword
+    mainFrame:HookScript("OnShow", RefreshInviteSettings)
+    RefreshInviteSettings()
 
-    mainFrame:HookScript("OnShow", function()
-        InitInviteDB()
-        enabled:SetChecked(AutoPromoteDB.inviteTool.enabled and true or false)
-        enabled:_ccrtRefresh()
-        keyword:SetText(AutoPromoteDB.inviteTool.keyword or "inv")
-    end)
+    return true
 end
 
-local function NormalizeMessage(msg)
-    if not msg then return "" end
-    return msg:gsub("^%s+", ""):gsub("%s+$", ""):lower()
+local function EnsureInviteUI()
+    if uiInjected then return end
+    if InjectInviteUI() then
+        if uiWatcher then
+            uiWatcher:Cancel()
+            uiWatcher = nil
+        end
+        return
+    end
+
+    -- La fenêtre /ccrt est créée à la demande. On attend simplement sa création,
+    -- sans remplacer ni dépendre de la commande slash principale.
+    if not uiWatcher then
+        uiWatcher = C_Timer.NewTicker(0.25, function()
+            if InjectInviteUI() and uiWatcher then
+                uiWatcher:Cancel()
+                uiWatcher = nil
+            end
+        end, 240)
+    end
 end
 
 local function InviteByKeyword(message, sender)
@@ -132,7 +160,7 @@ local function InviteByKeyword(message, sender)
         return
     end
 
-    -- Si nous sommes déjà groupés, seul le chef/assistant doit tenter l'invitation.
+    -- En groupe, seuls le chef et les assistants peuvent inviter.
     if IsInGroup() and not UnitIsGroupLeader("player") and not UnitIsGroupAssistant("player") then
         return
     end
@@ -149,19 +177,13 @@ inviteEvent:RegisterEvent("CHAT_MSG_WHISPER")
 inviteEvent:SetScript("OnEvent", function(_, event, ...)
     if event == "PLAYER_LOGIN" then
         InitInviteDB()
-        C_Timer.After(1, InjectInviteUI)
+        EnsureInviteUI()
     elseif event == "CHAT_MSG_WHISPER" then
         local message, sender = ...
         InviteByKeyword(message, sender)
     end
 end)
 
--- /ccrt construit la fenêtre à la demande. On enveloppe sa commande existante
--- pour injecter la section Invite Tool dès la première ouverture.
-local oldCCRTSlash = SlashCmdList and SlashCmdList["CCRAIDTOOLS"]
-if oldCCRTSlash then
-    SlashCmdList["CCRAIDTOOLS"] = function(msg)
-        oldCCRTSlash(msg)
-        C_Timer.After(0, InjectInviteUI)
-    end
-end
+-- Pas de /ccinvite : toute la configuration reste dans /ccrt.
+-- Si l'addon est rechargé alors que la fenêtre principale existe déjà, injection immédiate.
+C_Timer.After(0, EnsureInviteUI)
