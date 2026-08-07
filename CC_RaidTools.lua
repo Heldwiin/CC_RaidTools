@@ -49,6 +49,7 @@ function C.SkinButton(button)
 end
 
 -- Checkbox/toggle using the same toggle geometry and textures as Atrocity Essentials.
+-- The textures are bundled locally so CC RaidTools does not depend on Atrocity Essentials.
 function C.SkinCheckBox(box)
     if not box or box._ccrtSkin then return end
     box._ccrtSkin=true
@@ -88,7 +89,7 @@ function C.SkinCheckBox(box)
     crossmark:SetSize(KNOB_SIZE,KNOB_SIZE)
     crossmark:SetPoint("CENTER",knob,"CENTER",0,0)
     crossmark:SetTexture(CROSS_TEXTURE)
-    crossmark:SetVertexColor(1,1,1,0.8)
+    crossmark:SetVertexColor(0.15,0.15,0.20,0.65)
     crossmark:Show()
 
     local click=CreateFrame("Button",nil,box)
@@ -113,11 +114,13 @@ function C.SkinCheckBox(box)
             box:SetBackdropColor(C.BRAND_R*0.55,C.BRAND_G*0.55,C.BRAND_B*0.65,1)
             knob:ClearAllPoints(); knob:SetPoint("LEFT",box,"LEFT",ON_POSITION,0)
             knobTexture:SetColorTexture(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.6)
+            checkmark:SetVertexColor(1,1,1,1)
             checkmark:Show(); crossmark:Hide()
         else
-            box:SetBackdropColor(0.035,0.035,0.045,1)
+            box:SetBackdropColor(0.025,0.025,0.035,1)
             knob:ClearAllPoints(); knob:SetPoint("LEFT",box,"LEFT",OFF_POSITION,0)
-            knobTexture:SetColorTexture(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.6)
+            knobTexture:SetColorTexture(C.BRAND_R*0.55,C.BRAND_G*0.55,C.BRAND_B*0.60,0.38)
+            crossmark:SetVertexColor(0.12,0.12,0.16,0.55)
             checkmark:Hide(); crossmark:Show()
         end
     end
