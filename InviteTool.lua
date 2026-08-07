@@ -1,263 +1,167 @@
--- CC RaidTools - Invite Tool
--- Invitation des membres de guilde par rang, sans dépendance à MRT.
+-- CC RaidTools - Invite Tool intégré à /ccrt
+-- Invitation automatique par mot-clé reçu en message privé.
 
 local BRAND_R, BRAND_G, BRAND_B = 0.451, 0.506, 1
-local inviteFrame
-local rankChecks = {}
-local discoveredInviteRanks = {}
+local inviteEvent = CreateFrame("Frame")
+local uiInjected = false
 
 local function InitInviteDB()
     if not AutoPromoteDB then AutoPromoteDB = {} end
     AutoPromoteDB.inviteTool = AutoPromoteDB.inviteTool or {}
-    AutoPromoteDB.inviteTool.ranks = AutoPromoteDB.inviteTool.ranks or {}
-    if AutoPromoteDB.inviteTool.onlineOnly == nil then AutoPromoteDB.inviteTool.onlineOnly = true end
-    if AutoPromoteDB.inviteTool.autoRaid == nil then AutoPromoteDB.inviteTool.autoRaid = true end
+    if AutoPromoteDB.inviteTool.keyword == nil then AutoPromoteDB.inviteTool.keyword = "inv" end
+    if AutoPromoteDB.inviteTool.enabled == nil then AutoPromoteDB.inviteTool.enabled = true end
 end
 
-local function SkinPanel(f)
-    local bg = f:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.025, 0.025, 0.035, 0.92)
-    f:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    f:SetBackdropBorderColor(0, 0, 0, 1)
+local function SkinEditBox(box)
+    box:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+    })
+    box:SetBackdropColor(0.018, 0.018, 0.024, 0.90)
+    box:SetBackdropBorderColor(0, 0, 0, 1)
+    box:SetTextColor(1, 1, 1)
 end
 
-local function SkinButton(b)
-    if b.Left then b.Left:Hide() end
-    if b.Middle then b.Middle:Hide() end
-    if b.Right then b.Right:Hide() end
-    if b.SetNormalTexture then b:SetNormalTexture("") end
-    if b.SetPushedTexture then b:SetPushedTexture("") end
-    local bg = b:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.045, 0.045, 0.055, 0.96)
-    local border = CreateFrame("Frame", nil, b, "BackdropTemplate")
-    border:SetAllPoints()
-    border:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    border:SetBackdropBorderColor(0, 0, 0, 1)
-    b:HookScript("OnEnter", function() bg:SetColorTexture(0.10, 0.10, 0.13, 0.98) end)
-    b:HookScript("OnLeave", function() bg:SetColorTexture(0.045, 0.045, 0.055, 0.96) end)
-end
+local function SkinCheckBox(box)
+    box:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+    })
+    box:SetBackdropColor(0.035, 0.035, 0.045, 1)
+    box:SetBackdropBorderColor(0, 0, 0, 1)
 
-local function CreateCheck(parent, label, x, y)
-    local b = CreateFrame("CheckButton", nil, parent, "BackdropTemplate")
-    b:SetSize(18, 18)
-    b:SetPoint("TOPLEFT", x, y)
-    b:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    b:SetBackdropColor(0.035, 0.035, 0.045, 1)
-    b:SetBackdropBorderColor(0, 0, 0, 1)
-
-    local mark = b:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    mark:SetPoint("CENTER", 0, 0)
-    mark:SetText("X")
-    mark:SetTextColor(1, 1, 1)
-    mark:Hide()
+    local x = box:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    x:SetPoint("CENTER", 0, 0)
+    x:SetText("X")
+    x:SetTextColor(1, 1, 1)
+    box._ccrtX = x
 
     local function Refresh(self)
-        if self:GetChecked() then mark:Show() else mark:Hide() end
+        x:SetShown(self:GetChecked() and true or false)
     end
-    b._ccrtRefresh = Refresh
-    b:HookScript("OnClick", Refresh)
-    b:HookScript("OnShow", Refresh)
-
-    local text = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    text:SetPoint("LEFT", b, "RIGHT", 7, 0)
-    text:SetText(label)
-    text:SetTextColor(0.9, 0.9, 0.92)
-    return b, text
+    box._ccrtRefresh = Refresh
+    box:HookScript("OnShow", Refresh)
+    Refresh(box)
 end
 
-local function RefreshRanks()
-    wipe(discoveredInviteRanks)
-    if not IsInGuild() then return end
-    if C_GuildInfo and C_GuildInfo.GuildRoster then
-        C_GuildInfo.GuildRoster()
-    elseif GuildRoster then
-        GuildRoster()
-    end
-    local n = GetNumGuildMembers and GetNumGuildMembers() or 0
-    for i = 1, n do
-        local _, rankName, rankIndex = GetGuildRosterInfo(i)
-        if rankName and rankIndex ~= nil then
-            discoveredInviteRanks[rankIndex] = rankName
-        end
-    end
-end
-
-local function IsAlreadyGrouped(name)
-    local short = name and name:match("^([^%-]+)")
-    if not short then return false end
-    if UnitName("player") == short then return true end
-    if IsInRaid() then
-        for i = 1, GetNumGroupMembers() do
-            if UnitName("raid" .. i) == short then return true end
-        end
-    elseif IsInGroup() then
-        for i = 1, GetNumSubgroupMembers() do
-            if UnitName("party" .. i) == short then return true end
-        end
-    end
-    return false
-end
-
-local function InviteSelectedRanks()
+local function InjectInviteUI()
     InitInviteDB()
-    RefreshRanks()
-    if not IsInGuild() then
-        print("|cff33ff99[CC RaidTools]|r Vous n'êtes pas dans une guilde.")
-        return
-    end
-    if InCombatLockdown() then
-        print("|cff33ff99[CC RaidTools]|r Impossible d'inviter pendant le combat.")
-        return
-    end
+    local mainFrame = _G.CCRaidToolsFrame
+    if not mainFrame or uiInjected then return end
+    uiInjected = true
 
-    local invited = 0
-    local n = GetNumGuildMembers and GetNumGuildMembers() or 0
-    for i = 1, n do
-        local name, _, rankIndex, _, _, _, _, _, online = GetGuildRosterInfo(i)
-        if name and AutoPromoteDB.inviteTool.ranks[rankIndex] and (online or not AutoPromoteDB.inviteTool.onlineOnly) then
-            if not IsAlreadyGrouped(name) then
-                if C_PartyInfo and C_PartyInfo.InviteUnit then
-                    C_PartyInfo.InviteUnit(name)
-                elseif InviteUnit then
-                    InviteUnit(name)
-                end
-                invited = invited + 1
-            end
-        end
-    end
+    -- On ajoute une petite zone Invite Tool au bas de la fenêtre /ccrt.
+    -- La fenêtre est légèrement agrandie uniquement pour cette section.
+    local oldWidth, oldHeight = mainFrame:GetSize()
+    mainFrame:SetSize(oldWidth, math.max(oldHeight, 705))
 
-    if AutoPromoteDB.inviteTool.autoRaid and not IsInRaid() then
-        C_Timer.After(2, function()
-            if IsInGroup() and not IsInRaid() and UnitIsGroupLeader("player") and ConvertToRaid then
-                ConvertToRaid()
-            end
-        end)
-    end
-    print("|cff33ff99[CC RaidTools]|r " .. invited .. " invitation(s) envoyée(s).")
-end
-
-local function BuildInviteFrame()
-    if inviteFrame then return inviteFrame end
-    InitInviteDB()
-
-    inviteFrame = CreateFrame("Frame", "CCRTInviteToolFrame", UIParent, "BackdropTemplate")
-    inviteFrame:SetSize(390, 470)
-    inviteFrame:SetPoint("CENTER")
-    inviteFrame:SetFrameStrata("DIALOG")
-    inviteFrame:SetMovable(true)
-    inviteFrame:EnableMouse(true)
-    inviteFrame:RegisterForDrag("LeftButton")
-    inviteFrame:SetScript("OnDragStart", inviteFrame.StartMoving)
-    inviteFrame:SetScript("OnDragStop", inviteFrame.StopMovingOrSizing)
-    inviteFrame:SetClampedToScreen(true)
-    SkinPanel(inviteFrame)
-
-    local title = inviteFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 18, -16)
-    title:SetText("CC RaidTools  •  Invite Tool")
+    local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -640)
+    title:SetText("Invite Tool :")
     title:SetTextColor(BRAND_R, BRAND_G, BRAND_B)
 
-    local close = CreateFrame("Button", nil, inviteFrame, "UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT", -2, -2)
+    local enabled = CreateFrame("CheckButton", nil, mainFrame, "BackdropTemplate")
+    enabled:SetSize(20, 20)
+    enabled:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -660)
+    SkinCheckBox(enabled)
+    enabled:SetChecked(AutoPromoteDB.inviteTool.enabled and true or false)
+    enabled:_ccrtRefresh()
 
-    local info = inviteFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    info:SetPoint("TOPLEFT", 18, -48)
-    info:SetText("Sélectionne les rangs de guilde à inviter :")
+    local enabledText = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    enabledText:SetPoint("LEFT", enabled, "RIGHT", 4, 0)
+    enabledText:SetText("Invitation par mot-clé")
 
-    local scroll = CreateFrame("ScrollFrame", nil, inviteFrame, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", 18, -72)
-    scroll:SetPoint("BOTTOMRIGHT", -38, 105)
-    local child = CreateFrame("Frame", nil, scroll)
-    child:SetSize(320, 320)
-    scroll:SetScrollChild(child)
-    inviteFrame.rankChild = child
+    local keywordLabel = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    keywordLabel:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 165, -663)
+    keywordLabel:SetText("Mot-clé :")
 
-    local online = CreateCheck(inviteFrame, "Uniquement les joueurs en ligne", 18, -380)
-    online:SetChecked(AutoPromoteDB.inviteTool.onlineOnly)
-    if online._ccrtRefresh then online:_ccrtRefresh() end
-    online:SetScript("OnClick", function(self)
-        AutoPromoteDB.inviteTool.onlineOnly = self:GetChecked() and true or false
-        if self._ccrtRefresh then self:_ccrtRefresh() end
+    local keyword = CreateFrame("EditBox", nil, mainFrame, "BackdropTemplate")
+    keyword:SetSize(70, 20)
+    keyword:SetPoint("LEFT", keywordLabel, "RIGHT", 5, 0)
+    keyword:SetAutoFocus(false)
+    keyword:SetMaxLetters(20)
+    keyword:SetFontObject("ChatFontNormal")
+    keyword:SetTextInsets(5, 5, 0, 0)
+    keyword:SetText(AutoPromoteDB.inviteTool.keyword or "inv")
+    SkinEditBox(keyword)
+
+    enabled:SetScript("OnClick", function(self)
+        AutoPromoteDB.inviteTool.enabled = self:GetChecked() and true or false
+        self:_ccrtRefresh()
     end)
 
-    local raid = CreateCheck(inviteFrame, "Convertir automatiquement en raid", 18, -407)
-    raid:SetChecked(AutoPromoteDB.inviteTool.autoRaid)
-    if raid._ccrtRefresh then raid:_ccrtRefresh() end
-    raid:SetScript("OnClick", function(self)
-        AutoPromoteDB.inviteTool.autoRaid = self:GetChecked() and true or false
-        if self._ccrtRefresh then self:_ccrtRefresh() end
+    local function SaveKeyword()
+        local value = keyword:GetText() or ""
+        value = value:gsub("^%s+", ""):gsub("%s+$", ""):lower()
+        if value == "" then value = "inv" end
+        AutoPromoteDB.inviteTool.keyword = value
+        keyword:SetText(value)
+        keyword:ClearFocus()
+    end
+    keyword:SetScript("OnEnterPressed", SaveKeyword)
+    keyword:SetScript("OnEditFocusLost", SaveKeyword)
+
+    mainFrame.inviteEnabled = enabled
+    mainFrame.inviteKeyword = keyword
+
+    mainFrame:HookScript("OnShow", function()
+        InitInviteDB()
+        enabled:SetChecked(AutoPromoteDB.inviteTool.enabled and true or false)
+        enabled:_ccrtRefresh()
+        keyword:SetText(AutoPromoteDB.inviteTool.keyword or "inv")
     end)
-
-    local invite = CreateFrame("Button", nil, inviteFrame, "UIPanelButtonTemplate")
-    invite:SetSize(160, 28)
-    invite:SetPoint("BOTTOM", 0, 16)
-    invite:SetText("Inviter")
-    SkinButton(invite)
-    invite:SetScript("OnClick", InviteSelectedRanks)
-
-    inviteFrame:Hide()
-    return inviteFrame
 end
 
-local function PopulateRanks()
-    local f = BuildInviteFrame()
-    RefreshRanks()
-
-    for _, row in ipairs(rankChecks) do
-        row.box:Hide()
-        row.text:Hide()
-    end
-    wipe(rankChecks)
-
-    local indexes = {}
-    for idx in pairs(discoveredInviteRanks) do indexes[#indexes + 1] = idx end
-    table.sort(indexes)
-
-    local y = -4
-    for _, idx in ipairs(indexes) do
-        local rankName = discoveredInviteRanks[idx]
-        local box, text = CreateCheck(f.rankChild, rankName, 4, y)
-        box:SetChecked(AutoPromoteDB.inviteTool.ranks[idx] and true or false)
-        if box._ccrtRefresh then box:_ccrtRefresh() end
-        box:SetScript("OnClick", function(self)
-            AutoPromoteDB.inviteTool.ranks[idx] = self:GetChecked() and true or nil
-            if self._ccrtRefresh then self:_ccrtRefresh() end
-        end)
-        rankChecks[#rankChecks + 1] = { box = box, text = text }
-        y = y - 27
-    end
-    f.rankChild:SetHeight(math.max(320, -y + 10))
+local function NormalizeMessage(msg)
+    if not msg then return "" end
+    return msg:gsub("^%s+", ""):gsub("%s+$", ""):lower()
 end
 
-local function ToggleInviteTool()
-    local f = BuildInviteFrame()
-    if f:IsShown() then
-        f:Hide()
-    else
-        PopulateRanks()
-        f:Show()
-    end
-end
-
--- Slash command. Le nom de SlashCmdList est volontairement unique.
-SLASH_CCRTINVITETOOL1 = "/ccinvite"
-SlashCmdList["CCRTINVITETOOL"] = function()
-    ToggleInviteTool()
-end
-
-_G.CCRT_ToggleInviteTool = ToggleInviteTool
-_G.CCRT_InviteSelectedRanks = InviteSelectedRanks
-
-local event = CreateFrame("Frame")
-event:RegisterEvent("PLAYER_LOGIN")
-event:RegisterEvent("GUILD_ROSTER_UPDATE")
-event:SetScript("OnEvent", function(_, evt)
+local function InviteByKeyword(message, sender)
     InitInviteDB()
-    if evt == "PLAYER_LOGIN" or evt == "GUILD_ROSTER_UPDATE" then
-        RefreshRanks()
+    if not AutoPromoteDB.inviteTool.enabled then return end
+    if not sender or sender == "" then return end
+
+    local keyword = NormalizeMessage(AutoPromoteDB.inviteTool.keyword)
+    if keyword == "" or NormalizeMessage(message) ~= keyword then return end
+
+    if InCombatLockdown() then
+        SendChatMessage("Invitation impossible pendant le combat.", "WHISPER", nil, sender)
+        return
+    end
+
+    -- Si nous sommes déjà groupés, seul le chef/assistant doit tenter l'invitation.
+    if IsInGroup() and not UnitIsGroupLeader("player") and not UnitIsGroupAssistant("player") then
+        return
+    end
+
+    if C_PartyInfo and C_PartyInfo.InviteUnit then
+        C_PartyInfo.InviteUnit(sender)
+    elseif InviteUnit then
+        InviteUnit(sender)
+    end
+end
+
+inviteEvent:RegisterEvent("PLAYER_LOGIN")
+inviteEvent:RegisterEvent("CHAT_MSG_WHISPER")
+inviteEvent:SetScript("OnEvent", function(_, event, ...)
+    if event == "PLAYER_LOGIN" then
+        InitInviteDB()
+        C_Timer.After(1, InjectInviteUI)
+    elseif event == "CHAT_MSG_WHISPER" then
+        local message, sender = ...
+        InviteByKeyword(message, sender)
     end
 end)
 
-print("|cff7381FF[CC RaidTools]|r Invite Tool chargé. Commande : /ccinvite")
+-- /ccrt construit la fenêtre à la demande. On enveloppe sa commande existante
+-- pour injecter la section Invite Tool dès la première ouverture.
+local oldCCRTSlash = SlashCmdList and SlashCmdList["CCRAIDTOOLS"]
+if oldCCRTSlash then
+    SlashCmdList["CCRAIDTOOLS"] = function(msg)
+        oldCCRTSlash(msg)
+        C_Timer.After(0, InjectInviteUI)
+    end
+end
