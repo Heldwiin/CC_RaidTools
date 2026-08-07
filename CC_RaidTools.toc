@@ -6,5 +6,7 @@
 ## SavedVariables: AutoPromoteDB
 
 CC_RaidTools.lua
-ReadyCheckUI.lua
+AutoPromote.lua
+AutoLog.lua
+ReadyCheck.lua
 InviteTool.lua
