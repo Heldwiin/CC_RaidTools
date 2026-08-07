@@ -6,6 +6,8 @@ local C = CCRT
 C.BRAND_R, C.BRAND_G, C.BRAND_B = 0.451, 0.506, 1
 C.modules = C.modules or {}
 
+local GUI_TEXTURES="Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\"
+
 function C.InitDB()
     if not AutoPromoteDB then AutoPromoteDB = {} end
     AutoPromoteDB.names = AutoPromoteDB.names or {}
@@ -54,8 +56,8 @@ function C.SkinCheckBox(box)
     box:EnableMouse(true)
     box:RegisterForClicks("LeftButtonUp")
 
-    local CHECK_TEXTURE="Interface\\AddOns\\atrocityEssentials\\Media\\GUITextures\\ok-iconBlack.tga"
-    local CROSS_TEXTURE="Interface\\AddOns\\atrocityEssentials\\Media\\GUITextures\\cross-small.png"
+    local CHECK_TEXTURE=GUI_TEXTURES.."ok-iconBlack.tga"
+    local CROSS_TEXTURE=GUI_TEXTURES.."cross-small.png"
     local TOGGLE_WIDTH,TOGGLE_HEIGHT=48,24
     local KNOB_SIZE,KNOB_PADDING=22,1
     local OFF_POSITION=KNOB_PADDING
@@ -175,7 +177,7 @@ local function BuildMainFrame()
     local closeTex=close:CreateTexture(nil,"ARTWORK")
     closeTex:SetPoint("CENTER")
     closeTex:SetSize(13,13)
-    closeTex:SetTexture("Interface\\AddOns\\atrocityEssentials\\Media\\GUITextures\\aesClose.png")
+    closeTex:SetTexture(GUI_TEXTURES.."aesClose.png")
     closeTex:SetVertexColor(0.851,0.851,0.851,1)
     closeTex:SetTexelSnappingBias(0)
     closeTex:SetSnapToPixelGrid(true)
