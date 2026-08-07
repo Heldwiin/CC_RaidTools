@@ -46,25 +46,77 @@ function C.SkinButton(button)
     button:HookScript("OnLeave",function(self) self._ccrtBg:SetColorTexture(0.045,0.045,0.055,0.94) end)
 end
 
+-- Checkbox/toggle inspired by the visual style used by Atrocity Essentials.
 function C.SkinCheckBox(box)
     if not box or box._ccrtSkin then return end
-    box._ccrtSkin=true; box:EnableMouse(true); box:RegisterForClicks("LeftButtonUp")
-    box:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
+    box._ccrtSkin=true
+    box:SetSize(48,24)
+    box:EnableMouse(true)
+    box:RegisterForClicks("LeftButtonUp")
+
+    box:SetBackdrop({
+        bgFile="Interface\\Buttons\\WHITE8X8",
+        edgeFile="Interface\\Buttons\\WHITE8X8",
+        edgeSize=1,
+    })
     box:SetBackdropBorderColor(0,0,0,1)
-    local bg=box:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); box._ccrtCheckBg=bg
-    local mark=box:CreateFontString(nil,"OVERLAY","GameFontNormalLarge"); mark:SetPoint("CENTER",0,0); mark:SetJustifyH("CENTER"); mark:SetJustifyV("MIDDLE"); box._ccrtCheckMark=mark
-    local hover=box:CreateTexture(nil,"HIGHLIGHT"); hover:SetAllPoints(); hover:SetColorTexture(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.16)
+
+    local knob=CreateFrame("Frame",nil,box,"BackdropTemplate")
+    knob:SetSize(22,22)
+    knob:SetPoint("LEFT",box,"LEFT",1,0)
+    knob:SetBackdrop({
+        bgFile="Interface\\Buttons\\WHITE8X8",
+        edgeFile="Interface\\Buttons\\WHITE8X8",
+        edgeSize=1,
+    })
+    knob:SetBackdropColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.4)
+    knob:SetBackdropBorderColor(0,0,0,1)
+
+    local mark=knob:CreateFontString(nil,"OVERLAY","GameFontNormalLarge")
+    mark:SetPoint("CENTER",0,0)
+    mark:SetJustifyH("CENTER")
+    mark:SetJustifyV("MIDDLE")
+    mark:SetText("×")
+    mark:SetTextColor(0.18,0.18,0.32,1)
+
+    local click=CreateFrame("Button",nil,box)
+    click:SetAllPoints()
+    click:RegisterForClicks("LeftButtonUp")
+    click:SetScript("OnClick",function(self)
+        box:SetChecked(not box:GetChecked())
+        if box._ccrtRefresh then box:_ccrtRefresh() end
+        if box:GetScript("OnClick") then
+            box:GetScript("OnClick")(box)
+        end
+    end)
+
+    local hover=box:CreateTexture(nil,"HIGHLIGHT")
+    hover:SetAllPoints()
+    hover:SetColorTexture(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.12)
+    hover:SetDrawLayer("HIGHLIGHT",0)
+
     local function refresh(self)
         local on=self:GetChecked() and true or false
         if on then
-            bg:SetColorTexture(C.BRAND_R*0.62,C.BRAND_G*0.62,C.BRAND_B*0.72,1)
-            mark:SetText("✓"); mark:SetTextColor(1,1,1,1)
+            box:SetBackdropColor(C.BRAND_R*0.5,C.BRAND_G*0.5,C.BRAND_B*0.5,1)
+            knob:ClearAllPoints()
+            knob:SetPoint("RIGHT",box,"RIGHT",-1,0)
+            knob:SetBackdropColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.8)
+            mark:SetText("✓")
+            mark:SetTextColor(1,1,1,1)
         else
-            bg:SetColorTexture(0.055,0.055,0.12,1)
-            mark:SetText("×"); mark:SetTextColor(0.18,0.18,0.32,1)
+            box:SetBackdropColor(0.055,0.055,0.12,1)
+            knob:ClearAllPoints()
+            knob:SetPoint("LEFT",box,"LEFT",1,0)
+            knob:SetBackdropColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.4)
+            mark:SetText("×")
+            mark:SetTextColor(0.18,0.18,0.32,1)
         end
     end
-    box._ccrtRefresh=refresh; box:HookScript("OnShow",refresh); refresh(box)
+
+    box._ccrtRefresh=refresh
+    box:HookScript("OnShow",refresh)
+    refresh(box)
 end
 
 function C.SkinScrollBar(scroll)
