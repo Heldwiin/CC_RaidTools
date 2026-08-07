@@ -20,7 +20,6 @@ local function SkinEditBox(box)
     box:SetTextColor(1, 1, 1)
 end
 
--- Copie volontaire du skin checkbox principal : CCRTSkinCheckBox est local dans CC_RaidTools.lua.
 local function SkinCheckBox(box)
     if not box or box._ccrtSkin then return end
     box._ccrtSkin = true
@@ -58,22 +57,6 @@ local function SkinCheckBox(box)
     Refresh(box)
 end
 
-local function SkinButton(button)
-    if not button or button._ccrtSkin then return end
-    button._ccrtSkin = true
-    if button.Left then button.Left:Hide() end
-    if button.Middle then button.Middle:Hide() end
-    if button.Right then button.Right:Hide() end
-    if button.SetNormalTexture then button:SetNormalTexture("") end
-    if button.SetPushedTexture then button:SetPushedTexture("") end
-    local bg = button:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints(); bg:SetColorTexture(0.045, 0.045, 0.055, 0.94)
-    local border = CreateFrame("Frame", nil, button, "BackdropTemplate")
-    border:SetAllPoints(); border:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 }); border:SetBackdropBorderColor(0,0,0,1)
-    button:HookScript("OnEnter", function() bg:SetColorTexture(0.10,0.10,0.13,0.96) end)
-    button:HookScript("OnLeave", function() bg:SetColorTexture(0.045,0.045,0.055,0.94) end)
-end
-
 local function NormalizeMessage(msg)
     if not msg then return "" end
     return msg:gsub("^%s+", ""):gsub("%s+$", ""):lower()
@@ -87,20 +70,6 @@ local function InjectInviteUI()
 
     local oldWidth, oldHeight = mainFrame:GetSize()
     mainFrame:SetSize(oldWidth, math.max(oldHeight, 705))
-
-    -- Bouton de test dans la section Ready Check existante.
-    local testReady = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
-    testReady:SetSize(90, 22)
-    testReady:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -16, -603)
-    testReady:SetText("Tester")
-    SkinButton(testReady)
-    testReady:SetScript("OnClick", function()
-        if IsInRaid() and SlashCmdList and SlashCmdList["CCRAIDTOOLS"] then
-            SlashCmdList["CCRAIDTOOLS"]("raidcheck")
-        else
-            print("|cff33ff99[CC RaidTools]|r Le test du Ready Check nécessite d'être dans un raid.")
-        end
-    end)
 
     local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -640)
