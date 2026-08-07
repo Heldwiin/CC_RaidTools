@@ -1,6 +1,8 @@
 -- CC RaidTools - Ready Check
 local C=CCRT
 local frame,rows,statuses,hideTimer
+rows={}
+statuses={}
 local ROW_H=20
 local FOOD={[308488]=1,[308506]=1,[308434]=1,[308514]=1,[327708]=1,[327706]=1,[327709]=1,[308525]=1,[327707]=1,[308637]=1,[308474]=1,[308504]=1,[308430]=1,[308509]=1,[327704]=1,[327701]=1,[327705]=1,[327702]=1,[382145]=1,[382150]=1,[382146]=1,[382149]=1,[396092]=1,[382246]=1,[382247]=1,[382152]=1,[382153]=1,[382157]=1,[382230]=1,[382231]=1,[382232]=1,[382154]=1,[382155]=1,[382156]=1,[382234]=1,[382235]=1,[382236]=1}
 local FLASK={[1236763]=1,[1239355]=1,[1235057]=1,[1239755]=1,[1236767]=1,[1235111]=1,[1235110]=1,[1235108]=1}
@@ -45,10 +47,10 @@ local chk
 local function BuildUI(f)
     local label=f:CreateFontString(nil,"OVERLAY","GameFontNormal"); label:SetPoint("TOPLEFT",f,"TOPLEFT",10,-600); label:SetText("Ready Check :"); label:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
     chk=CreateFrame("CheckButton",nil,f,"BackdropTemplate"); chk:SetSize(24,24); C.SkinCheckBox(chk); chk:SetPoint("TOPLEFT",f,"TOPLEFT",10,-620); local t=chk:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); t:SetPoint("LEFT",chk,"RIGHT",2,0); t:SetText("Check Buffs /appel"); chk:SetScript("OnClick",function(self)AutoPromoteDB.raidCheckEnabled=self:GetChecked() and true or false; if self._ccrtRefresh then self:_ccrtRefresh() end; if not AutoPromoteDB.raidCheckEnabled and frame then frame:Hide() end end); f.raidCheckChk=chk
-    local test=CreateFrame("Button",nil,f,"UIPanelButtonTemplate"); test:SetSize(54,22); test:SetPoint("RIGHT",f,"RIGHT",-16,0); test:SetPoint("CENTER",chk,"CENTER",0,0); test:SetText("Test"); C.SkinButton(test); test:SetScript("OnClick",function() if IsInRaid() then BuildFrame(); frame:Show(); Refresh() else print("|cff33ff99[CC RaidTools]|r Le test du Ready Check nécessite d'être dans un raid.") end end); f.raidCheckTestButton=test
+    local test=CreateFrame("Button",nil,f,"UIPanelButtonTemplate"); test:SetSize(54,22); test:SetPoint("RIGHT",f,"RIGHT",-16,0); test:SetPoint("CENTER",chk,"CENTER",0,0); test:SetText("Test"); C.SkinButton(test); test:SetScript("OnClick",function() if IsInRaid() then wipe(statuses); BuildFrame(); frame:Show(); Refresh() else print("|cff33ff99[CC RaidTools]|r Le test du Ready Check nécessite d'être dans un raid.") end end); f.raidCheckTestButton=test
 end
 local function RefreshUI() C.InitDB(); if chk then chk:SetChecked(AutoPromoteDB.raidCheckEnabled and true or false); if chk._ccrtRefresh then chk:_ccrtRefresh() end end end
 C.RegisterModule("ReadyCheck",BuildUI,RefreshUI)
-C.modules.ReadyCheck.command=function(cmd) if cmd=="raidcheck" then if IsInRaid() then BuildFrame(); frame:Show(); Refresh() else print("|cff33ff99[CC RaidTools]|r Tu n'es pas en raid.") end; return true end end
+C.modules.ReadyCheck.command=function(cmd) if cmd=="raidcheck" then if IsInRaid() then wipe(statuses); BuildFrame(); frame:Show(); Refresh() else print("|cff33ff99[CC RaidTools]|r Tu n'es pas en raid.") end; return true end end
 local e=CreateFrame("Frame"); for _,ev in ipairs({"READY_CHECK","READY_CHECK_CONFIRM","READY_CHECK_FINISHED","UNIT_AURA"}) do e:RegisterEvent(ev) end
 e:SetScript("OnEvent",function(_,ev,a,b) if ev=="READY_CHECK" then Show(a) elseif ev=="READY_CHECK_CONFIRM" then Update(a,b); C_Timer.After(.1,Refresh); C_Timer.After(.5,Refresh) elseif ev=="READY_CHECK_FINISHED" then Finish() elseif ev=="UNIT_AURA" and frame and frame:IsShown() then Refresh() end end)
