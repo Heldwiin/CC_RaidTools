@@ -13,6 +13,7 @@ function C.InitDB()
     AutoPromoteDB.rankNames = AutoPromoteDB.rankNames or {}
     AutoPromoteDB.logging = AutoPromoteDB.logging or { lfr=false, normal=false, heroic=false, mythic=false }
     if AutoPromoteDB.raidCheckEnabled == nil then AutoPromoteDB.raidCheckEnabled = true end
+    AutoPromoteDB.windowPos = AutoPromoteDB.windowPos or {}
 end
 
 function C.NormalizeName(name)
@@ -71,12 +72,38 @@ end
 local mainFrame
 function C.GetMainFrame() return mainFrame end
 
+local function SaveMainFramePosition()
+    if not mainFrame or not AutoPromoteDB then return end
+    local point,_,relativePoint,x,y = mainFrame:GetPoint(1)
+    if point then
+        AutoPromoteDB.windowPos.point=point
+        AutoPromoteDB.windowPos.relativePoint=relativePoint or point
+        AutoPromoteDB.windowPos.x=x or 0
+        AutoPromoteDB.windowPos.y=y or 0
+    end
+end
+
+local function RestoreMainFramePosition()
+    if not mainFrame then return end
+    mainFrame:ClearAllPoints()
+    local p=AutoPromoteDB and AutoPromoteDB.windowPos
+    if p and p.point then
+        mainFrame:SetPoint(p.point,UIParent,p.relativePoint or p.point,p.x or 0,p.y or 0)
+    else
+        -- Première ouverture : légèrement décalée à droite du centre pour éviter de masquer le centre de l'écran.
+        mainFrame:SetPoint("CENTER",UIParent,"CENTER",260,0)
+    end
+end
+
 local function BuildMainFrame()
     if mainFrame then return mainFrame end
     C.InitDB()
     mainFrame=CreateFrame("Frame","CCRaidToolsFrame",UIParent)
-    mainFrame:SetSize(320,705); mainFrame:SetPoint("CENTER"); mainFrame:SetMovable(true); mainFrame:EnableMouse(true); mainFrame:RegisterForDrag("LeftButton")
-    mainFrame:SetScript("OnDragStart",mainFrame.StartMoving); mainFrame:SetScript("OnDragStop",mainFrame.StopMovingOrSizing); C.ApplyPanelSkin(mainFrame)
+    mainFrame:SetSize(320,705); mainFrame:SetMovable(true); mainFrame:EnableMouse(true); mainFrame:RegisterForDrag("LeftButton")
+    mainFrame:SetScript("OnDragStart",mainFrame.StartMoving)
+    mainFrame:SetScript("OnDragStop",function(self) self:StopMovingOrSizing(); SaveMainFramePosition() end)
+    C.ApplyPanelSkin(mainFrame)
+    RestoreMainFramePosition()
     local title=mainFrame:CreateFontString(nil,"OVERLAY","GameFontNormal"); title:SetPoint("TOP",0,-7); title:SetText("CC RaidTools"); title:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
     local close=CreateFrame("Button",nil,mainFrame); close:SetSize(22,22); close:SetPoint("TOPRIGHT",-4,-4); close:SetText("×"); close:SetNormalFontObject("GameFontNormalLarge"); close:SetHighlightFontObject("GameFontHighlightLarge"); close:SetScript("OnClick",function() mainFrame:Hide() end)
     mainFrame:Hide()
