@@ -48,8 +48,8 @@ function C.SkinButton(button)
     button:HookScript("OnLeave",function(self) self._ccrtBg:SetColorTexture(0.045,0.045,0.055,0.94) end)
 end
 
--- Checkbox/toggle using the same toggle geometry and textures as Atrocity Essentials.
--- The textures are bundled locally so CC RaidTools does not depend on Atrocity Essentials.
+-- Toggle visuel basé sur le rendu d'Atrocity Essentials : deux demi-panneaux fixes.
+-- Les textures des symboles sont fournies localement dans TexturesGUI.
 function C.SkinCheckBox(box)
     if not box or box._ccrtSkin then return end
     box._ccrtSkin=true
@@ -59,38 +59,40 @@ function C.SkinCheckBox(box)
 
     local CHECK_TEXTURE=GUI_TEXTURES.."ok-iconBlack.tga"
     local CROSS_TEXTURE=GUI_TEXTURES.."cross-small.png"
-    local TOGGLE_WIDTH,TOGGLE_HEIGHT=48,24
-    local KNOB_SIZE,KNOB_PADDING=22,1
-    local OFF_POSITION=KNOB_PADDING
-    local ON_POSITION=TOGGLE_WIDTH-KNOB_SIZE-KNOB_PADDING
+    local W,H=48,24
+    local HALF=24
 
-    box:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
-    box:SetBackdropColor(0.015,0.015,0.02,1)
-    box:SetBackdropBorderColor(0.08,0.08,0.10,1)
+    -- Bordure noire nette, identique au contrôle AES.
+    box:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=2})
+    box:SetBackdropColor(0.01,0.01,0.012,1)
+    box:SetBackdropBorderColor(0.01,0.01,0.012,1)
 
-    local knob=CreateFrame("Frame",nil,box,"BackdropTemplate")
-    knob:SetSize(KNOB_SIZE,KNOB_SIZE)
-    knob:SetPoint("LEFT",box,"LEFT",OFF_POSITION,0)
-    knob:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
-    knob:SetBackdropBorderColor(0.10,0.10,0.12,1)
+    local left=box:CreateTexture(nil,"BACKGROUND")
+    left:SetPoint("TOPLEFT",1,-1)
+    left:SetSize(HALF-1,H-2)
 
-    local knobTexture=knob:CreateTexture(nil,"ARTWORK")
-    knobTexture:SetAllPoints()
-    knobTexture:SetColorTexture(0.72,0.72,0.76,1)
+    local right=box:CreateTexture(nil,"BACKGROUND")
+    right:SetPoint("TOPRIGHT",-1,-1)
+    right:SetSize(HALF-1,H-2)
 
-    local checkmark=knob:CreateTexture(nil,"OVERLAY")
-    checkmark:SetSize(KNOB_SIZE,KNOB_SIZE)
-    checkmark:SetPoint("CENTER",knob,"CENTER",0,0)
+    -- Fine séparation verticale au centre.
+    local divider=box:CreateTexture(nil,"BORDER")
+    divider:SetPoint("TOP",box,"TOP",0,-1)
+    divider:SetPoint("BOTTOM",box,"BOTTOM",0,1)
+    divider:SetWidth(1)
+    divider:SetColorTexture(0.01,0.01,0.012,1)
+
+    local checkmark=box:CreateTexture(nil,"ARTWORK")
+    checkmark:SetSize(22,22)
+    checkmark:SetPoint("CENTER",box,"CENTER",12,0)
     checkmark:SetTexture(CHECK_TEXTURE)
-    checkmark:SetVertexColor(0.03,0.03,0.04,1)
-    checkmark:Hide()
+    checkmark:SetVertexColor(0,0,0,1)
 
-    local crossmark=knob:CreateTexture(nil,"OVERLAY")
-    crossmark:SetSize(KNOB_SIZE,KNOB_SIZE)
-    crossmark:SetPoint("CENTER",knob,"CENTER",0,0)
+    local crossmark=box:CreateTexture(nil,"ARTWORK")
+    crossmark:SetSize(22,22)
+    crossmark:SetPoint("CENTER",box,"CENTER",-12,0)
     crossmark:SetTexture(CROSS_TEXTURE)
-    crossmark:SetVertexColor(0.30,0.30,0.34,1)
-    crossmark:Show()
+    crossmark:SetVertexColor(0.10,0.10,0.10,1)
 
     local click=CreateFrame("Button",nil,box)
     click:SetAllPoints(box)
@@ -105,23 +107,25 @@ function C.SkinCheckBox(box)
     local hover=box:CreateTexture(nil,"HIGHLIGHT")
     hover:SetAllPoints(box)
     hover:SetTexture("Interface\\Buttons\\WHITE8X8")
-    hover:SetVertexColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.15)
-    hover:SetAlpha(0.15)
+    hover:SetVertexColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.08)
+    hover:SetAlpha(0.08)
 
     local function refresh(self)
         local on=self:GetChecked() and true or false
         if on then
-            box:SetBackdropColor(C.BRAND_R*0.55,C.BRAND_G*0.55,C.BRAND_B*0.65,1)
-            knob:ClearAllPoints(); knob:SetPoint("LEFT",box,"LEFT",ON_POSITION,0)
-            knobTexture:SetColorTexture(0.78,0.78,0.82,1)
-            checkmark:SetVertexColor(0.03,0.03,0.04,1)
-            checkmark:Show(); crossmark:Hide()
+            -- AES actif : gauche violet sombre, droite violet clair.
+            left:SetColorTexture(0.30,0.31,0.59,1)
+            right:SetColorTexture(0.38,0.40,0.76,1)
+            checkmark:SetVertexColor(0,0,0,1)
+            checkmark:Show()
+            crossmark:Hide()
         else
-            box:SetBackdropColor(0.015,0.015,0.02,1)
-            knob:ClearAllPoints(); knob:SetPoint("LEFT",box,"LEFT",OFF_POSITION,0)
-            knobTexture:SetColorTexture(0.60,0.60,0.64,1)
-            crossmark:SetVertexColor(0.28,0.28,0.32,1)
-            checkmark:Hide(); crossmark:Show()
+            -- AES inactif : gauche gris, droite presque noire.
+            left:SetColorTexture(0.30,0.30,0.30,1)
+            right:SetColorTexture(0.09,0.09,0.09,1)
+            crossmark:SetVertexColor(0.10,0.10,0.10,1)
+            crossmark:Show()
+            checkmark:Hide()
         end
     end
 
