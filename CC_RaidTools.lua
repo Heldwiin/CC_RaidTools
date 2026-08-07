@@ -49,12 +49,21 @@ end
 function C.SkinCheckBox(box)
     if not box or box._ccrtSkin then return end
     box._ccrtSkin=true; box:EnableMouse(true); box:RegisterForClicks("LeftButtonUp")
-    box:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1}); box:SetBackdropColor(0.035,0.035,0.045,1); box:SetBackdropBorderColor(0,0,0,1)
-    local checked=box:CreateTexture(nil,"ARTWORK"); checked:SetPoint("TOPLEFT",3,-3); checked:SetPoint("BOTTOMRIGHT",-3,3); checked:SetColorTexture(C.BRAND_R*0.62,C.BRAND_G*0.62,C.BRAND_B*0.72,1)
-    local tick=CreateFrame("Frame",nil,box); tick:SetAllPoints(); tick:EnableMouse(false)
-    for _,r in ipairs({45,-45}) do local x=tick:CreateTexture(nil,"OVERLAY"); x:SetColorTexture(1,1,1,1); x:SetSize(2,13); x:SetPoint("CENTER"); x:SetRotation(math.rad(r)) end
-    local hover=box:CreateTexture(nil,"HIGHLIGHT"); hover:SetPoint("TOPLEFT",2,-2); hover:SetPoint("BOTTOMRIGHT",-2,2); hover:SetColorTexture(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.15)
-    local function refresh(self) local on=self:GetChecked() and true or false; checked:SetShown(on); tick:SetShown(on) end
+    box:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
+    box:SetBackdropBorderColor(0,0,0,1)
+    local bg=box:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); box._ccrtCheckBg=bg
+    local mark=box:CreateFontString(nil,"OVERLAY","GameFontNormalLarge"); mark:SetPoint("CENTER",0,0); mark:SetJustifyH("CENTER"); mark:SetJustifyV("MIDDLE"); box._ccrtCheckMark=mark
+    local hover=box:CreateTexture(nil,"HIGHLIGHT"); hover:SetAllPoints(); hover:SetColorTexture(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.16)
+    local function refresh(self)
+        local on=self:GetChecked() and true or false
+        if on then
+            bg:SetColorTexture(C.BRAND_R*0.62,C.BRAND_G*0.62,C.BRAND_B*0.72,1)
+            mark:SetText("✓"); mark:SetTextColor(1,1,1,1)
+        else
+            bg:SetColorTexture(0.055,0.055,0.12,1)
+            mark:SetText("×"); mark:SetTextColor(0.18,0.18,0.32,1)
+        end
+    end
     box._ccrtRefresh=refresh; box:HookScript("OnShow",refresh); refresh(box)
 end
 
