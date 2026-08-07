@@ -25,6 +25,12 @@ local function SkinEditBox(box)
 end
 
 local function SkinCheckBox(box)
+    -- Utilise exactement le skin commun de CC RaidTools lorsqu'il est disponible.
+    if CCRTSkinCheckBox then
+        CCRTSkinCheckBox(box)
+        return
+    end
+
     box:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -69,21 +75,17 @@ local function InjectInviteUI()
     title:SetTextColor(BRAND_R, BRAND_G, BRAND_B)
 
     local enabled = CreateFrame("CheckButton", nil, mainFrame, "BackdropTemplate")
-    enabled:SetSize(20, 20)
+    enabled:SetSize(24, 24)
     enabled:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -660)
     SkinCheckBox(enabled)
 
-    local enabledText = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    enabledText:SetPoint("LEFT", enabled, "RIGHT", 4, 0)
-    enabledText:SetText("Invitation par mot-clé")
-
     local keywordLabel = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    keywordLabel:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 165, -663)
+    keywordLabel:SetPoint("LEFT", enabled, "RIGHT", 2, 0)
     keywordLabel:SetText("Mot-clé :")
 
     local keyword = CreateFrame("EditBox", nil, mainFrame, "BackdropTemplate")
-    keyword:SetSize(70, 20)
-    keyword:SetPoint("LEFT", keywordLabel, "RIGHT", 5, 0)
+    keyword:SetSize(90, 22)
+    keyword:SetPoint("LEFT", keywordLabel, "RIGHT", 6, 0)
     keyword:SetAutoFocus(false)
     keyword:SetMaxLetters(20)
     keyword:SetFontObject("ChatFontNormal")
