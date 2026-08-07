@@ -65,31 +65,31 @@ function C.SkinCheckBox(box)
     local ON_POSITION=TOGGLE_WIDTH-KNOB_SIZE-KNOB_PADDING
 
     box:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
-    box:SetBackdropColor(0.035,0.035,0.045,1)
-    box:SetBackdropBorderColor(0.10,0.10,0.14,1)
+    box:SetBackdropColor(0.015,0.015,0.02,1)
+    box:SetBackdropBorderColor(0.08,0.08,0.10,1)
 
     local knob=CreateFrame("Frame",nil,box,"BackdropTemplate")
     knob:SetSize(KNOB_SIZE,KNOB_SIZE)
     knob:SetPoint("LEFT",box,"LEFT",OFF_POSITION,0)
     knob:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
-    knob:SetBackdropBorderColor(0.08,0.08,0.12,1)
+    knob:SetBackdropBorderColor(0.10,0.10,0.12,1)
 
     local knobTexture=knob:CreateTexture(nil,"ARTWORK")
     knobTexture:SetAllPoints()
-    knobTexture:SetColorTexture(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.6)
+    knobTexture:SetColorTexture(0.72,0.72,0.76,1)
 
     local checkmark=knob:CreateTexture(nil,"OVERLAY")
     checkmark:SetSize(KNOB_SIZE,KNOB_SIZE)
     checkmark:SetPoint("CENTER",knob,"CENTER",0,0)
     checkmark:SetTexture(CHECK_TEXTURE)
-    checkmark:SetVertexColor(1,1,1,1)
+    checkmark:SetVertexColor(0.03,0.03,0.04,1)
     checkmark:Hide()
 
     local crossmark=knob:CreateTexture(nil,"OVERLAY")
     crossmark:SetSize(KNOB_SIZE,KNOB_SIZE)
     crossmark:SetPoint("CENTER",knob,"CENTER",0,0)
     crossmark:SetTexture(CROSS_TEXTURE)
-    crossmark:SetVertexColor(0.15,0.15,0.20,0.65)
+    crossmark:SetVertexColor(0.30,0.30,0.34,1)
     crossmark:Show()
 
     local click=CreateFrame("Button",nil,box)
@@ -113,14 +113,14 @@ function C.SkinCheckBox(box)
         if on then
             box:SetBackdropColor(C.BRAND_R*0.55,C.BRAND_G*0.55,C.BRAND_B*0.65,1)
             knob:ClearAllPoints(); knob:SetPoint("LEFT",box,"LEFT",ON_POSITION,0)
-            knobTexture:SetColorTexture(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.6)
-            checkmark:SetVertexColor(1,1,1,1)
+            knobTexture:SetColorTexture(0.78,0.78,0.82,1)
+            checkmark:SetVertexColor(0.03,0.03,0.04,1)
             checkmark:Show(); crossmark:Hide()
         else
-            box:SetBackdropColor(0.025,0.025,0.035,1)
+            box:SetBackdropColor(0.015,0.015,0.02,1)
             knob:ClearAllPoints(); knob:SetPoint("LEFT",box,"LEFT",OFF_POSITION,0)
-            knobTexture:SetColorTexture(C.BRAND_R*0.55,C.BRAND_G*0.55,C.BRAND_B*0.60,0.38)
-            crossmark:SetVertexColor(0.12,0.12,0.16,0.55)
+            knobTexture:SetColorTexture(0.60,0.60,0.64,1)
+            crossmark:SetVertexColor(0.28,0.28,0.32,1)
             checkmark:Hide(); crossmark:Show()
         end
     end
