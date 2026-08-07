@@ -14,43 +14,64 @@ local function InitInviteDB()
 end
 
 local function SkinEditBox(box)
-    box:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-    })
+    box:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
     box:SetBackdropColor(0.018, 0.018, 0.024, 0.90)
     box:SetBackdropBorderColor(0, 0, 0, 1)
     box:SetTextColor(1, 1, 1)
 end
 
+-- Copie volontaire du skin checkbox principal : CCRTSkinCheckBox est local dans CC_RaidTools.lua.
 local function SkinCheckBox(box)
-    -- Utilise exactement le skin commun de CC RaidTools lorsqu'il est disponible.
-    if CCRTSkinCheckBox then
-        CCRTSkinCheckBox(box)
-        return
-    end
-
-    box:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-    })
+    if not box or box._ccrtSkin then return end
+    box._ccrtSkin = true
+    box:EnableMouse(true)
+    box:RegisterForClicks("LeftButtonUp")
+    box:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
     box:SetBackdropColor(0.035, 0.035, 0.045, 1)
     box:SetBackdropBorderColor(0, 0, 0, 1)
 
-    local x = box:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    x:SetPoint("CENTER", 0, 0)
-    x:SetText("X")
-    x:SetTextColor(1, 1, 1)
+    local checkedBg = box:CreateTexture(nil, "ARTWORK")
+    checkedBg:SetPoint("TOPLEFT", 3, -3)
+    checkedBg:SetPoint("BOTTOMRIGHT", -3, 3)
+    checkedBg:SetColorTexture(BRAND_R * 0.62, BRAND_G * 0.62, BRAND_B * 0.72, 1)
+    checkedBg:Hide()
+
+    local tick = CreateFrame("Frame", nil, box)
+    tick:SetAllPoints(box)
+    tick:EnableMouse(false)
+    local x1 = tick:CreateTexture(nil, "OVERLAY")
+    x1:SetColorTexture(1, 1, 1, 1); x1:SetSize(2, 13); x1:SetPoint("CENTER"); x1:SetRotation(math.rad(45))
+    local x2 = tick:CreateTexture(nil, "OVERLAY")
+    x2:SetColorTexture(1, 1, 1, 1); x2:SetSize(2, 13); x2:SetPoint("CENTER"); x2:SetRotation(math.rad(-45))
+    tick:Hide()
+
+    local hover = box:CreateTexture(nil, "HIGHLIGHT")
+    hover:SetPoint("TOPLEFT", 2, -2); hover:SetPoint("BOTTOMRIGHT", -2, 2)
+    hover:SetColorTexture(BRAND_R, BRAND_G, BRAND_B, 0.15)
 
     local function Refresh(self)
-        x:SetShown(self:GetChecked() and true or false)
+        checkedBg:SetShown(self:GetChecked() and true or false)
+        tick:SetShown(self:GetChecked() and true or false)
     end
-
     box._ccrtRefresh = Refresh
     box:HookScript("OnShow", Refresh)
     Refresh(box)
+end
+
+local function SkinButton(button)
+    if not button or button._ccrtSkin then return end
+    button._ccrtSkin = true
+    if button.Left then button.Left:Hide() end
+    if button.Middle then button.Middle:Hide() end
+    if button.Right then button.Right:Hide() end
+    if button.SetNormalTexture then button:SetNormalTexture("") end
+    if button.SetPushedTexture then button:SetPushedTexture("") end
+    local bg = button:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints(); bg:SetColorTexture(0.045, 0.045, 0.055, 0.94)
+    local border = CreateFrame("Frame", nil, button, "BackdropTemplate")
+    border:SetAllPoints(); border:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 }); border:SetBackdropBorderColor(0,0,0,1)
+    button:HookScript("OnEnter", function() bg:SetColorTexture(0.10,0.10,0.13,0.96) end)
+    button:HookScript("OnLeave", function() bg:SetColorTexture(0.045,0.045,0.055,0.94) end)
 end
 
 local function NormalizeMessage(msg)
@@ -60,14 +81,26 @@ end
 
 local function InjectInviteUI()
     InitInviteDB()
-
     local mainFrame = _G.CCRaidToolsFrame
     if not mainFrame or uiInjected then return false end
     uiInjected = true
 
-    -- Cette section fait partie de la fenêtre principale /ccrt : aucune seconde fenêtre.
     local oldWidth, oldHeight = mainFrame:GetSize()
     mainFrame:SetSize(oldWidth, math.max(oldHeight, 705))
+
+    -- Bouton de test dans la section Ready Check existante.
+    local testReady = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
+    testReady:SetSize(90, 22)
+    testReady:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -16, -603)
+    testReady:SetText("Tester")
+    SkinButton(testReady)
+    testReady:SetScript("OnClick", function()
+        if IsInRaid() and SlashCmdList and SlashCmdList["CCRAIDTOOLS"] then
+            SlashCmdList["CCRAIDTOOLS"]("raidcheck")
+        else
+            print("|cff33ff99[CC RaidTools]|r Le test du Ready Check nécessite d'être dans un raid.")
+        end
+    end)
 
     local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -640)
@@ -86,10 +119,7 @@ local function InjectInviteUI()
     local keyword = CreateFrame("EditBox", nil, mainFrame, "BackdropTemplate")
     keyword:SetSize(90, 22)
     keyword:SetPoint("LEFT", keywordLabel, "RIGHT", 6, 0)
-    keyword:SetAutoFocus(false)
-    keyword:SetMaxLetters(20)
-    keyword:SetFontObject("ChatFontNormal")
-    keyword:SetTextInsets(5, 5, 0, 0)
+    keyword:SetAutoFocus(false); keyword:SetMaxLetters(20); keyword:SetFontObject("ChatFontNormal"); keyword:SetTextInsets(5,5,0,0)
     SkinEditBox(keyword)
 
     local function RefreshInviteSettings()
@@ -108,84 +138,43 @@ local function InjectInviteUI()
         local value = NormalizeMessage(keyword:GetText())
         if value == "" then value = "inv" end
         AutoPromoteDB.inviteTool.keyword = value
-        keyword:SetText(value)
-        keyword:ClearFocus()
+        keyword:SetText(value); keyword:ClearFocus()
     end
-
     keyword:SetScript("OnEnterPressed", SaveKeyword)
-    keyword:SetScript("OnEscapePressed", function(self)
-        self:SetText(AutoPromoteDB.inviteTool.keyword or "inv")
-        self:ClearFocus()
-    end)
+    keyword:SetScript("OnEscapePressed", function(self) self:SetText(AutoPromoteDB.inviteTool.keyword or "inv"); self:ClearFocus() end)
     keyword:SetScript("OnEditFocusLost", SaveKeyword)
 
-    mainFrame.inviteEnabled = enabled
-    mainFrame.inviteKeyword = keyword
+    mainFrame.inviteEnabled = enabled; mainFrame.inviteKeyword = keyword
     mainFrame:HookScript("OnShow", RefreshInviteSettings)
     RefreshInviteSettings()
-
     return true
 end
 
 local function EnsureInviteUI()
     if uiInjected then return end
-    if InjectInviteUI() then
-        if uiWatcher then
-            uiWatcher:Cancel()
-            uiWatcher = nil
-        end
-        return
-    end
-
-    -- La fenêtre /ccrt est créée à la demande. On attend simplement sa création,
-    -- sans remplacer ni dépendre de la commande slash principale.
+    if InjectInviteUI() then if uiWatcher then uiWatcher:Cancel(); uiWatcher=nil end return end
     if not uiWatcher then
         uiWatcher = C_Timer.NewTicker(0.25, function()
-            if InjectInviteUI() and uiWatcher then
-                uiWatcher:Cancel()
-                uiWatcher = nil
-            end
+            if InjectInviteUI() and uiWatcher then uiWatcher:Cancel(); uiWatcher=nil end
         end, 240)
     end
 end
 
 local function InviteByKeyword(message, sender)
     InitInviteDB()
-    if not AutoPromoteDB.inviteTool.enabled then return end
-    if not sender or sender == "" then return end
-
+    if not AutoPromoteDB.inviteTool.enabled or not sender or sender == "" then return end
     local keyword = NormalizeMessage(AutoPromoteDB.inviteTool.keyword)
     if keyword == "" or NormalizeMessage(message) ~= keyword then return end
-
-    if InCombatLockdown() then
-        SendChatMessage("Invitation impossible pendant le combat.", "WHISPER", nil, sender)
-        return
-    end
-
-    -- En groupe, seuls le chef et les assistants peuvent inviter.
-    if IsInGroup() and not UnitIsGroupLeader("player") and not UnitIsGroupAssistant("player") then
-        return
-    end
-
-    if C_PartyInfo and C_PartyInfo.InviteUnit then
-        C_PartyInfo.InviteUnit(sender)
-    elseif InviteUnit then
-        InviteUnit(sender)
-    end
+    if InCombatLockdown() then SendChatMessage("Invitation impossible pendant le combat.", "WHISPER", nil, sender); return end
+    if IsInGroup() and not UnitIsGroupLeader("player") and not UnitIsGroupAssistant("player") then return end
+    if C_PartyInfo and C_PartyInfo.InviteUnit then C_PartyInfo.InviteUnit(sender) elseif InviteUnit then InviteUnit(sender) end
 end
 
 inviteEvent:RegisterEvent("PLAYER_LOGIN")
 inviteEvent:RegisterEvent("CHAT_MSG_WHISPER")
 inviteEvent:SetScript("OnEvent", function(_, event, ...)
-    if event == "PLAYER_LOGIN" then
-        InitInviteDB()
-        EnsureInviteUI()
-    elseif event == "CHAT_MSG_WHISPER" then
-        local message, sender = ...
-        InviteByKeyword(message, sender)
-    end
+    if event == "PLAYER_LOGIN" then InitInviteDB(); EnsureInviteUI()
+    elseif event == "CHAT_MSG_WHISPER" then local message, sender = ...; InviteByKeyword(message, sender) end
 end)
 
--- Pas de /ccinvite : toute la configuration reste dans /ccrt.
--- Si l'addon est rechargé alors que la fenêtre principale existe déjà, injection immédiate.
 C_Timer.After(0, EnsureInviteUI)
