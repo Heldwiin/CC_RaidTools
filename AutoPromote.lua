@@ -10,14 +10,7 @@ local function RefreshRanksData()
 end
 local function CheckAndPromote()
     C.InitDB(); if not IsInRaid() or not UnitIsGroupLeader("player") then return end
-    for i=1,GetNumGroupMembers() do
-        local name,rank=GetRaidRosterInfo(i)
-        if name and rank==0 then
-            local should=AutoPromoteDB.names[name] and true or false
-            if not should then local idx=guildRankByName[C.StripRealm(name)]; local rn=idx and discoveredRanks[idx]; should=idx and (AutoPromoteDB.ranks[idx] or (rn and AutoPromoteDB.rankNames[rn])) end
-            if should then if InCombatLockdown() then pending[name]=true else PromoteToAssistant(name); print("|cff33ff99[CC RaidTools]|r "..name.." promu(e) assistant de raid.") end end
-        end
-    end
+    for i=1,GetNumGroupMembers() do local name,rank=GetRaidRosterInfo(i); if name and rank==0 then local should=AutoPromoteDB.names[name] and true or false; if not should then local idx=guildRankByName[C.StripRealm(name)]; local rn=idx and discoveredRanks[idx]; should=idx and (AutoPromoteDB.ranks[idx] or (rn and AutoPromoteDB.rankNames[rn])) end; if should then if InCombatLockdown() then pending[name]=true else PromoteToAssistant(name); print("|cff33ff99[CC RaidTools]|r "..name.." promu(e) assistant de raid.") end end end end
 end
 C.CheckAndPromote=CheckAndPromote
 
@@ -56,11 +49,4 @@ C.RegisterModule("AutoPromote",BuildUI,Refresh)
 
 local e=CreateFrame("Frame"); for _,ev in ipairs({"GROUP_ROSTER_UPDATE","PLAYER_ENTERING_WORLD","GUILD_ROSTER_UPDATE","PLAYER_REGEN_ENABLED"}) do e:RegisterEvent(ev) end
 e:SetScript("OnEvent",function(_,ev) if ev=="GUILD_ROSTER_UPDATE" then RefreshRanksData(); AutoPromoteUI_RefreshRanks() elseif ev=="PLAYER_REGEN_ENABLED" then for n in pairs(pending) do PromoteToAssistant(n); print("|cff33ff99[CC RaidTools]|r "..n.." promu(e) assistant de raid (après combat)."); pending[n]=nil end else CheckAndPromote() end end)
-
-C.modules.AutoPromote.command=function(cmd,rest)
-    if cmd=="add" and rest then AutoPromoteDB.names[rest]=true; print("|cff33ff99[CC RaidTools]|r "..rest.." ajouté à la liste."); AutoPromoteUI_RefreshNames(); return true end
-    if cmd=="remove" and rest then AutoPromoteDB.names[rest]=nil; print("|cff33ff99[CC RaidTools]|r "..rest.." retiré de la liste."); AutoPromoteUI_RefreshNames(); return true end
-    if cmd=="list" then print("|cff33ff99[CC RaidTools]|r Liste des joueurs à promouvoir :"); local empty=true; for n in pairs(AutoPromoteDB.names) do print("  - "..n); empty=false end; if empty then print("  (aucun)") end; return true end
-    if cmd=="debug" then print("|cff33ff99[CC RaidTools] debug:|r Leader = "..tostring(UnitIsGroupLeader("player")).." | En combat = "..tostring(InCombatLockdown() and true or false)); return true end
-end
 RequestRoster()
