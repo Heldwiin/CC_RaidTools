@@ -48,8 +48,7 @@ function C.SkinButton(button)
     button:HookScript("OnLeave",function(self) self._ccrtBg:SetColorTexture(0.045,0.045,0.055,0.94) end)
 end
 
--- Toggle visuel basé sur le rendu d'Atrocity Essentials : deux demi-panneaux fixes.
--- Les textures des symboles sont fournies localement dans TexturesGUI.
+-- Toggle visuel à deux demi-panneaux fixes, avec textures locales.
 function C.SkinCheckBox(box)
     if not box or box._ccrtSkin then return end
     box._ccrtSkin=true
@@ -66,7 +65,6 @@ function C.SkinCheckBox(box)
     box:SetBackdropColor(0.01,0.01,0.012,1)
     box:SetBackdropBorderColor(0.01,0.01,0.012,1)
 
-    -- IMPORTANT: these must be ARTWORK so the backdrop does not cover them.
     local left=box:CreateTexture(nil,"ARTWORK")
     left:SetPoint("TOPLEFT",1,-1)
     left:SetSize(HALF-1,H-2)
