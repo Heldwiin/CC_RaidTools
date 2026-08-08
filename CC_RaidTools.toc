@@ -10,3 +10,4 @@ AutoPromote.lua
 AutoLog.lua
 ReadyCheck.lua
 InviteTool.lua
+CloseButtonSkin.lua
