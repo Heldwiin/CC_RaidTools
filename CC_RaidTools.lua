@@ -48,7 +48,7 @@ function C.SkinButton(button)
     button:HookScript("OnLeave",function(self) self._ccrtBg:SetColorTexture(0.045,0.045,0.055,0.94) end)
 end
 
--- SwitchBox : deux demi-panneaux fixes avec textures locales.
+-- SwitchBox
 function C.SkinCheckBox(box)
     if not box or box._ccrtSkin then return end
     box._ccrtSkin=true
