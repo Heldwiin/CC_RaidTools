@@ -15,6 +15,18 @@ if db.x == nil then db.x = 0 end
 if db.y == nil then db.y = -180 end
 
 local MARK_TEXTURE = "Interface\\TargetingFrame\\UI-RaidTargetingIcons"
+-- The atlas ordering in this texture is not the same as the raid marker IDs.
+-- Display order must be: star, circle, diamond, triangle, moon, square, cross, skull.
+local MARK_TEXTURE_INDEX = {
+    [1] = 5, -- star
+    [2] = 6, -- circle
+    [3] = 3, -- diamond
+    [4] = 2, -- triangle
+    [5] = 7, -- moon
+    [6] = 1, -- square
+    [7] = 4, -- cross
+    [8] = 8, -- skull
+}
 local MARK_COORDS = {
     [1] = {0, .25, 0, .25}, [2] = {.25, .5, 0, .25}, [3] = {.5, .75, 0, .25}, [4] = {.75, 1, 0, .25},
     [5] = {0, .25, .25, .5}, [6] = {.25, .5, .25, .5}, [7] = {.5, .75, .25, .5}, [8] = {.75, 1, .25, .5},
@@ -44,7 +56,8 @@ end
 
 local function SetMarkIcon(texture, index)
     texture:SetTexture(MARK_TEXTURE)
-    local c = MARK_COORDS[index]
+    local atlasIndex = MARK_TEXTURE_INDEX[index] or index
+    local c = MARK_COORDS[atlasIndex]
     if c then texture:SetTexCoord(c[1], c[2], c[3], c[4]) end
 end
 
@@ -84,12 +97,10 @@ local function AddTooltip(b, title, line1)
 end
 
 local function SetupSecureRaidButton(button, index)
-    -- /tm uses the normal current target and keeps the icon number exactly
-    -- aligned with the displayed Blizzard raid-target icon.
     button:SetAttribute("type1", "macro")
-    button:SetAttribute("macrotext1", "/tm " .. index)
+    button:SetAttribute("macrotext1", "/tm [@mouseover,exists] " .. index .. "; [@target,exists] " .. index)
     button:SetAttribute("type2", "macro")
-    button:SetAttribute("macrotext2", "/tm 0")
+    button:SetAttribute("macrotext2", "/tm [@mouseover,exists] 0; [@target,exists] 0")
 end
 
 local function SetupSecureWorldButton(button, index)
