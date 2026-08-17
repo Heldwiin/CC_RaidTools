@@ -2,33 +2,76 @@
 local C=CCRT
 C.InitDB()
 
-AutoPromoteDB.focusModifier=AutoPromoteDB.focusModifier or "shift"
-AutoPromoteDB.focusMouseButton=AutoPromoteDB.focusMouseButton or "1"
+-- Keep Focus settings in their own SavedVariables table and migrate the older keys once.
+AutoPromoteDB.focus = AutoPromoteDB.focus or {}
+if AutoPromoteDB.focus.modifier == nil then AutoPromoteDB.focus.modifier = AutoPromoteDB.focusModifier or "shift" end
+if AutoPromoteDB.focus.mouseButton == nil then AutoPromoteDB.focus.mouseButton = AutoPromoteDB.focusMouseButton or "1" end
+AutoPromoteDB.focusModifier = AutoPromoteDB.focus.modifier
+AutoPromoteDB.focusMouseButton = AutoPromoteDB.focus.mouseButton
 
-local modifier=AutoPromoteDB.focusModifier
-local mouseButton=AutoPromoteDB.focusMouseButton
-local previousModifier=modifier
-local previousMouseButton=mouseButton
+local focusDB = AutoPromoteDB.focus
+local modifier = focusDB.modifier
+local mouseButton = focusDB.mouseButton
+local previousModifier = modifier
+local previousMouseButton = mouseButton
 
-local function GetBindingKey() return string.upper(modifier).."-BUTTON"..mouseButton end
+local function GetBindingKey()
+    return string.upper(modifier).."-BUTTON"..mouseButton
+end
+
 local function SetFocusHotkey(frame)
     if not frame or InCombatLockdown() then return end
-    if previousModifier and previousMouseButton then frame:SetAttribute(previousModifier.."-type"..previousMouseButton,nil) end
+    if previousModifier and previousMouseButton then
+        frame:SetAttribute(previousModifier.."-type"..previousMouseButton,nil)
+    end
     frame:SetAttribute(modifier.."-type"..mouseButton,"focus")
 end
-local function CreateFrame_Hook(type,name,parent,template) if template=="SecureUnitButtonTemplate" and name then SetFocusHotkey(_G[name]) end end
+
+local function CreateFrame_Hook(type,name,parent,template)
+    if template=="SecureUnitButtonTemplate" and name then
+        SetFocusHotkey(_G[name])
+    end
+end
 hooksecurefunc("CreateFrame",CreateFrame_Hook)
+
 local focusButton=CreateFrame("CheckButton","CCRTFocusButton",UIParent,"SecureUnitButtonTemplate")
-focusButton:SetAttribute("type1","macro"); focusButton:SetAttribute("macrotext","/focus mouseover")
-local defaultUnitFrames={PlayerFrame,PetFrame,PartyMemberFrame1,PartyMemberFrame2,PartyMemberFrame3,PartyMemberFrame4,PartyMemberFrame1PetFrame,PartyMemberFrame2PetFrame,PartyMemberFrame3PetFrame,PartyMemberFrame4PetFrame,TargetFrame,TargetofTargetFrame}
-function ApplyDefaultUnitFrameBindings() if InCombatLockdown() then return end; for _,frame in ipairs(defaultUnitFrames) do SetFocusHotkey(frame) end end
+focusButton:SetAttribute("type1","macro")
+focusButton:SetAttribute("macrotext","/focus mouseover")
+
+local defaultUnitFrames={
+    PlayerFrame,PetFrame,
+    PartyMemberFrame1,PartyMemberFrame2,PartyMemberFrame3,PartyMemberFrame4,
+    PartyMemberFrame1PetFrame,PartyMemberFrame2PetFrame,PartyMemberFrame3PetFrame,PartyMemberFrame4PetFrame,
+    TargetFrame,TargetofTargetFrame
+}
+
+local function ApplyDefaultUnitFrameBindings()
+    if InCombatLockdown() then return end
+    for _,frame in ipairs(defaultUnitFrames) do
+        SetFocusHotkey(frame)
+    end
+end
+
 local function ApplyFocusBinding()
     if InCombatLockdown() then return end
-    local newKey=GetBindingKey(); local oldKey=previousModifier and previousMouseButton and (string.upper(previousModifier).."-BUTTON"..previousMouseButton)
-    if oldKey and oldKey~=newKey then SetOverrideBinding(focusButton,true,oldKey,nil) end
-    SetOverrideBindingClick(focusButton,true,newKey,"CCRTFocusButton"); ApplyDefaultUnitFrameBindings(); previousModifier=modifier; previousMouseButton=mouseButton
+    local newKey=GetBindingKey()
+    local oldKey=previousModifier and previousMouseButton and (string.upper(previousModifier).."-BUTTON"..previousMouseButton)
+    if oldKey and oldKey~=newKey then
+        SetOverrideBinding(focusButton,true,oldKey,nil)
+    end
+    SetOverrideBindingClick(focusButton,true,newKey,"CCRTFocusButton")
+    ApplyDefaultUnitFrameBindings()
+    previousModifier=modifier
+    previousMouseButton=mouseButton
 end
-local function SaveFocusSettings() AutoPromoteDB.focusModifier=modifier; AutoPromoteDB.focusMouseButton=mouseButton end
+
+local function SaveFocusSettings()
+    focusDB.modifier=modifier
+    focusDB.mouseButton=mouseButton
+    -- Keep the old keys synchronized for compatibility with existing profiles.
+    AutoPromoteDB.focusModifier=modifier
+    AutoPromoteDB.focusMouseButton=mouseButton
+end
 
 local function CreateSwitchMenu(parent, values, currentValue, onSelect)
     local holder=CreateFrame("Frame",nil,parent)
@@ -38,34 +81,20 @@ local function CreateSwitchMenu(parent, values, currentValue, onSelect)
     local bg=button:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(0.035,0.035,0.045,0.96)
     local border=button:CreateTexture(nil,"BORDER"); border:SetAllPoints(); border:SetTexture("Interface\\Buttons\\WHITE8X8"); border:SetVertexColor(0,0,0,0.95)
     local text=button:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); text:SetPoint("LEFT",9,0); text:SetPoint("RIGHT",-24,0); text:SetJustifyH("LEFT"); text:SetTextColor(0.92,0.92,0.92)
-    local arrow=button:CreateTexture(nil,"OVERLAY")
-    arrow:SetSize(14,10)
-    arrow:SetPoint("RIGHT",-7,0)
-    arrow:SetTexture("Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\arrow.png")
-    arrow:SetVertexColor(1,1,1,1)
+    local arrow=button:CreateTexture(nil,"OVERLAY"); arrow:SetSize(14,10); arrow:SetPoint("RIGHT",-7,0); arrow:SetTexture("Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\arrow.png"); arrow:SetVertexColor(1,1,1,1)
 
     local menu=CreateFrame("Frame",nil,UIParent,"BackdropTemplate")
-    menu:SetSize(118,#values*24+2)
-    menu:SetFrameStrata("DIALOG")
-    menu:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
-    menu:SetBackdropColor(0.018,0.018,0.024,0.98)
-    menu:SetBackdropBorderColor(0,0,0,1)
-    menu:Hide()
+    menu:SetSize(118,#values*24+2); menu:SetFrameStrata("DIALOG")
+    menu:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1}); menu:SetBackdropColor(0.018,0.018,0.024,0.98); menu:SetBackdropBorderColor(0,0,0,1); menu:Hide()
 
-    local function Close() menu:Hide() end
     for i,entry in ipairs(values) do
-        local row=CreateFrame("Button",nil,menu)
-        row:SetSize(116,23)
-        row:SetPoint("TOPLEFT",1,-1-(i-1)*24)
+        local row=CreateFrame("Button",nil,menu); row:SetSize(116,23); row:SetPoint("TOPLEFT",1,-1-(i-1)*24)
         local rowBg=row:CreateTexture(nil,"BACKGROUND"); rowBg:SetAllPoints(); rowBg:SetColorTexture(0.018,0.018,0.024,1)
         local rowText=row:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); rowText:SetPoint("LEFT",8,0); rowText:SetText(entry[1]); rowText:SetTextColor(0.92,0.92,0.92)
         row:SetScript("OnEnter",function() rowBg:SetColorTexture(C.BRAND_R*0.35,C.BRAND_G*0.35,C.BRAND_B*0.48,1) end)
         row:SetScript("OnLeave",function() rowBg:SetColorTexture(0.018,0.018,0.024,1) end)
         row:SetScript("OnClick",function()
-            currentValue=entry[2]
-            text:SetText(entry[1])
-            Close()
-            onSelect(entry[2],entry[1])
+            currentValue=entry[2]; text:SetText(entry[1]); menu:Hide(); onSelect(entry[2],entry[1])
         end)
     end
     button:SetScript("OnEnter",function() bg:SetColorTexture(0.07,0.07,0.09,0.98) end)
@@ -73,27 +102,45 @@ local function CreateSwitchMenu(parent, values, currentValue, onSelect)
     button:SetScript("OnClick",function()
         if menu:IsShown() then menu:Hide() else menu:ClearAllPoints(); menu:SetPoint("TOPLEFT",holder,"BOTTOMLEFT",0,-1); menu:Show() end
     end)
-    holder._button=button
-    holder._text=text
-    holder._menu=menu
+    holder._button=button; holder._text=text; holder._menu=menu
     function holder:SetValue(value)
-        for _,entry in ipairs(values) do if entry[2]==value then currentValue=value; text:SetText(entry[1]); return end end
+        for _,entry in ipairs(values) do
+            if entry[2]==value then currentValue=value; text:SetText(entry[1]); return end
+        end
     end
     holder:SetValue(currentValue)
     return holder
 end
 
+local modifierValues={{"Shift","shift"},{"Alt","alt"},{"Ctrl","ctrl"}}
+local mouseValues={{"Left","1"},{"Right","2"},{"Middle","3"},{"Mouse 4","4"},{"Mouse 5","5"}}
+local modifierDrop
+local mouseDrop
+
 local function BuildUI(f)
     local label=f:CreateFontString(nil,"OVERLAY","GameFontNormal"); label:SetPoint("TOPLEFT",f,"TOPLEFT",12,-30); label:SetText("Focus :"); label:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
     local modifierLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); modifierLabel:SetPoint("TOPLEFT",label,"BOTTOMLEFT",0,-8); modifierLabel:SetText("Touche")
-    local modifierValues={{"Shift","shift"},{"Alt","alt"},{"Ctrl","ctrl"}}
-    local mouseValues={{"Left","1"},{"Right","2"},{"Middle","3"},{"Mouse 4","4"},{"Mouse 5","5"}}
-    local modifierDrop=CreateSwitchMenu(f,modifierValues,modifier,function(value) modifier=value; SaveFocusSettings(); ApplyFocusBinding() end)
-    modifierDrop:SetPoint("TOPLEFT",modifierLabel,"BOTTOMLEFT",0,-4)
+    modifierDrop=CreateSwitchMenu(f,modifierValues,modifier,function(value) modifier=value; SaveFocusSettings(); ApplyFocusBinding() end); modifierDrop:SetPoint("TOPLEFT",modifierLabel,"BOTTOMLEFT",0,-4)
     local mouseLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); mouseLabel:SetPoint("TOPLEFT",modifierLabel,"TOPLEFT",158,0); mouseLabel:SetText("Clic souris")
-    local mouseDrop=CreateSwitchMenu(f,mouseValues,mouseButton,function(value) mouseButton=value; SaveFocusSettings(); ApplyFocusBinding() end)
-    mouseDrop:SetPoint("TOPLEFT",modifierDrop,"TOPLEFT",158,0)
+    mouseDrop=CreateSwitchMenu(f,mouseValues,mouseButton,function(value) mouseButton=value; SaveFocusSettings(); ApplyFocusBinding() end); mouseDrop:SetPoint("TOPLEFT",modifierDrop,"TOPLEFT",158,0)
 end
-C.RegisterModule("Focus",BuildUI,function() end)
-ApplyDefaultUnitFrameBindings(); ApplyFocusBinding()
-local events=CreateFrame("Frame"); events:RegisterEvent("PLAYER_REGEN_ENABLED"); events:RegisterEvent("PLAYER_LOGIN"); events:SetScript("OnEvent",function() ApplyDefaultUnitFrameBindings(); ApplyFocusBinding() end)
+
+local function RefreshUI()
+    if modifierDrop then modifierDrop:SetValue(focusDB.modifier) end
+    if mouseDrop then mouseDrop:SetValue(focusDB.mouseButton) end
+end
+
+C.RegisterModule("Focus",BuildUI,RefreshUI)
+ApplyDefaultUnitFrameBindings()
+ApplyFocusBinding()
+
+local events=CreateFrame("Frame")
+events:RegisterEvent("PLAYER_REGEN_ENABLED")
+events:RegisterEvent("PLAYER_LOGIN")
+events:SetScript("OnEvent",function()
+    modifier=focusDB.modifier or "shift"
+    mouseButton=focusDB.mouseButton or "1"
+    ApplyDefaultUnitFrameBindings()
+    ApplyFocusBinding()
+    RefreshUI()
+end)
