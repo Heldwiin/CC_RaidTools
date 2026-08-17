@@ -34,19 +34,6 @@ local focusButton=CreateFrame("CheckButton","CCRTFocusButton",UIParent,"SecureUn
 focusButton:SetAttribute("type1","macro")
 focusButton:SetAttribute("macrotext","/focus mouseover")
 
-local function ApplyFocusBinding()
-    if InCombatLockdown() then return end
-    local newKey=GetBindingKey()
-    local oldKey=previousModifier and previousMouseButton and (string.upper(previousModifier).."-BUTTON"..previousMouseButton)
-    if oldKey and oldKey~=newKey then
-        SetOverrideBinding(focusButton,true,oldKey,nil)
-    end
-    SetOverrideBindingClick(focusButton,true,newKey,"CCRTFocusButton")
-    ApplyDefaultUnitFrameBindings()
-    previousModifier=modifier
-    previousMouseButton=mouseButton
-end
-
 local defaultUnitFrames={
     PlayerFrame,
     PetFrame,
@@ -69,6 +56,19 @@ function ApplyDefaultUnitFrameBindings()
     end
 end
 
+local function ApplyFocusBinding()
+    if InCombatLockdown() then return end
+    local newKey=GetBindingKey()
+    local oldKey=previousModifier and previousMouseButton and (string.upper(previousModifier).."-BUTTON"..previousMouseButton)
+    if oldKey and oldKey~=newKey then
+        SetOverrideBinding(focusButton,true,oldKey,nil)
+    end
+    SetOverrideBindingClick(focusButton,true,newKey,"CCRTFocusButton")
+    ApplyDefaultUnitFrameBindings()
+    previousModifier=modifier
+    previousMouseButton=mouseButton
+end
+
 local function SaveFocusSettings()
     AutoPromoteDB.focusModifier=modifier
     AutoPromoteDB.focusMouseButton=mouseButton
@@ -76,7 +76,7 @@ end
 
 local function BuildUI(f)
     local label=f:CreateFontString(nil,"OVERLAY","GameFontNormal")
-    label:SetPoint("TOPLEFT",f,"TOPLEFT",12,-630)
+    label:SetPoint("TOPLEFT",f,"TOPLEFT",12,-710)
     label:SetText("Focus :")
     label:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
 
