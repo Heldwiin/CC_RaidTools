@@ -16,8 +16,8 @@ if db.y == nil then db.y = -180 end
 
 local MARK_TEXTURE = "Interface\\TargetingFrame\\UI-RaidTargetingIcons"
 local MARK_COORDS = {
-    [1] = {0, .25, .25, .5}, [2] = {0, .25, 0, .25}, [3] = {.25, .5, .25, .5}, [4] = {.5, .75, .25, .5},
-    [5] = {.5, .75, 0, .25}, [6] = {.25, .5, 0, .25}, [7] = {.75, 1, 0, .25}, [8] = {.75, 1, .25, .5},
+    [1] = {0, .25, 0, .25}, [2] = {.25, .5, 0, .25}, [3] = {.5, .75, 0, .25}, [4] = {.75, 1, 0, .25},
+    [5] = {0, .25, .25, .5}, [6] = {.25, .5, .25, .5}, [7] = {.5, .75, .25, .5}, [8] = {.75, 1, .25, .5},
 }
 
 local bar
@@ -28,12 +28,7 @@ local configRefresh
 local function SavePosition()
     if not bar then return end
     local point, _, relativePoint, x, y = bar:GetPoint(1)
-    if point then
-        db.point = point
-        db.relativePoint = relativePoint or point
-        db.x = x or 0
-        db.y = y or 0
-    end
+    if point then db.point = point; db.relativePoint = relativePoint or point; db.x = x or 0; db.y = y or 0 end
 end
 
 local function RestorePosition()
@@ -54,121 +49,101 @@ local function MakeIconButton(parent, width, height)
     b:SetMouseClickEnabled(true)
     b:RegisterForClicks("AnyUp", "AnyDown")
     local bg = b:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.025, 0.025, 0.035, 0.92)
-    b.bg = bg
+    bg:SetAllPoints(); bg:SetColorTexture(0.025, 0.025, 0.035, 0.92); b.bg = bg
     local border = b:CreateTexture(nil, "BORDER")
-    border:SetAllPoints()
-    border:SetTexture("Interface\\Buttons\\WHITE8X8")
-    border:SetVertexColor(0, 0, 0, 0.95)
+    border:SetAllPoints(); border:SetTexture("Interface\\Buttons\\WHITE8X8"); border:SetVertexColor(0, 0, 0, 0.95)
     local icon = b:CreateTexture(nil, "ARTWORK")
-    icon:SetPoint("TOPLEFT", 3, -3)
-    icon:SetPoint("BOTTOMRIGHT", -3, 3)
-    b.icon = icon
+    icon:SetPoint("TOPLEFT", 3, -3); icon:SetPoint("BOTTOMRIGHT", -3, 3); b.icon = icon
     return b
 end
 
 local function AddTooltip(b, title, line1)
     b:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText(title)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP"); GameTooltip:SetText(title)
         if line1 then GameTooltip:AddLine(line1, 0.75, 0.75, 0.75) end
-        GameTooltip:Show()
-        self.bg:SetColorTexture(C.BRAND_R*0.22, C.BRAND_G*0.22, C.BRAND_B*0.30, 0.98)
+        GameTooltip:Show(); self.bg:SetColorTexture(C.BRAND_R * 0.22, C.BRAND_G * 0.22, C.BRAND_B * 0.30, 0.98)
     end)
     b:SetScript("OnLeave", function(self)
-        GameTooltip:Hide()
-        self.bg:SetColorTexture(0.025, 0.025, 0.035, 0.92)
+        GameTooltip:Hide(); self.bg:SetColorTexture(0.025, 0.025, 0.035, 0.92)
     end)
 end
 
 local function SetupSecureRaidButton(button, index)
-    button:SetAttribute("type1", "macro")
-    button:SetAttribute("macrotext1", "/tm [@target,exists] " .. index)
-    button:SetAttribute("type2", "macro")
-    button:SetAttribute("macrotext2", "/tm [@target,exists] 0")
+    button:SetAttribute("type1", "macro"); button:SetAttribute("macrotext1", "/tm [@target,exists] " .. index)
+    button:SetAttribute("type2", "macro"); button:SetAttribute("macrotext2", "/tm [@target,exists] 0")
 end
 
 local function SetupSecureWorldButton(button, index)
-    button:SetAttribute("type1", "worldmarker")
-    button:SetAttribute("marker1", index)
-    button:SetAttribute("action1", "set")
-    button:SetAttribute("type2", "worldmarker")
-    button:SetAttribute("marker2", index)
-    button:SetAttribute("action2", "clear")
+    button:SetAttribute("type1", "worldmarker"); button:SetAttribute("marker1", index); button:SetAttribute("action1", "set")
+    button:SetAttribute("type2", "worldmarker"); button:SetAttribute("marker2", index); button:SetAttribute("action2", "clear")
+end
+
+local function CreateRowBackground(parent)
+    local bg = parent:CreateTexture(nil, "BACKGROUND")
+    bg:SetTexture("Interface\\Buttons\\WHITE8X8"); bg:SetVertexColor(0.015, 0.015, 0.02, 0.90)
+    return bg
 end
 
 local function ApplyBarLayout()
     if not bar then return end
     local horizontal = db.orientation == "HORIZONTAL"
-    local gap, size = 2, 30
-    local worldSize = 23
-    local count = 8
+    local gap, raidSize, worldSize, count = 2, 30, 23, 8
+    local raidWidth = 4 + count * raidSize + (count - 1) * gap
+    local worldWidth = 4 + count * worldSize + (count - 1) * gap
+    local raidHeight, worldHeight = raidSize + 4, worldSize + 4
+    local worldOffset = (raidWidth - worldWidth) / 2
 
-    for i, b in ipairs(buttons) do
-        b:ClearAllPoints()
-        if horizontal then
-            b:SetPoint("TOPLEFT", bar, "TOPLEFT", 2 + (i-1)*(size+gap), -2)
-        else
-            b:SetPoint("TOPLEFT", bar, "TOPLEFT", 2, -2-(i-1)*(size+gap))
-        end
-    end
-
-    for i, b in ipairs(worldButtons) do
-        b:ClearAllPoints()
-        if horizontal then
-            b:SetPoint("TOPLEFT", bar, "TOPLEFT", 2+(i-1)*(worldSize+gap), -2-(size+gap))
-        else
-            b:SetPoint("TOPLEFT", bar, "TOPLEFT", 2+(size+gap), -2-(i-1)*(worldSize+gap))
-        end
-        b:SetSize(worldSize, worldSize)
-        b.icon:SetPoint("TOPLEFT", 3, -3)
-        b.icon:SetPoint("BOTTOMRIGHT", -3, 3)
-    end
+    if not bar._raidRowBG then bar._raidRowBG = CreateRowBackground(bar); bar._worldRowBG = CreateRowBackground(bar) end
+    bar._raidRowBG:ClearAllPoints(); bar._worldRowBG:ClearAllPoints()
 
     if horizontal then
-        bar:SetSize(4+count*size+(count-1)*gap, 4+size+gap+worldSize)
+        bar:SetSize(raidWidth, raidHeight + gap + worldHeight)
+        bar._raidRowBG:SetSize(raidWidth, raidHeight); bar._raidRowBG:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+        bar._worldRowBG:SetSize(worldWidth, worldHeight); bar._worldRowBG:SetPoint("TOPLEFT", bar, "TOPLEFT", worldOffset, -raidHeight - gap)
+        for i, button in ipairs(buttons) do
+            button:ClearAllPoints(); button:SetSize(raidSize, raidSize)
+            button:SetPoint("TOPLEFT", bar, "TOPLEFT", 2 + (i - 1) * (raidSize + gap), -2)
+        end
+        for i, button in ipairs(worldButtons) do
+            button:ClearAllPoints(); button:SetSize(worldSize, worldSize)
+            button:SetPoint("TOPLEFT", bar, "TOPLEFT", worldOffset + 2 + (i - 1) * (worldSize + gap), -raidHeight - gap - 2)
+            button.icon:ClearAllPoints(); button.icon:SetPoint("TOPLEFT", 3, -3); button.icon:SetPoint("BOTTOMRIGHT", -3, 3)
+        end
     else
-        bar:SetSize(4+size+gap+worldSize, 4+count*size+(count-1)*gap)
+        bar:SetSize(raidHeight + gap + worldHeight, raidWidth)
+        bar._raidRowBG:SetSize(raidHeight, raidWidth); bar._raidRowBG:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+        bar._worldRowBG:SetSize(worldHeight, worldWidth); bar._worldRowBG:SetPoint("TOPLEFT", bar, "TOPLEFT", raidHeight + gap, -worldOffset)
+        for i, button in ipairs(buttons) do
+            button:ClearAllPoints(); button:SetSize(raidSize, raidSize)
+            button:SetPoint("TOPLEFT", bar, "TOPLEFT", 2, -2 - (i - 1) * (raidSize + gap))
+        end
+        for i, button in ipairs(worldButtons) do
+            button:ClearAllPoints(); button:SetSize(worldSize, worldSize)
+            button:SetPoint("TOPLEFT", bar, "TOPLEFT", raidHeight + gap + 2, -worldOffset - 2 - (i - 1) * (worldSize + gap))
+            button.icon:ClearAllPoints(); button.icon:SetPoint("TOPLEFT", 3, -3); button.icon:SetPoint("BOTTOMRIGHT", -3, 3)
+        end
     end
-    bar:SetScale(db.scale or 1)
-    bar:SetAlpha(db.alpha or 1)
+    bar:SetBackdropColor(0, 0, 0, 0); bar:SetBackdropBorderColor(0, 0, 0, 0)
+    bar:SetScale(db.scale or 1); bar:SetAlpha(db.alpha or 1)
 end
 
 local function CreateBar()
     if bar then return bar end
     bar = CreateFrame("Frame", "CCRaidToolsMarksBar", UIParent, "BackdropTemplate")
-    bar:SetMovable(true)
-    bar:SetClampedToScreen(true)
-    bar:EnableMouse(true)
-    bar:RegisterForDrag("LeftButton")
+    bar:SetMovable(true); bar:SetClampedToScreen(true); bar:EnableMouse(true); bar:RegisterForDrag("LeftButton")
     bar:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8", edgeFile="Interface\\Buttons\\WHITE8X8", edgeSize=1})
-    bar:SetBackdropColor(0.015,0.015,0.02,0.90)
-    bar:SetBackdropBorderColor(0,0,0,1)
+    bar:SetBackdropColor(0,0,0,0); bar:SetBackdropBorderColor(0,0,0,0)
     bar:SetScript("OnDragStart", function(self) if not db.locked then self:StartMoving() end end)
     bar:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); SavePosition() end)
-
     for i = 1, 8 do
-        local b = MakeIconButton(bar, 30, 30)
-        SetMarkIcon(b.icon, i)
-        SetupSecureRaidButton(b, i)
-        AddTooltip(b, "Marque de raid " .. i, "Clic gauche : poser   |   Clic droit : retirer")
-        buttons[i] = b
+        local b = MakeIconButton(bar, 30, 30); SetMarkIcon(b.icon, i); SetupSecureRaidButton(b, i)
+        AddTooltip(b, "Marque de raid " .. i, "Clic gauche : poser   |   Clic droit : retirer"); buttons[i] = b
     end
-
     for i = 1, 8 do
-        local b = MakeIconButton(bar, 23, 23)
-        SetMarkIcon(b.icon, i)
-        b.icon:SetVertexColor(1, 0.85, 0.35, 0.85)
-        SetupSecureWorldButton(b, i)
-        AddTooltip(b, "Marqueur au sol " .. i, "Clic gauche : placer   |   Clic droit : retirer")
-        worldButtons[i] = b
+        local b = MakeIconButton(bar, 23, 23); SetMarkIcon(b.icon, i); b.icon:SetVertexColor(1, 0.85, 0.35, 0.85); SetupSecureWorldButton(b, i)
+        AddTooltip(b, "Marqueur au sol " .. i, "Clic gauche : placer   |   Clic droit : retirer"); worldButtons[i] = b
     end
-
-    RestorePosition()
-    ApplyBarLayout()
-    bar:SetShown(db.enabled)
-    return bar
+    RestorePosition(); ApplyBarLayout(); bar:SetShown(db.enabled); return bar
 end
 
 local function SetEnabled(value) db.enabled = value and true or false; CreateBar():SetShown(db.enabled) end
@@ -176,15 +151,10 @@ local function SetLocked(value) db.locked = value and true or false; if bar then
 local function ResetPosition() db.point, db.relativePoint, db.x, db.y = "CENTER", "CENTER", 0, -180; if bar then RestorePosition() end end
 
 local function BuildUI(parent)
-    local title = parent:CreateFontString(nil,"OVERLAY","GameFontNormal")
-    title:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -30)
-    title:SetText("Marks Bar :")
-    title:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
-    local enable = CreateFrame("CheckButton",nil,parent,"BackdropTemplate")
-    enable:SetSize(48,24); enable:SetPoint("TOPLEFT",title,"BOTTOMLEFT",0,-8); C.SkinCheckBox(enable); enable:SetChecked(db.enabled); enable:SetScript("OnClick",function(self) SetEnabled(self:GetChecked()) end)
+    local title = parent:CreateFontString(nil,"OVERLAY","GameFontNormal"); title:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -30); title:SetText("Marks Bar :"); title:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
+    local enable = CreateFrame("CheckButton",nil,parent,"BackdropTemplate"); enable:SetSize(48,24); enable:SetPoint("TOPLEFT",title,"BOTTOMLEFT",0,-8); C.SkinCheckBox(enable); enable:SetChecked(db.enabled); enable:SetScript("OnClick",function(self) SetEnabled(self:GetChecked()) end)
     local enableText=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); enableText:SetPoint("LEFT",enable,"RIGHT",8,0); enableText:SetText("Activer la barre")
-    local lock=CreateFrame("CheckButton",nil,parent,"BackdropTemplate")
-    lock:SetSize(48,24); lock:SetPoint("TOPLEFT",enable,"BOTTOMLEFT",0,-12); C.SkinCheckBox(lock); lock:SetChecked(db.locked); lock:SetScript("OnClick",function(self) SetLocked(self:GetChecked()) end)
+    local lock=CreateFrame("CheckButton",nil,parent,"BackdropTemplate"); lock:SetSize(48,24); lock:SetPoint("TOPLEFT",enable,"BOTTOMLEFT",0,-12); C.SkinCheckBox(lock); lock:SetChecked(db.locked); lock:SetScript("OnClick",function(self) SetLocked(self:GetChecked()) end)
     local lockText=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); lockText:SetPoint("LEFT",lock,"RIGHT",8,0); lockText:SetText("Verrouiller la position")
     local orient=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); orient:SetPoint("TOPLEFT",lock,"BOTTOMLEFT",0,-16); orient:SetText("Orientation")
     local horizontal=CreateFrame("Button",nil,parent); horizontal:SetSize(110,26); horizontal:SetPoint("TOPLEFT",orient,"BOTTOMLEFT",0,-5); C.SkinButton(horizontal); horizontal:SetText("Horizontal"); horizontal:SetNormalFontObject("GameFontHighlightSmall")
