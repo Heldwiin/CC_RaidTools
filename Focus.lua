@@ -30,32 +30,65 @@ local function ApplyFocusBinding()
 end
 local function SaveFocusSettings() AutoPromoteDB.focusModifier=modifier; AutoPromoteDB.focusMouseButton=mouseButton end
 
-local function SkinDropDown(drop)
-    if drop._ccrtSkin then return end
-    drop._ccrtSkin=true
-    local button=_G[drop:GetName().."Button"]
-    if not button then return end
-    button:SetSize(118,24)
-    local normal=button:GetNormalTexture(); local pushed=button:GetPushedTexture(); local disabled=button:GetDisabledTexture()
-    if normal then normal:SetTexture("Interface\\Buttons\\WHITE8X8"); normal:SetVertexColor(0.045,0.045,0.055,0.96); normal:SetAllPoints() end
-    if pushed then pushed:SetTexture("Interface\\Buttons\\WHITE8X8"); pushed:SetVertexColor(C.BRAND_R*0.42,C.BRAND_G*0.42,C.BRAND_B*0.42,0.96); pushed:SetAllPoints() end
-    if disabled then disabled:SetTexture("Interface\\Buttons\\WHITE8X8"); disabled:SetVertexColor(0.025,0.025,0.03,0.96); disabled:SetAllPoints() end
-    local text=_G[drop:GetName().."Text"]
-    if text then text:SetTextColor(0.95,0.95,0.95); text:ClearAllPoints(); text:SetPoint("LEFT",button,"LEFT",10,0); text:SetPoint("RIGHT",button,"RIGHT",-22,0); text:SetJustifyH("LEFT") end
+local function CreateSwitchMenu(parent, values, currentValue, onSelect)
+    local holder=CreateFrame("Frame",nil,parent)
+    holder:SetSize(118,24)
+    local button=CreateFrame("Button",nil,holder)
+    button:SetAllPoints()
+    local bg=button:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(0.035,0.035,0.045,0.96)
+    local border=button:CreateTexture(nil,"BORDER"); border:SetAllPoints(); border:SetTexture("Interface\\Buttons\\WHITE8X8"); border:SetVertexColor(0,0,0,0.95)
+    local text=button:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); text:SetPoint("LEFT",9,0); text:SetPoint("RIGHT",-24,0); text:SetJustifyH("LEFT"); text:SetTextColor(0.92,0.92,0.92)
+    local arrow=button:CreateFontString(nil,"OVERLAY","GameFontNormalSmall"); arrow:SetPoint("RIGHT",-8,0); arrow:SetText("▾"); arrow:SetTextColor(0.75,0.75,0.75)
+
+    local menu=CreateFrame("Frame",nil,UIParent,"BackdropTemplate")
+    menu:SetSize(118,#values*24+2)
+    menu:SetFrameStrata("DIALOG")
+    menu:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
+    menu:SetBackdropColor(0.018,0.018,0.024,0.98)
+    menu:SetBackdropBorderColor(0,0,0,1)
+    menu:Hide()
+
+    local function Close() menu:Hide() end
+    for i,entry in ipairs(values) do
+        local row=CreateFrame("Button",nil,menu)
+        row:SetSize(116,23)
+        row:SetPoint("TOPLEFT",1,-1-(i-1)*24)
+        local rowBg=row:CreateTexture(nil,"BACKGROUND"); rowBg:SetAllPoints(); rowBg:SetColorTexture(0.018,0.018,0.024,1)
+        local rowText=row:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); rowText:SetPoint("LEFT",8,0); rowText:SetText(entry[1]); rowText:SetTextColor(0.92,0.92,0.92)
+        row:SetScript("OnEnter",function() rowBg:SetColorTexture(C.BRAND_R*0.35,C.BRAND_G*0.35,C.BRAND_B*0.48,1) end)
+        row:SetScript("OnLeave",function() rowBg:SetColorTexture(0.018,0.018,0.024,1) end)
+        row:SetScript("OnClick",function()
+            currentValue=entry[2]
+            text:SetText(entry[1])
+            Close()
+            onSelect(entry[2],entry[1])
+        end)
+    end
+    button:SetScript("OnEnter",function() bg:SetColorTexture(0.07,0.07,0.09,0.98) end)
+    button:SetScript("OnLeave",function() bg:SetColorTexture(0.035,0.035,0.045,0.96) end)
+    button:SetScript("OnClick",function()
+        if menu:IsShown() then menu:Hide() else menu:ClearAllPoints(); menu:SetPoint("TOPLEFT",holder,"BOTTOMLEFT",0,-1); menu:Show() end
+    end)
+    holder._button=button
+    holder._text=text
+    holder._menu=menu
+    function holder:SetValue(value)
+        for _,entry in ipairs(values) do if entry[2]==value then currentValue=value; text:SetText(entry[1]); return end end
+    end
+    holder:SetValue(currentValue)
+    return holder
 end
 
 local function BuildUI(f)
     local label=f:CreateFontString(nil,"OVERLAY","GameFontNormal"); label:SetPoint("TOPLEFT",f,"TOPLEFT",12,-30); label:SetText("Focus :"); label:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
     local modifierLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); modifierLabel:SetPoint("TOPLEFT",label,"BOTTOMLEFT",0,-8); modifierLabel:SetText("Touche")
-    local modifierDrop=CreateFrame("Frame","CCRTFocusModifierDropDown",f,"UIDropDownMenuTemplate"); modifierDrop:SetPoint("TOPLEFT",modifierLabel,"BOTTOMLEFT",-15,-2); UIDropDownMenu_SetWidth(modifierDrop,118)
-    local mouseDrop=CreateFrame("Frame","CCRTFocusMouseDropDown",f,"UIDropDownMenuTemplate"); mouseDrop:SetPoint("TOPLEFT",modifierDrop,"TOPLEFT",158,0); UIDropDownMenu_SetWidth(mouseDrop,118)
-    local mouseLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); mouseLabel:SetPoint("BOTTOMLEFT",mouseDrop,"TOPLEFT",15,2); mouseLabel:SetText("Clic souris")
-    local modifiers={{"Shift","shift"},{"Alt","alt"},{"Ctrl","ctrl"}}; local mouseButtons={{"Left","1"},{"Right","2"},{"Middle","3"},{"Mouse 4","4"},{"Mouse 5","5"}}
-    UIDropDownMenu_Initialize(modifierDrop,function(self,level) for _,info in ipairs(modifiers) do local d=UIDropDownMenu_CreateInfo(); d.text=info[1]; d.value=info[2]; d.checked=(modifier==info[2]); d.func=function() modifier=info[2]; SaveFocusSettings(); UIDropDownMenu_SetText(modifierDrop,info[1]); ApplyFocusBinding() end; UIDropDownMenu_AddButton(d,level) end end)
-    UIDropDownMenu_Initialize(mouseDrop,function(self,level) for _,info in ipairs(mouseButtons) do local d=UIDropDownMenu_CreateInfo(); d.text=info[1]; d.value=info[2]; d.checked=(mouseButton==info[2]); d.func=function() mouseButton=info[2]; SaveFocusSettings(); UIDropDownMenu_SetText(mouseDrop,info[1]); ApplyFocusBinding() end; UIDropDownMenu_AddButton(d,level) end end)
-    local modifierName="Shift"; local mouseName="Left"; for _,info in ipairs(modifiers) do if info[2]==modifier then modifierName=info[1] end end; for _,info in ipairs(mouseButtons) do if info[2]==mouseButton then mouseName=info[1] end end
-    UIDropDownMenu_SetText(modifierDrop,modifierName); UIDropDownMenu_SetText(mouseDrop,mouseName)
-    SkinDropDown(modifierDrop); SkinDropDown(mouseDrop)
+    local modifierValues={{"Shift","shift"},{"Alt","alt"},{"Ctrl","ctrl"}}
+    local mouseValues={{"Left","1"},{"Right","2"},{"Middle","3"},{"Mouse 4","4"},{"Mouse 5","5"}}
+    local modifierDrop=CreateSwitchMenu(f,modifierValues,modifier,function(value) modifier=value; SaveFocusSettings(); ApplyFocusBinding() end)
+    modifierDrop:SetPoint("TOPLEFT",modifierLabel,"BOTTOMLEFT",0,-4)
+    local mouseLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); mouseLabel:SetPoint("TOPLEFT",modifierDrop,"TOPRIGHT",40,0); mouseLabel:SetText("Clic souris")
+    local mouseDrop=CreateSwitchMenu(f,mouseValues,mouseButton,function(value) mouseButton=value; SaveFocusSettings(); ApplyFocusBinding() end)
+    mouseDrop:SetPoint("TOPLEFT",mouseLabel,"BOTTOMLEFT",0,-4)
 end
 C.RegisterModule("Focus",BuildUI,function() end)
 ApplyDefaultUnitFrameBindings(); ApplyFocusBinding()
