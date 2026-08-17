@@ -15,6 +15,7 @@ if db.x == nil then db.x = 0 end
 if db.y == nil then db.y = -180 end
 
 local MARK_ICON_TEXTURE = "Interface\\TargetingFrame\\UI-RaidTargetingIcon_"
+local WORLD_MARK_ICON = { [1]=6, [2]=4, [3]=3, [4]=7, [5]=1, [6]=2, [7]=5, [8]=8 }
 local bar
 local buttons = {}
 local worldButtons = {}
@@ -34,6 +35,12 @@ end
 
 local function SetMarkIcon(texture, index)
     texture:SetTexture(MARK_ICON_TEXTURE .. index)
+    texture:SetTexCoord(0, 1, 0, 1)
+end
+
+local function SetWorldMarkIcon(texture, markerID)
+    local iconID = WORLD_MARK_ICON[markerID] or markerID
+    texture:SetTexture(MARK_ICON_TEXTURE .. iconID)
     texture:SetTexCoord(0, 1, 0, 1)
 end
 
@@ -140,7 +147,7 @@ local function CreateBar()
         AddTooltip(b, "Marque de raid " .. i, "Clic gauche : poser   |   Clic droit : retirer"); buttons[i] = b
     end
     for i = 1, 8 do
-        local b = MakeIconButton(bar, 23, 23); SetMarkIcon(b.icon, i); b.icon:SetVertexColor(1, 0.85, 0.35, 0.85); SetupSecureWorldButton(b, i)
+        local b = MakeIconButton(bar, 23, 23); SetWorldMarkIcon(b.icon, i); b.icon:SetVertexColor(1, 0.85, 0.35, 0.85); SetupSecureWorldButton(b, i)
         AddTooltip(b, "Marqueur au sol " .. i, "Clic gauche : placer   |   Clic droit : retirer"); worldButtons[i] = b
     end
     RestorePosition(); ApplyBarLayout()
@@ -150,10 +157,7 @@ end
 
 local function SetEnabled(value)
     db.enabled = value and true or false
-    if InCombatLockdown() then
-        if configRefresh then configRefresh() end
-        return
-    end
+    if InCombatLockdown() then return end
     CreateBar():SetShown(db.enabled)
 end
 
