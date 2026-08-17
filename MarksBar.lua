@@ -15,21 +15,9 @@ if db.x == nil then db.x = 0 end
 if db.y == nil then db.y = -180 end
 
 local MARK_TEXTURE = "Interface\\TargetingFrame\\UI-RaidTargetingIcons"
--- The atlas ordering in this texture is not the same as the raid marker IDs.
--- Display order must be: star, circle, diamond, triangle, moon, square, cross, skull.
-local MARK_TEXTURE_INDEX = {
-    [1] = 5, -- star
-    [2] = 6, -- circle
-    [3] = 3, -- diamond
-    [4] = 2, -- triangle
-    [5] = 7, -- moon
-    [6] = 1, -- square
-    [7] = 4, -- cross
-    [8] = 8, -- skull
-}
 local MARK_COORDS = {
-    [1] = {0, .25, 0, .25}, [2] = {.25, .5, 0, .25}, [3] = {.5, .75, 0, .25}, [4] = {.75, 1, 0, .25},
-    [5] = {0, .25, .25, .5}, [6] = {.25, .5, .25, .5}, [7] = {.5, .75, .25, .5}, [8] = {.75, 1, .25, .5},
+    [1] = {0, .25, .25, .5}, [2] = {0, .25, 0, .25}, [3] = {.25, .5, .25, .5}, [4] = {.5, .75, .25, .5},
+    [5] = {.5, .75, 0, .25}, [6] = {.25, .5, 0, .25}, [7] = {.75, 1, 0, .25}, [8] = {.75, 1, .25, .5},
 }
 
 local bar
@@ -56,8 +44,7 @@ end
 
 local function SetMarkIcon(texture, index)
     texture:SetTexture(MARK_TEXTURE)
-    local atlasIndex = MARK_TEXTURE_INDEX[index] or index
-    local c = MARK_COORDS[atlasIndex]
+    local c = MARK_COORDS[index]
     if c then texture:SetTexCoord(c[1], c[2], c[3], c[4]) end
 end
 
@@ -66,7 +53,6 @@ local function MakeIconButton(parent, width, height)
     b:SetSize(width, height)
     b:SetMouseClickEnabled(true)
     b:RegisterForClicks("AnyUp", "AnyDown")
-
     local bg = b:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.025, 0.025, 0.035, 0.92)
@@ -98,9 +84,9 @@ end
 
 local function SetupSecureRaidButton(button, index)
     button:SetAttribute("type1", "macro")
-    button:SetAttribute("macrotext1", "/tm [@mouseover,exists] " .. index .. "; [@target,exists] " .. index)
+    button:SetAttribute("macrotext1", "/tm [@target,exists] " .. index)
     button:SetAttribute("type2", "macro")
-    button:SetAttribute("macrotext2", "/tm [@mouseover,exists] 0; [@target,exists] 0")
+    button:SetAttribute("macrotext2", "/tm [@target,exists] 0")
 end
 
 local function SetupSecureWorldButton(button, index)
@@ -116,6 +102,7 @@ local function ApplyBarLayout()
     if not bar then return end
     local horizontal = db.orientation == "HORIZONTAL"
     local gap, size = 2, 30
+    local worldSize = 23
     local count = 8
 
     for i, b in ipairs(buttons) do
@@ -130,16 +117,19 @@ local function ApplyBarLayout()
     for i, b in ipairs(worldButtons) do
         b:ClearAllPoints()
         if horizontal then
-            b:SetPoint("TOPLEFT", bar, "TOPLEFT", 2+(i-1)*(size+gap), -2-(size+gap))
+            b:SetPoint("TOPLEFT", bar, "TOPLEFT", 2+(i-1)*(worldSize+gap), -2-(size+gap))
         else
-            b:SetPoint("TOPLEFT", bar, "TOPLEFT", 2+(size+gap), -2-(i-1)*(size+gap))
+            b:SetPoint("TOPLEFT", bar, "TOPLEFT", 2+(size+gap), -2-(i-1)*(worldSize+gap))
         end
+        b:SetSize(worldSize, worldSize)
+        b.icon:SetPoint("TOPLEFT", 3, -3)
+        b.icon:SetPoint("BOTTOMRIGHT", -3, 3)
     end
 
     if horizontal then
-        bar:SetSize(4+count*size+(count-1)*gap, 4+size*2+gap)
+        bar:SetSize(4+count*size+(count-1)*gap, 4+size+gap+worldSize)
     else
-        bar:SetSize(4+size*2+gap, 4+count*size+(count-1)*gap)
+        bar:SetSize(4+size+gap+worldSize, 4+count*size+(count-1)*gap)
     end
     bar:SetScale(db.scale or 1)
     bar:SetAlpha(db.alpha or 1)
@@ -147,7 +137,6 @@ end
 
 local function CreateBar()
     if bar then return bar end
-
     bar = CreateFrame("Frame", "CCRaidToolsMarksBar", UIParent, "BackdropTemplate")
     bar:SetMovable(true)
     bar:SetClampedToScreen(true)
@@ -156,13 +145,8 @@ local function CreateBar()
     bar:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8", edgeFile="Interface\\Buttons\\WHITE8X8", edgeSize=1})
     bar:SetBackdropColor(0.015,0.015,0.02,0.90)
     bar:SetBackdropBorderColor(0,0,0,1)
-    bar:SetScript("OnDragStart", function(self)
-        if not db.locked then self:StartMoving() end
-    end)
-    bar:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-        SavePosition()
-    end)
+    bar:SetScript("OnDragStart", function(self) if not db.locked then self:StartMoving() end end)
+    bar:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); SavePosition() end)
 
     for i = 1, 8 do
         local b = MakeIconButton(bar, 30, 30)
@@ -173,7 +157,7 @@ local function CreateBar()
     end
 
     for i = 1, 8 do
-        local b = MakeIconButton(bar, 30, 30)
+        local b = MakeIconButton(bar, 23, 23)
         SetMarkIcon(b.icon, i)
         b.icon:SetVertexColor(1, 0.85, 0.35, 0.85)
         SetupSecureWorldButton(b, i)
@@ -187,95 +171,29 @@ local function CreateBar()
     return bar
 end
 
-local function SetEnabled(value)
-    db.enabled = value and true or false
-    CreateBar():SetShown(db.enabled)
-end
-
-local function SetLocked(value)
-    db.locked = value and true or false
-    if bar then bar:SetMovable(not db.locked) end
-end
-
-local function ResetPosition()
-    db.point, db.relativePoint, db.x, db.y = "CENTER", "CENTER", 0, -180
-    if bar then RestorePosition() end
-end
+local function SetEnabled(value) db.enabled = value and true or false; CreateBar():SetShown(db.enabled) end
+local function SetLocked(value) db.locked = value and true or false; if bar then bar:SetMovable(not db.locked) end end
+local function ResetPosition() db.point, db.relativePoint, db.x, db.y = "CENTER", "CENTER", 0, -180; if bar then RestorePosition() end end
 
 local function BuildUI(parent)
     local title = parent:CreateFontString(nil,"OVERLAY","GameFontNormal")
     title:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -30)
     title:SetText("Marks Bar :")
     title:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
-
     local enable = CreateFrame("CheckButton",nil,parent,"BackdropTemplate")
-    enable:SetSize(48,24)
-    enable:SetPoint("TOPLEFT",title,"BOTTOMLEFT",0,-8)
-    C.SkinCheckBox(enable)
-    enable:SetChecked(db.enabled)
-    enable:SetScript("OnClick",function(self) SetEnabled(self:GetChecked()) end)
-    local enableText=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
-    enableText:SetPoint("LEFT",enable,"RIGHT",8,0)
-    enableText:SetText("Activer la barre")
-
+    enable:SetSize(48,24); enable:SetPoint("TOPLEFT",title,"BOTTOMLEFT",0,-8); C.SkinCheckBox(enable); enable:SetChecked(db.enabled); enable:SetScript("OnClick",function(self) SetEnabled(self:GetChecked()) end)
+    local enableText=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); enableText:SetPoint("LEFT",enable,"RIGHT",8,0); enableText:SetText("Activer la barre")
     local lock=CreateFrame("CheckButton",nil,parent,"BackdropTemplate")
-    lock:SetSize(48,24)
-    lock:SetPoint("TOPLEFT",enable,"BOTTOMLEFT",0,-12)
-    C.SkinCheckBox(lock)
-    lock:SetChecked(db.locked)
-    lock:SetScript("OnClick",function(self) SetLocked(self:GetChecked()) end)
-    local lockText=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
-    lockText:SetPoint("LEFT",lock,"RIGHT",8,0)
-    lockText:SetText("Verrouiller la position")
-
-    local orient=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
-    orient:SetPoint("TOPLEFT",lock,"BOTTOMLEFT",0,-16)
-    orient:SetText("Orientation")
-    local horizontal=CreateFrame("Button",nil,parent)
-    horizontal:SetSize(110,26)
-    horizontal:SetPoint("TOPLEFT",orient,"BOTTOMLEFT",0,-5)
-    C.SkinButton(horizontal)
-    horizontal:SetText("Horizontal")
-    horizontal:SetNormalFontObject("GameFontHighlightSmall")
-    local vertical=CreateFrame("Button",nil,parent)
-    vertical:SetSize(110,26)
-    vertical:SetPoint("LEFT",horizontal,"RIGHT",6,0)
-    C.SkinButton(vertical)
-    vertical:SetText("Vertical")
-    vertical:SetNormalFontObject("GameFontHighlightSmall")
-    local function RefreshOrientation()
-        local h=db.orientation=="HORIZONTAL"
-        horizontal._ccrtBg:SetColorTexture(h and C.BRAND_R*0.28 or 0.045,h and C.BRAND_G*0.28 or 0.045,h and C.BRAND_B*0.30 or 0.055,0.95)
-        vertical._ccrtBg:SetColorTexture(not h and C.BRAND_R*0.28 or 0.045,not h and C.BRAND_G*0.28 or 0.045,not h and C.BRAND_B*0.30 or 0.055,0.95)
-    end
-    horizontal:SetScript("OnClick",function() db.orientation="HORIZONTAL"; RefreshOrientation(); ApplyBarLayout() end)
-    vertical:SetScript("OnClick",function() db.orientation="VERTICAL"; RefreshOrientation(); ApplyBarLayout() end)
-    RefreshOrientation()
-
-    local reset=CreateFrame("Button",nil,parent)
-    reset:SetSize(130,26)
-    reset:SetPoint("TOPLEFT",horizontal,"BOTTOMLEFT",0,-14)
-    C.SkinButton(reset)
-    reset:SetText("Recentrer la barre")
-    reset:SetNormalFontObject("GameFontHighlightSmall")
-    reset:SetScript("OnClick",ResetPosition)
-
-    local info=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
-    info:SetPoint("TOPLEFT",reset,"BOTTOMLEFT",0,-12)
-    info:SetWidth(360)
-    info:SetJustifyH("LEFT")
-    info:SetText("Ligne 1 : marques de raid.\nLigne 2 : marqueurs au sol.\nClic droit : retirer.\nLa barre est déplaçable tant qu'elle n'est pas verrouillée.")
-    info:SetTextColor(0.65,0.65,0.65)
-    configRefresh=function()
-        enable:SetChecked(db.enabled)
-        lock:SetChecked(db.locked)
-        RefreshOrientation()
-    end
+    lock:SetSize(48,24); lock:SetPoint("TOPLEFT",enable,"BOTTOMLEFT",0,-12); C.SkinCheckBox(lock); lock:SetChecked(db.locked); lock:SetScript("OnClick",function(self) SetLocked(self:GetChecked()) end)
+    local lockText=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); lockText:SetPoint("LEFT",lock,"RIGHT",8,0); lockText:SetText("Verrouiller la position")
+    local orient=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); orient:SetPoint("TOPLEFT",lock,"BOTTOMLEFT",0,-16); orient:SetText("Orientation")
+    local horizontal=CreateFrame("Button",nil,parent); horizontal:SetSize(110,26); horizontal:SetPoint("TOPLEFT",orient,"BOTTOMLEFT",0,-5); C.SkinButton(horizontal); horizontal:SetText("Horizontal"); horizontal:SetNormalFontObject("GameFontHighlightSmall")
+    local vertical=CreateFrame("Button",nil,parent); vertical:SetSize(110,26); vertical:SetPoint("LEFT",horizontal,"RIGHT",6,0); C.SkinButton(vertical); vertical:SetText("Vertical"); vertical:SetNormalFontObject("GameFontHighlightSmall")
+    local function RefreshOrientation() local h=db.orientation=="HORIZONTAL"; horizontal._ccrtBg:SetColorTexture(h and C.BRAND_R*0.28 or 0.045,h and C.BRAND_G*0.28 or 0.045,h and C.BRAND_B*0.30 or 0.055,0.95); vertical._ccrtBg:SetColorTexture(not h and C.BRAND_R*0.28 or 0.045,not h and C.BRAND_G*0.28 or 0.045,not h and C.BRAND_B*0.30 or 0.055,0.95) end
+    horizontal:SetScript("OnClick",function() db.orientation="HORIZONTAL"; RefreshOrientation(); ApplyBarLayout() end); vertical:SetScript("OnClick",function() db.orientation="VERTICAL"; RefreshOrientation(); ApplyBarLayout() end); RefreshOrientation()
+    local reset=CreateFrame("Button",nil,parent); reset:SetSize(130,26); reset:SetPoint("TOPLEFT",horizontal,"BOTTOMLEFT",0,-14); C.SkinButton(reset); reset:SetText("Recentrer la barre"); reset:SetNormalFontObject("GameFontHighlightSmall"); reset:SetScript("OnClick",ResetPosition)
+    local info=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); info:SetPoint("TOPLEFT",reset,"BOTTOMLEFT",0,-12); info:SetWidth(360); info:SetJustifyH("LEFT"); info:SetText("Ligne 1 : marques de raid.\nLigne 2 : marqueurs au sol.\nClic droit : retirer.\nLa barre est déplaçable tant qu'elle n'est pas verrouillée."); info:SetTextColor(0.65,0.65,0.65)
+    configRefresh=function() enable:SetChecked(db.enabled); lock:SetChecked(db.locked); RefreshOrientation() end
 end
-
-C.RegisterModule("MarksBar",BuildUI,function()
-    if configRefresh then configRefresh() end
-end)
-
-CreateBar()
-SetLocked(db.locked)
+C.RegisterModule("MarksBar",BuildUI,function() if configRefresh then configRefresh() end end)
+CreateBar(); SetLocked(db.locked)
