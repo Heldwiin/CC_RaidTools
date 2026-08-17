@@ -168,7 +168,7 @@ local function BuildMainFrame()
     if mainFrame then return mainFrame end
     C.InitDB()
     mainFrame=CreateFrame("Frame","CCRaidToolsFrame",UIParent)
-    mainFrame:SetSize(320,705)
+    mainFrame:SetSize(320,790)
     mainFrame:SetMovable(true)
     mainFrame:EnableMouse(true)
     mainFrame:RegisterForDrag("LeftButton")
