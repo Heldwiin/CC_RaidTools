@@ -11,4 +11,5 @@ AutoLog.lua
 ReadyCheck.lua
 InviteTool.lua
 Focus.lua
+MarksBar.lua
 CloseButtonSkin.lua
