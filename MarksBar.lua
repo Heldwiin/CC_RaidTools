@@ -82,21 +82,26 @@ local function AddTooltip(b, title, line1)
 end
 
 local function SetupSecureRaidButton(button, index)
-    -- Raid marking is protected. Execute the macro from a SecureActionButtonTemplate
-    -- on the hardware click instead of calling SetRaidTarget() from addon Lua.
-    button:SetAttribute("type1", "macro")
-    button:SetAttribute("macrotext1", "/tm [@mouseover,exists] " .. index .. "; [@target,exists] " .. index)
-    button:SetAttribute("type2", "macro")
-    button:SetAttribute("macrotext2", "/tm [@mouseover,exists] 0; [@target,exists] 0")
+    -- Midnight exposes raid target marking as a secure action.
+    -- Use the unit under the mouse first, falling back to the current target.
+    button:SetAttribute("type1", "raidtarget")
+    button:SetAttribute("action1", "set")
+    button:SetAttribute("marker1", index)
+    button:SetAttribute("unit1", "mouseover")
+    button:SetAttribute("type2", "raidtarget")
+    button:SetAttribute("action2", "clear")
+    button:SetAttribute("marker2", index)
+    button:SetAttribute("unit2", "mouseover")
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 end
 
 local function SetupSecureWorldButton(button, index)
-    -- World markers are also protected and must be executed by a secure button.
-    button:SetAttribute("type1", "macro")
-    button:SetAttribute("macrotext1", "/wm " .. index)
-    button:SetAttribute("type2", "macro")
-    button:SetAttribute("macrotext2", "/cwm " .. index)
+    button:SetAttribute("type1", "worldmarker")
+    button:SetAttribute("action1", "set")
+    button:SetAttribute("marker1", index)
+    button:SetAttribute("type2", "worldmarker")
+    button:SetAttribute("action2", "clear")
+    button:SetAttribute("marker2", index)
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 end
 
@@ -152,7 +157,6 @@ local function CreateBar()
         SavePosition()
     end)
 
-    -- Row 1: raid target markers.
     for i = 1, 8 do
         local b = MakeIconButton(bar, 30, 30, true)
         SetMarkIcon(b.icon, i)
@@ -161,7 +165,6 @@ local function CreateBar()
         buttons[i] = b
     end
 
-    -- Row 2: world markers. The icon strip is kept visually distinct.
     for i = 1, 8 do
         local b = MakeIconButton(bar, 30, 30, true)
         SetMarkIcon(b.icon, i)
