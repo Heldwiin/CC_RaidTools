@@ -52,8 +52,6 @@ local function MakeIconButton(parent, width, height)
     local b = CreateFrame("Button", nil, parent, "SecureActionButtonTemplate")
     b:SetSize(width, height)
     b:SetMouseClickEnabled(true)
-    -- SecureActionButtonTemplate actions must listen to both press/release so they
-    -- work with the current ActionButtonUseKeyDown setting.
     b:RegisterForClicks("AnyUp", "AnyDown")
 
     local bg = b:CreateTexture(nil, "BACKGROUND")
@@ -86,16 +84,15 @@ local function AddTooltip(b, title, line1)
 end
 
 local function SetupSecureRaidButton(button, index)
-    -- Raid target marking is executed by the secure macro command /tm.
-    -- Mouseover is preferred; the current target is used as fallback.
+    -- /tm uses the normal current target and keeps the icon number exactly
+    -- aligned with the displayed Blizzard raid-target icon.
     button:SetAttribute("type1", "macro")
-    button:SetAttribute("macrotext1", "/tm [@mouseover,exists] " .. index .. "; [@target,exists] " .. index)
+    button:SetAttribute("macrotext1", "/tm " .. index)
     button:SetAttribute("type2", "macro")
-    button:SetAttribute("macrotext2", "/tm [@mouseover,exists] 0; [@target,exists] 0")
+    button:SetAttribute("macrotext2", "/tm 0")
 end
 
 local function SetupSecureWorldButton(button, index)
-    -- Native secure worldmarker action. No direct protected Lua API call.
     button:SetAttribute("type1", "worldmarker")
     button:SetAttribute("marker1", index)
     button:SetAttribute("action1", "set")
