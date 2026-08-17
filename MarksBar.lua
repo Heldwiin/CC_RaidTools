@@ -13,10 +13,10 @@ if db.point == nil then db.point = "CENTER" end
 if db.relativePoint == nil then db.relativePoint = "CENTER" end
 if db.x == nil then db.x = 0 end
 if db.y == nil then db.y = -180 end
+if db.targetMode == nil then db.targetMode = "TARGET" end
 
 local MARK_ICON_TEXTURE = "Interface\\TargetingFrame\\UI-RaidTargetingIcon_"
 -- World marker commands keep their IDs, but the displayed icons follow the same visual order as the raid markers.
--- Visual order: star, circle, diamond, triangle, moon, square, cross, skull.
 local WORLD_MARK_COMMAND = { [1]=5, [2]=6, [3]=3, [4]=2, [5]=7, [6]=1, [7]=4, [8]=8 }
 local bar
 local buttons = {}
@@ -66,10 +66,17 @@ local function AddTooltip(b, title, line1)
 end
 
 local function SetupSecureRaidButton(button, index)
+    local unit = db.targetMode == "MOUSEOVER" and "@mouseover,exists" or "@target,exists"
     button:SetAttribute("type1", "macro")
-    button:SetAttribute("macrotext1", "/tm [@target,exists] " .. index)
+    button:SetAttribute("macrotext1", "/tm [" .. unit .. "] " .. index)
     button:SetAttribute("type2", "macro")
-    button:SetAttribute("macrotext2", "/tm [@target,exists] 0")
+    button:SetAttribute("macrotext2", "/tm [" .. unit .. "] 0")
+end
+
+local function RefreshRaidButtons()
+    for i, button in ipairs(buttons) do
+        SetupSecureRaidButton(button, i)
+    end
 end
 
 local function SetupSecureWorldButton(button, index)
@@ -182,9 +189,20 @@ local function BuildUI(parent)
     local vertical=CreateFrame("Button",nil,parent); vertical:SetSize(110,26); vertical:SetPoint("LEFT",horizontal,"RIGHT",6,0); C.SkinButton(vertical); vertical:SetText("Vertical"); vertical:SetNormalFontObject("GameFontHighlightSmall")
     local function RefreshOrientation() local h=db.orientation=="HORIZONTAL"; horizontal._ccrtBg:SetColorTexture(h and C.BRAND_R*0.28 or 0.045,h and C.BRAND_G*0.28 or 0.045,h and C.BRAND_B*0.30 or 0.055,0.95); vertical._ccrtBg:SetColorTexture(not h and C.BRAND_R*0.28 or 0.045,not h and C.BRAND_G*0.28 or 0.045,not h and C.BRAND_B*0.30 or 0.055,0.95) end
     horizontal:SetScript("OnClick",function() db.orientation="HORIZONTAL"; RefreshOrientation(); ApplyBarLayout() end); vertical:SetScript("OnClick",function() db.orientation="VERTICAL"; RefreshOrientation(); ApplyBarLayout() end); RefreshOrientation()
-    local reset=CreateFrame("Button",nil,parent); reset:SetSize(130,26); reset:SetPoint("TOPLEFT",horizontal,"BOTTOMLEFT",0,-14); C.SkinButton(reset); reset:SetText("Recentrer la barre"); reset:SetNormalFontObject("GameFontHighlightSmall"); reset:SetScript("OnClick",ResetPosition)
+    local targetLabel=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); targetLabel:SetPoint("TOPLEFT",horizontal,"BOTTOMLEFT",0,-16); targetLabel:SetText("Cible des marques")
+    local target=CreateFrame("Button",nil,parent); target:SetSize(110,26); target:SetPoint("TOPLEFT",targetLabel,"BOTTOMLEFT",0,-5); C.SkinButton(target); target:SetText("Cible"); target:SetNormalFontObject("GameFontHighlightSmall")
+    local mouseover=CreateFrame("Button",nil,parent); mouseover:SetSize(110,26); mouseover:SetPoint("LEFT",target,"RIGHT",6,0); C.SkinButton(mouseover); mouseover:SetText("Mouseover"); mouseover:SetNormalFontObject("GameFontHighlightSmall")
+    local function RefreshTargetMode()
+        local t=db.targetMode=="TARGET"
+        target._ccrtBg:SetColorTexture(t and C.BRAND_R*0.28 or 0.045,t and C.BRAND_G*0.28 or 0.045,t and C.BRAND_B*0.30 or 0.055,0.95)
+        mouseover._ccrtBg:SetColorTexture(not t and C.BRAND_R*0.28 or 0.045,not t and C.BRAND_G*0.28 or 0.045,not t and C.BRAND_B*0.30 or 0.055,0.95)
+    end
+    target:SetScript("OnClick",function() db.targetMode="TARGET"; RefreshTargetMode(); if not InCombatLockdown() then RefreshRaidButtons() end end)
+    mouseover:SetScript("OnClick",function() db.targetMode="MOUSEOVER"; RefreshTargetMode(); if not InCombatLockdown() then RefreshRaidButtons() end end)
+    RefreshTargetMode()
+    local reset=CreateFrame("Button",nil,parent); reset:SetSize(130,26); reset:SetPoint("TOPLEFT",target,"BOTTOMLEFT",0,-14); C.SkinButton(reset); reset:SetText("Recentrer la barre"); reset:SetNormalFontObject("GameFontHighlightSmall"); reset:SetScript("OnClick",ResetPosition)
     local info=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); info:SetPoint("TOPLEFT",reset,"BOTTOMLEFT",0,-12); info:SetWidth(360); info:SetJustifyH("LEFT"); info:SetText("Ligne 1 : marques de raid.\nLigne 2 : marqueurs au sol.\nClic droit : retirer.\nLa barre est déplaçable tant qu'elle n'est pas verrouillée."); info:SetTextColor(0.65,0.65,0.65)
-    configRefresh=function() enable:SetChecked(db.enabled); lock:SetChecked(db.locked); RefreshOrientation() end
+    configRefresh=function() enable:SetChecked(db.enabled); lock:SetChecked(db.locked); RefreshOrientation(); RefreshTargetMode() end
 end
 C.RegisterModule("MarksBar",BuildUI,function() if configRefresh then configRefresh() end end)
 CreateBar(); SetLocked(db.locked)
