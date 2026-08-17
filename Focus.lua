@@ -90,9 +90,9 @@ local function BuildUI(f)
     local mouseValues={{"Left","1"},{"Right","2"},{"Middle","3"},{"Mouse 4","4"},{"Mouse 5","5"}}
     local modifierDrop=CreateSwitchMenu(f,modifierValues,modifier,function(value) modifier=value; SaveFocusSettings(); ApplyFocusBinding() end)
     modifierDrop:SetPoint("TOPLEFT",modifierLabel,"BOTTOMLEFT",0,-4)
-    local mouseLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); mouseLabel:SetPoint("TOPLEFT",modifierDrop,"TOPRIGHT",40,0); mouseLabel:SetText("Clic souris")
+    local mouseLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); mouseLabel:SetPoint("TOPLEFT",modifierLabel,"TOPLEFT",158,0); mouseLabel:SetText("Clic souris")
     local mouseDrop=CreateSwitchMenu(f,mouseValues,mouseButton,function(value) mouseButton=value; SaveFocusSettings(); ApplyFocusBinding() end)
-    mouseDrop:SetPoint("TOPLEFT",mouseLabel,"BOTTOMLEFT",0,-4)
+    mouseDrop:SetPoint("TOPLEFT",modifierDrop,"TOPLEFT",158,0)
 end
 C.RegisterModule("Focus",BuildUI,function() end)
 ApplyDefaultUnitFrameBindings(); ApplyFocusBinding()
