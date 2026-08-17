@@ -168,7 +168,7 @@ local function BuildMainFrame()
     if mainFrame then return mainFrame end
     C.InitDB()
     mainFrame=CreateFrame("Frame","CCRaidToolsFrame",UIParent)
-    mainFrame:SetSize(320,790)
+    mainFrame:SetSize(320,705)
     mainFrame:SetMovable(true)
     mainFrame:EnableMouse(true)
     mainFrame:RegisterForDrag("LeftButton")
@@ -176,10 +176,12 @@ local function BuildMainFrame()
     mainFrame:SetScript("OnDragStop",function(self) self:StopMovingOrSizing(); SaveMainFramePosition() end)
     C.ApplyPanelSkin(mainFrame)
     RestoreMainFramePosition()
+
     local title=mainFrame:CreateFontString(nil,"OVERLAY","GameFontNormal")
     title:SetPoint("TOP",0,-7)
     title:SetText("CC RaidTools")
     title:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
+
     local close=CreateFrame("Button",nil,mainFrame)
     close:SetSize(22,22)
     close:SetPoint("TOPRIGHT",-4,-4)
@@ -193,9 +195,37 @@ local function BuildMainFrame()
     close:SetScript("OnEnter",function() closeTex:SetVertexColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,1) end)
     close:SetScript("OnLeave",function() closeTex:SetVertexColor(0.851,0.851,0.851,1) end)
     close:SetScript("OnClick",function() mainFrame:Hide() end)
+
+    local scroll=CreateFrame("ScrollFrame","CCRaidToolsScrollFrame",mainFrame,"UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT",mainFrame,"TOPLEFT",6,-32)
+    scroll:SetPoint("BOTTOMRIGHT",mainFrame,"BOTTOMRIGHT",-20,8)
+
+    local child=CreateFrame("Frame","CCRaidToolsScrollChild",scroll)
+    child:SetSize(294,790)
+    scroll:SetScrollChild(child)
+    C._scrollFrame=scroll
+    C._scrollChild=child
+
+    local bar=scroll.ScrollBar
+    if bar then
+        bar:ClearAllPoints()
+        bar:SetPoint("TOPRIGHT",mainFrame,"TOPRIGHT",-3,-34)
+        bar:SetPoint("BOTTOMRIGHT",mainFrame,"BOTTOMRIGHT",-3,12)
+    end
+
     mainFrame:Hide()
-    for _,m in pairs(C.modules) do if m.build and not m.built then m.build(mainFrame); m.built=true end end
-    mainFrame:SetScript("OnShow",function() for _,m in pairs(C.modules) do if m.refresh then m.refresh(mainFrame) end end end)
+    for _,m in pairs(C.modules) do
+        if m.build and not m.built then
+            m.build(child)
+            m.built=true
+        end
+    end
+
+    mainFrame:SetScript("OnShow",function()
+        for _,m in pairs(C.modules) do if m.refresh then m.refresh(mainFrame) end end
+        scroll:UpdateScrollChildRect()
+    end)
+
     return mainFrame
 end
 
