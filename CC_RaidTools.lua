@@ -58,7 +58,6 @@ function C.SkinCheckBox(box)
 
     local CHECK_TEXTURE=GUI_TEXTURES.."ok-iconBlack.tga"
     local CROSS_TEXTURE=GUI_TEXTURES.."cross-small.png"
-    local W,H=48,24
     local HALF=24
 
     box:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=2})
@@ -67,11 +66,10 @@ function C.SkinCheckBox(box)
 
     local left=box:CreateTexture(nil,"ARTWORK")
     left:SetPoint("TOPLEFT",1,-1)
-    left:SetSize(HALF-1,H-2)
-
+    left:SetSize(HALF-1,22)
     local right=box:CreateTexture(nil,"ARTWORK")
     right:SetPoint("TOPRIGHT",-1,-1)
-    right:SetSize(HALF-1,H-2)
+    right:SetSize(HALF-1,22)
 
     local divider=box:CreateTexture(nil,"OVERLAY")
     divider:SetPoint("TOP",box,"TOP",0,-1)
@@ -113,14 +111,12 @@ function C.SkinCheckBox(box)
             left:SetColorTexture(0.30,0.31,0.59,1)
             right:SetColorTexture(0.38,0.40,0.76,1)
             checkmark:SetVertexColor(0,0,0,1)
-            checkmark:Show()
-            crossmark:Hide()
+            checkmark:Show(); crossmark:Hide()
         else
             left:SetColorTexture(0.30,0.30,0.30,1)
             right:SetColorTexture(0.09,0.09,0.09,1)
             crossmark:SetVertexColor(0.10,0.10,0.10,1)
-            crossmark:Show()
-            checkmark:Hide()
+            crossmark:Show(); checkmark:Hide()
         end
     end
     box._ccrtRefresh=refresh
@@ -140,11 +136,14 @@ function C.RegisterModule(name, build, refresh)
 end
 
 local mainFrame
+local pages={}
+local buttons={}
+local selectedModule
 function C.GetMainFrame() return mainFrame end
 
 local function SaveMainFramePosition()
     if not mainFrame or not AutoPromoteDB then return end
-    local point,_,relativePoint,x,y = mainFrame:GetPoint(1)
+    local point,_,relativePoint,x,y=mainFrame:GetPoint(1)
     if point then
         AutoPromoteDB.windowPos.point=point
         AutoPromoteDB.windowPos.relativePoint=relativePoint or point
@@ -160,7 +159,41 @@ local function RestoreMainFramePosition()
     if p and p.point then
         mainFrame:SetPoint(p.point,UIParent,p.relativePoint or p.point,p.x or 0,p.y or 0)
     else
-        mainFrame:SetPoint("CENTER",UIParent,"CENTER",260,0)
+        mainFrame:SetPoint("CENTER",UIParent,"CENTER",0,0)
+    end
+end
+
+local function SelectModule(name)
+    selectedModule=name
+    for n,page in pairs(pages) do page:SetShown(n==name) end
+    for n,b in pairs(buttons) do
+        if n==name then
+            b._ccrtBg:SetColorTexture(C.BRAND_R*0.32,C.BRAND_G*0.32,C.BRAND_B*0.42,0.95)
+            b.text:SetTextColor(1,1,1)
+        else
+            b._ccrtBg:SetColorTexture(0.035,0.035,0.045,0.80)
+            b.text:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
+        end
+    end
+    local module=C.modules[name]
+    local page=pages[name]
+    if module and page and module.refresh then module.refresh(page.content) end
+end
+
+local function CreatePage(name,module)
+    local page=CreateFrame("ScrollFrame",nil,mainFrame,"UIPanelScrollFrameTemplate")
+    page:SetPoint("TOPLEFT",148,-32)
+    page:SetPoint("BOTTOMRIGHT",-20,10)
+    local content=CreateFrame("Frame",nil,page)
+    content:SetSize(455,730)
+    page:SetScrollChild(content)
+    page.content=content
+    C.SkinScrollBar(page)
+    page:Hide()
+    pages[name]=page
+    if module.build then
+        module.build(content)
+        module.built=true
     end
 end
 
@@ -168,7 +201,7 @@ local function BuildMainFrame()
     if mainFrame then return mainFrame end
     C.InitDB()
     mainFrame=CreateFrame("Frame","CCRaidToolsFrame",UIParent)
-    mainFrame:SetSize(320,705)
+    mainFrame:SetSize(650,705)
     mainFrame:SetMovable(true)
     mainFrame:EnableMouse(true)
     mainFrame:RegisterForDrag("LeftButton")
@@ -196,36 +229,54 @@ local function BuildMainFrame()
     close:SetScript("OnLeave",function() closeTex:SetVertexColor(0.851,0.851,0.851,1) end)
     close:SetScript("OnClick",function() mainFrame:Hide() end)
 
-    local scroll=CreateFrame("ScrollFrame","CCRaidToolsScrollFrame",mainFrame,"UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT",mainFrame,"TOPLEFT",6,-32)
-    scroll:SetPoint("BOTTOMRIGHT",mainFrame,"BOTTOMRIGHT",-20,8)
+    local divider=mainFrame:CreateTexture(nil,"BORDER")
+    divider:SetPoint("TOPLEFT",136,-30)
+    divider:SetPoint("BOTTOMLEFT",136,10)
+    divider:SetWidth(1)
+    divider:SetColorTexture(0,0,0,0.95)
 
-    local child=CreateFrame("Frame","CCRaidToolsScrollChild",scroll)
-    child:SetSize(294,790)
-    scroll:SetScrollChild(child)
-    C._scrollFrame=scroll
-    C._scrollChild=child
+    local menuTitle=mainFrame:CreateFontString(nil,"OVERLAY","GameFontNormal")
+    menuTitle:SetPoint("TOPLEFT",12,-38)
+    menuTitle:SetText("Modules")
+    menuTitle:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
 
-    local bar=scroll.ScrollBar
-    if bar then
-        bar:ClearAllPoints()
-        bar:SetPoint("TOPRIGHT",mainFrame,"TOPRIGHT",-3,-34)
-        bar:SetPoint("BOTTOMRIGHT",mainFrame,"BOTTOMRIGHT",-3,12)
-    end
-
-    mainFrame:Hide()
-    for _,m in pairs(C.modules) do
-        if m.build and not m.built then
-            m.build(child)
-            m.built=true
+    local menuNames={
+        {"Auto Promote","AutoPromote"},
+        {"AutoLog","AutoLog"},
+        {"Ready Check","ReadyCheck"},
+        {"Invite Tool","InviteTool"},
+        {"Focus","Focus"},
+    }
+    local y=-65
+    for _,info in ipairs(menuNames) do
+        local label,name=info[1],info[2]
+        local module=C.modules[name]
+        if module then
+            local b=CreateFrame("Button",nil,mainFrame,"BackdropTemplate")
+            b:SetSize(118,28)
+            b:SetPoint("TOPLEFT",10,y)
+            b:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
+            b:SetBackdropBorderColor(0.08,0.08,0.11,1)
+            b._ccrtBg=b:CreateTexture(nil,"BACKGROUND"); b._ccrtBg:SetAllPoints(); b._ccrtBg:SetColorTexture(0.035,0.035,0.045,0.80)
+            b.text=b:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); b.text:SetPoint("LEFT",8,0); b.text:SetText(label); b.text:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
+            b:SetScript("OnClick",function() SelectModule(name) end)
+            b:SetScript("OnEnter",function(self) if selectedModule~=name then self._ccrtBg:SetColorTexture(0.07,0.07,0.09,0.95) end end)
+            b:SetScript("OnLeave",function(self) if selectedModule~=name then self._ccrtBg:SetColorTexture(0.035,0.035,0.045,0.80) end end)
+            buttons[name]=b
+            CreatePage(name,module)
+            y=y-32
         end
     end
 
+    mainFrame:Hide()
+    if pages.AutoPromote then SelectModule("AutoPromote") end
     mainFrame:SetScript("OnShow",function()
-        for _,m in pairs(C.modules) do if m.refresh then m.refresh(mainFrame) end end
-        scroll:UpdateScrollChildRect()
+        for name,module in pairs(C.modules) do
+            local page=pages[name]
+            if module.refresh and page and page.content then module.refresh(page.content) end
+        end
+        if selectedModule then SelectModule(selectedModule) end
     end)
-
     return mainFrame
 end
 
