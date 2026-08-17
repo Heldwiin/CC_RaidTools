@@ -30,17 +30,32 @@ local function ApplyFocusBinding()
 end
 local function SaveFocusSettings() AutoPromoteDB.focusModifier=modifier; AutoPromoteDB.focusMouseButton=mouseButton end
 
+local function SkinDropDown(drop)
+    if drop._ccrtSkin then return end
+    drop._ccrtSkin=true
+    local button=_G[drop:GetName().."Button"]
+    if not button then return end
+    button:SetSize(118,24)
+    local normal=button:GetNormalTexture(); local pushed=button:GetPushedTexture(); local disabled=button:GetDisabledTexture()
+    if normal then normal:SetTexture("Interface\\Buttons\\WHITE8X8"); normal:SetVertexColor(0.045,0.045,0.055,0.96); normal:SetAllPoints() end
+    if pushed then pushed:SetTexture("Interface\\Buttons\\WHITE8X8"); pushed:SetVertexColor(C.BRAND_R*0.42,C.BRAND_G*0.42,C.BRAND_B*0.42,0.96); pushed:SetAllPoints() end
+    if disabled then disabled:SetTexture("Interface\\Buttons\\WHITE8X8"); disabled:SetVertexColor(0.025,0.025,0.03,0.96); disabled:SetAllPoints() end
+    local text=_G[drop:GetName().."Text"]
+    if text then text:SetTextColor(0.95,0.95,0.95); text:ClearAllPoints(); text:SetPoint("LEFT",button,"LEFT",10,0); text:SetPoint("RIGHT",button,"RIGHT",-22,0); text:SetJustifyH("LEFT") end
+end
+
 local function BuildUI(f)
     local label=f:CreateFontString(nil,"OVERLAY","GameFontNormal"); label:SetPoint("TOPLEFT",f,"TOPLEFT",12,-30); label:SetText("Focus :"); label:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
     local modifierLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); modifierLabel:SetPoint("TOPLEFT",label,"BOTTOMLEFT",0,-8); modifierLabel:SetText("Touche")
-    local modifierDrop=CreateFrame("Frame","CCRTFocusModifierDropDown",f,"UIDropDownMenuTemplate"); modifierDrop:SetPoint("TOPLEFT",modifierLabel,"BOTTOMLEFT",-15,-2); UIDropDownMenu_SetWidth(modifierDrop,105)
-    local mouseLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); mouseLabel:SetPoint("TOPLEFT",modifierDrop,"TOPRIGHT",18,4); mouseLabel:SetText("Clic souris")
-    local mouseDrop=CreateFrame("Frame","CCRTFocusMouseDropDown",f,"UIDropDownMenuTemplate"); mouseDrop:SetPoint("TOPLEFT",mouseLabel,"BOTTOMLEFT",-15,-2); UIDropDownMenu_SetWidth(mouseDrop,105)
+    local modifierDrop=CreateFrame("Frame","CCRTFocusModifierDropDown",f,"UIDropDownMenuTemplate"); modifierDrop:SetPoint("TOPLEFT",modifierLabel,"BOTTOMLEFT",-15,-2); UIDropDownMenu_SetWidth(modifierDrop,118)
+    local mouseDrop=CreateFrame("Frame","CCRTFocusMouseDropDown",f,"UIDropDownMenuTemplate"); mouseDrop:SetPoint("TOPLEFT",modifierDrop,"TOPLEFT",158,0); UIDropDownMenu_SetWidth(mouseDrop,118)
+    local mouseLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); mouseLabel:SetPoint("BOTTOMLEFT",mouseDrop,"TOPLEFT",15,2); mouseLabel:SetText("Clic souris")
     local modifiers={{"Shift","shift"},{"Alt","alt"},{"Ctrl","ctrl"}}; local mouseButtons={{"Left","1"},{"Right","2"},{"Middle","3"},{"Mouse 4","4"},{"Mouse 5","5"}}
     UIDropDownMenu_Initialize(modifierDrop,function(self,level) for _,info in ipairs(modifiers) do local d=UIDropDownMenu_CreateInfo(); d.text=info[1]; d.value=info[2]; d.checked=(modifier==info[2]); d.func=function() modifier=info[2]; SaveFocusSettings(); UIDropDownMenu_SetText(modifierDrop,info[1]); ApplyFocusBinding() end; UIDropDownMenu_AddButton(d,level) end end)
     UIDropDownMenu_Initialize(mouseDrop,function(self,level) for _,info in ipairs(mouseButtons) do local d=UIDropDownMenu_CreateInfo(); d.text=info[1]; d.value=info[2]; d.checked=(mouseButton==info[2]); d.func=function() mouseButton=info[2]; SaveFocusSettings(); UIDropDownMenu_SetText(mouseDrop,info[1]); ApplyFocusBinding() end; UIDropDownMenu_AddButton(d,level) end end)
     local modifierName="Shift"; local mouseName="Left"; for _,info in ipairs(modifiers) do if info[2]==modifier then modifierName=info[1] end end; for _,info in ipairs(mouseButtons) do if info[2]==mouseButton then mouseName=info[1] end end
     UIDropDownMenu_SetText(modifierDrop,modifierName); UIDropDownMenu_SetText(mouseDrop,mouseName)
+    SkinDropDown(modifierDrop); SkinDropDown(mouseDrop)
 end
 C.RegisterModule("Focus",BuildUI,function() end)
 ApplyDefaultUnitFrameBindings(); ApplyFocusBinding()
