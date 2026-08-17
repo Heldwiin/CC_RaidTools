@@ -94,21 +94,17 @@ local function ApplyBarLayout()
     local worldWidth = 4 + count * worldSize + (count - 1) * gap
     local raidHeight, worldHeight = raidSize + 4, worldSize + 4
     local worldOffset = (raidWidth - worldWidth) / 2
-
     if not bar._raidRowBG then bar._raidRowBG = CreateRowBackground(bar); bar._worldRowBG = CreateRowBackground(bar) end
     bar._raidRowBG:ClearAllPoints(); bar._worldRowBG:ClearAllPoints()
-
     if horizontal then
         bar:SetSize(raidWidth, raidHeight + gap + worldHeight)
         bar._raidRowBG:SetSize(raidWidth, raidHeight); bar._raidRowBG:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
         bar._worldRowBG:SetSize(worldWidth, worldHeight); bar._worldRowBG:SetPoint("TOPLEFT", bar, "TOPLEFT", worldOffset, -raidHeight - gap)
         for i, button in ipairs(buttons) do
-            button:ClearAllPoints(); button:SetSize(raidSize, raidSize)
-            button:SetPoint("TOPLEFT", bar, "TOPLEFT", 2 + (i - 1) * (raidSize + gap), -2)
+            button:ClearAllPoints(); button:SetSize(raidSize, raidSize); button:SetPoint("TOPLEFT", bar, "TOPLEFT", 2 + (i - 1) * (raidSize + gap), -2)
         end
         for i, button in ipairs(worldButtons) do
-            button:ClearAllPoints(); button:SetSize(worldSize, worldSize)
-            button:SetPoint("TOPLEFT", bar, "TOPLEFT", worldOffset + 2 + (i - 1) * (worldSize + gap), -raidHeight - gap - 2)
+            button:ClearAllPoints(); button:SetSize(worldSize, worldSize); button:SetPoint("TOPLEFT", bar, "TOPLEFT", worldOffset + 2 + (i - 1) * (worldSize + gap), -raidHeight - gap - 2)
             button.icon:ClearAllPoints(); button.icon:SetPoint("TOPLEFT", 3, -3); button.icon:SetPoint("BOTTOMRIGHT", -3, 3)
         end
     else
@@ -116,61 +112,44 @@ local function ApplyBarLayout()
         bar._raidRowBG:SetSize(raidHeight, raidWidth); bar._raidRowBG:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
         bar._worldRowBG:SetSize(worldHeight, worldWidth); bar._worldRowBG:SetPoint("TOPLEFT", bar, "TOPLEFT", raidHeight + gap, -worldOffset)
         for i, button in ipairs(buttons) do
-            button:ClearAllPoints(); button:SetSize(raidSize, raidSize)
-            button:SetPoint("TOPLEFT", bar, "TOPLEFT", 2, -2 - (i - 1) * (raidSize + gap))
+            button:ClearAllPoints(); button:SetSize(raidSize, raidSize); button:SetPoint("TOPLEFT", bar, "TOPLEFT", 2, -2 - (i - 1) * (raidSize + gap))
         end
         for i, button in ipairs(worldButtons) do
-            button:ClearAllPoints(); button:SetSize(worldSize, worldSize)
-            button:SetPoint("TOPLEFT", bar, "TOPLEFT", raidHeight + gap + 2, -worldOffset - 2 - (i - 1) * (worldSize + gap))
+            button:ClearAllPoints(); button:SetSize(worldSize, worldSize); button:SetPoint("TOPLEFT", bar, "TOPLEFT", raidHeight + gap + 2, -worldOffset - 2 - (i - 1) * (worldSize + gap))
             button.icon:ClearAllPoints(); button.icon:SetPoint("TOPLEFT", 3, -3); button.icon:SetPoint("BOTTOMRIGHT", -3, 3)
         end
     end
-    bar:SetBackdropColor(0, 0, 0, 0); bar:SetBackdropBorderColor(0, 0, 0, 0)
-    bar:SetScale(db.scale or 1)
+    bar:SetBackdropColor(0, 0, 0, 0); bar:SetBackdropBorderColor(0, 0, 0, 0); bar:SetScale(db.scale or 1); bar:SetAlpha(db.alpha or 1)
 end
 
 local function ApplyDisplayMode()
-    if not bar or InCombatLockdown() then return end
-    if db.enabled then
-        bar:SetShown(true)
-        if not db.mouseoverDisplay then
-            bar:SetAlpha(db.alpha or 1)
-        end
+    if not bar then return end
+    if db.mouseoverDisplay then
+        RegisterStateDriver(bar, "visibility", "[mouseover] show; hide")
     else
-        bar:SetShown(false)
-        bar:SetAlpha(db.alpha or 1)
+        UnregisterStateDriver(bar, "visibility")
+        if not InCombatLockdown() then bar:SetShown(db.enabled) end
     end
 end
 
 local function CreateBar()
     if bar then return bar end
-    bar = CreateFrame("Frame", "CCRaidToolsMarksBar", UIParent, "BackdropTemplate")
+    bar = CreateFrame("Frame", "CCRaidToolsMarksBar", UIParent, "SecureHandlerStateTemplate,BackdropTemplate")
     bar:SetMovable(true); bar:SetClampedToScreen(true); bar:EnableMouse(true); bar:RegisterForDrag("LeftButton")
     bar:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8", edgeFile="Interface\\Buttons\\WHITE8X8", edgeSize=1})
     bar:SetBackdropColor(0,0,0,0); bar:SetBackdropBorderColor(0,0,0,0)
     bar:SetScript("OnDragStart", function(self) if not db.locked and not InCombatLockdown() then self:StartMoving() end end)
     bar:SetScript("OnDragStop", function(self) if not InCombatLockdown() then self:StopMovingOrSizing(); SavePosition() end end)
-
-    -- Do not use OnEnter/OnLeave here: child buttons can cause parent enter/leave transitions.
-    -- Instead, poll IsMouseOver so the bar remains visible while the cursor is over any part of it.
-    bar:SetScript("OnUpdate", function(self)
-        if db.mouseoverDisplay and db.enabled and not InCombatLockdown() then
-            local wantedAlpha = self:IsMouseOver() and (db.alpha or 1) or 0
-            if self:GetAlpha() ~= wantedAlpha then self:SetAlpha(wantedAlpha) end
-        end
-    end)
-
     for i = 1, 8 do
         local b = MakeIconButton(bar, 30, 30); SetMarkIcon(b.icon, i); SetupSecureRaidButton(b, i)
         AddTooltip(b, "Marque de raid " .. i, "Clic gauche : poser   |   Clic droit : retirer"); buttons[i] = b
     end
     for i = 1, 8 do
         local b = MakeIconButton(bar, 23, 23)
-        local worldID = ({5,6,3,2,7,1,4,8})[i]
-        SetMarkIcon(b.icon, worldID)
-        b.icon:SetVertexColor(1, 0.85, 0.35, 0.85)
-        SetupSecureWorldButton(b, worldID)
-        AddTooltip(b, "Marqueur au sol " .. worldID, "Clic gauche : placer   |   Clic droit : retirer"); worldButtons[i] = b
+        local visualIndex = ({5,6,3,2,7,1,4,8})[i]
+        SetMarkIcon(b.icon, visualIndex); b.icon:SetVertexColor(1, 0.85, 0.35, 0.85)
+        SetupSecureWorldButton(b, ({5,6,3,2,7,1,4,8})[i])
+        AddTooltip(b, "Marqueur au sol " .. ({5,6,3,2,7,1,4,8})[i], "Clic gauche : placer   |   Clic droit : retirer"); worldButtons[i] = b
     end
     RestorePosition(); ApplyBarLayout()
     if not InCombatLockdown() then ApplyDisplayMode() end
@@ -190,9 +169,7 @@ end
 
 local function SetMouseoverDisplay(value)
     db.mouseoverDisplay = value and true or false
-    if bar and not InCombatLockdown() then
-        ApplyDisplayMode()
-    end
+    if bar and not InCombatLockdown() then ApplyDisplayMode() end
 end
 
 local function ResetPosition()
@@ -224,5 +201,5 @@ CreateBar(); SetLocked(db.locked)
 local combatEvents = CreateFrame("Frame")
 combatEvents:RegisterEvent("PLAYER_REGEN_ENABLED")
 combatEvents:SetScript("OnEvent", function()
-    if bar then ApplyDisplayMode() end
+    if bar and not db.mouseoverDisplay then bar:SetShown(db.enabled) end
 end)
