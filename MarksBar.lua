@@ -14,11 +14,7 @@ if db.relativePoint == nil then db.relativePoint = "CENTER" end
 if db.x == nil then db.x = 0 end
 if db.y == nil then db.y = -180 end
 
-local MARK_TEXTURE = "Interface\\TargetingFrame\\UI-RaidTargetingIcons"
-local MARK_COORDS = {
-    [1] = {0, .25, 0, .25}, [2] = {.25, .5, 0, .25}, [3] = {.5, .75, 0, .25}, [4] = {.75, 1, 0, .25},
-    [5] = {0, .25, .25, .5}, [6] = {.25, .5, .25, .5}, [7] = {.5, .75, .25, .5}, [8] = {.75, 1, .25, .5},
-}
+local MARK_ICON_TEXTURE = "Interface\\TargetingFrame\\UI-RaidTargetingIcon_"
 
 local bar
 local buttons = {}
@@ -37,10 +33,14 @@ local function RestorePosition()
     bar:SetPoint(db.point or "CENTER", UIParent, db.relativePoint or "CENTER", db.x or 0, db.y or -180)
 end
 
+-- IDs Blizzard uses for raid target markers:
+-- 1 Star, 2 Circle, 3 Diamond, 4 Triangle,
+-- 5 Moon, 6 Square, 7 Cross, 8 Skull.
+-- Use Blizzard's individual icon textures so the displayed icon is
+-- guaranteed to use the same ID as the secure /tm macro.
 local function SetMarkIcon(texture, index)
-    texture:SetTexture(MARK_TEXTURE)
-    local c = MARK_COORDS[index]
-    if c then texture:SetTexCoord(c[1], c[2], c[3], c[4]) end
+    texture:SetTexture(MARK_ICON_TEXTURE .. index)
+    texture:SetTexCoord(0, 1, 0, 1)
 end
 
 local function MakeIconButton(parent, width, height)
@@ -69,13 +69,19 @@ local function AddTooltip(b, title, line1)
 end
 
 local function SetupSecureRaidButton(button, index)
-    button:SetAttribute("type1", "macro"); button:SetAttribute("macrotext1", "/tm [@target,exists] " .. index)
-    button:SetAttribute("type2", "macro"); button:SetAttribute("macrotext2", "/tm [@target,exists] 0")
+    button:SetAttribute("type1", "macro")
+    button:SetAttribute("macrotext1", "/tm [@target,exists] " .. index)
+    button:SetAttribute("type2", "macro")
+    button:SetAttribute("macrotext2", "/tm [@target,exists] 0")
 end
 
 local function SetupSecureWorldButton(button, index)
-    button:SetAttribute("type1", "worldmarker"); button:SetAttribute("marker1", index); button:SetAttribute("action1", "set")
-    button:SetAttribute("type2", "worldmarker"); button:SetAttribute("marker2", index); button:SetAttribute("action2", "clear")
+    button:SetAttribute("type1", "worldmarker")
+    button:SetAttribute("marker1", index)
+    button:SetAttribute("action1", "set")
+    button:SetAttribute("type2", "worldmarker")
+    button:SetAttribute("marker2", index)
+    button:SetAttribute("action2", "clear")
 end
 
 local function CreateRowBackground(parent)
