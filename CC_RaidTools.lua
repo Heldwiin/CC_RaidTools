@@ -98,7 +98,7 @@ local function BuildMainFrame()
     local divider=mainFrame:CreateTexture(nil,"BORDER"); divider:SetPoint("TOPLEFT",132,-29); divider:SetPoint("BOTTOMLEFT",132,8); divider:SetWidth(1); divider:SetColorTexture(0,0,0,0.9)
     local menuTitle=mainFrame:CreateFontString(nil,"OVERLAY","GameFontNormalSmall"); menuTitle:SetPoint("TOPLEFT",8,-37); menuTitle:SetText("Modules"); menuTitle:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
     local content=CreateFrame("Frame",nil,mainFrame); content:SetPoint("TOPLEFT",133,-31); content:SetPoint("BOTTOMRIGHT",-5,7); mainFrame.content=content
-    local order={"AutoPromote","AutoLog","ReadyCheck","InviteTool","Focus"}; local labels={AutoPromote="Auto Promote",AutoLog="AutoLog",ReadyCheck="Ready Check",InviteTool="Invite Tool",Focus="Focus"}; local buttons={}; local panels={}
+    local order={"AutoPromote","AutoLog","ReadyCheck","InviteTool","Focus","MarksBar"}; local labels={AutoPromote="Auto Promote",AutoLog="AutoLog",ReadyCheck="Ready Check",InviteTool="Invite Tool",Focus="Focus",MarksBar="Marks Bar"}; local buttons={}; local panels={}
     local function Select(name)
         for n,p in pairs(panels) do p:SetShown(n==name) end
         for n,b in pairs(buttons) do SetMenuButtonSkin(b,n==name) end
