@@ -9,22 +9,17 @@ local function InitDB()
 end
 local function Normalize(msg) if not msg then return "" end return msg:gsub("^%s+",""):gsub("%s+$",""):lower() end
 local function IsInviteKeyword(message)
-    local msg=Normalize(message)
-    if msg=="" then return false end
+    local msg=Normalize(message); if msg=="" then return false end
     local configured=AutoPromoteDB.inviteTool.keyword or "inv"
-    -- Plusieurs mots-clés séparés par une virgule ou un point-virgule.
-    -- Les espaces autour des séparateurs sont ignorés.
-    for word in configured:gmatch("[^,;]+") do
-        if Normalize(word)==msg then return true end
-    end
+    for word in configured:gmatch("[^,;]+") do if Normalize(word)==msg then return true end end
     return false
 end
 local function SkinEdit(box) box:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1}); box:SetBackdropColor(0.018,0.018,0.024,0.90); box:SetBackdropBorderColor(0,0,0,1); box:SetTextColor(1,1,1) end
 
 local function BuildUI(f)
     InitDB()
-    local title=f:CreateFontString(nil,"OVERLAY","GameFontNormal"); title:SetPoint("TOPLEFT",f,"TOPLEFT",10,-655); title:SetText("Invite Tool :"); title:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
-    enabled=CreateFrame("CheckButton",nil,f,"BackdropTemplate"); enabled:SetSize(24,24); enabled:SetPoint("TOPLEFT",f,"TOPLEFT",10,-675); C.SkinCheckBox(enabled)
+    local title=f:CreateFontString(nil,"OVERLAY","GameFontNormal"); title:SetPoint("TOPLEFT",f,"TOPLEFT",10,-30); title:SetText("Invite Tool :"); title:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
+    enabled=CreateFrame("CheckButton",nil,f,"BackdropTemplate"); enabled:SetSize(48,24); enabled:SetPoint("TOPLEFT",f,"TOPLEFT",10,-50); C.SkinCheckBox(enabled)
     local label=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); label:SetPoint("LEFT",enabled,"RIGHT",2,0); label:SetText("Mots-clés :")
     keyword=CreateFrame("EditBox",nil,f,"BackdropTemplate"); keyword:SetSize(145,22); keyword:SetPoint("LEFT",label,"RIGHT",6,0); keyword:SetAutoFocus(false); keyword:SetMaxLetters(60); keyword:SetFontObject("ChatFontNormal"); keyword:SetTextInsets(5,5,0,0); SkinEdit(keyword)
     enabled:SetScript("OnClick",function(self) AutoPromoteDB.inviteTool.enabled=self:GetChecked() and true or false; if self._ccrtRefresh then self:_ccrtRefresh() end end)
