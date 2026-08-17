@@ -48,10 +48,14 @@ local function SetMarkIcon(texture, index)
     if c then texture:SetTexCoord(c[1], c[2], c[3], c[4]) end
 end
 
-local function MakeIconButton(parent, width, height, secure)
-    local template = secure and "SecureActionButtonTemplate" or nil
-    local b = CreateFrame("Button", nil, parent, template)
+local function MakeIconButton(parent, width, height)
+    local b = CreateFrame("Button", nil, parent, "SecureActionButtonTemplate")
     b:SetSize(width, height)
+    b:SetMouseClickEnabled(true)
+    -- SecureActionButtonTemplate actions must listen to both press/release so they
+    -- work with the current ActionButtonUseKeyDown setting.
+    b:RegisterForClicks("AnyUp", "AnyDown")
+
     local bg = b:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.025, 0.025, 0.035, 0.92)
@@ -82,27 +86,22 @@ local function AddTooltip(b, title, line1)
 end
 
 local function SetupSecureRaidButton(button, index)
-    -- Midnight exposes raid target marking as a secure action.
-    -- Use the unit under the mouse first, falling back to the current target.
-    button:SetAttribute("type1", "raidtarget")
-    button:SetAttribute("action1", "set")
-    button:SetAttribute("marker1", index)
-    button:SetAttribute("unit1", "mouseover")
-    button:SetAttribute("type2", "raidtarget")
-    button:SetAttribute("action2", "clear")
-    button:SetAttribute("marker2", index)
-    button:SetAttribute("unit2", "mouseover")
-    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    -- Raid target marking is executed by the secure macro command /tm.
+    -- Mouseover is preferred; the current target is used as fallback.
+    button:SetAttribute("type1", "macro")
+    button:SetAttribute("macrotext1", "/tm [@mouseover,exists] " .. index .. "; [@target,exists] " .. index)
+    button:SetAttribute("type2", "macro")
+    button:SetAttribute("macrotext2", "/tm [@mouseover,exists] 0; [@target,exists] 0")
 end
 
 local function SetupSecureWorldButton(button, index)
+    -- Native secure worldmarker action. No direct protected Lua API call.
     button:SetAttribute("type1", "worldmarker")
-    button:SetAttribute("action1", "set")
     button:SetAttribute("marker1", index)
+    button:SetAttribute("action1", "set")
     button:SetAttribute("type2", "worldmarker")
-    button:SetAttribute("action2", "clear")
     button:SetAttribute("marker2", index)
-    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    button:SetAttribute("action2", "clear")
 end
 
 local function ApplyBarLayout()
@@ -158,7 +157,7 @@ local function CreateBar()
     end)
 
     for i = 1, 8 do
-        local b = MakeIconButton(bar, 30, 30, true)
+        local b = MakeIconButton(bar, 30, 30)
         SetMarkIcon(b.icon, i)
         SetupSecureRaidButton(b, i)
         AddTooltip(b, "Marque de raid " .. i, "Clic gauche : poser   |   Clic droit : retirer")
@@ -166,7 +165,7 @@ local function CreateBar()
     end
 
     for i = 1, 8 do
-        local b = MakeIconButton(bar, 30, 30, true)
+        local b = MakeIconButton(bar, 30, 30)
         SetMarkIcon(b.icon, i)
         b.icon:SetVertexColor(1, 0.85, 0.35, 0.85)
         SetupSecureWorldButton(b, i)
