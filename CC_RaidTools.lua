@@ -16,6 +16,15 @@ function C.InitDB()
     AutoPromoteDB.logging = AutoPromoteDB.logging or { lfr=false, normal=false, heroic=false, mythic=false }
     if AutoPromoteDB.raidCheckEnabled == nil then AutoPromoteDB.raidCheckEnabled = true end
     AutoPromoteDB.windowPos = AutoPromoteDB.windowPos or {}
+    AutoPromoteDB.marksBar = AutoPromoteDB.marksBar or {}
+    if AutoPromoteDB.marksBar.enabled == nil then AutoPromoteDB.marksBar.enabled = false end
+    if AutoPromoteDB.marksBar.locked == nil then AutoPromoteDB.marksBar.locked = false end
+    if AutoPromoteDB.marksBar.mouseoverDisplay == nil then AutoPromoteDB.marksBar.mouseoverDisplay = false end
+    AutoPromoteDB.focus = AutoPromoteDB.focus or {}
+    if AutoPromoteDB.focus.modifier == nil then AutoPromoteDB.focus.modifier = AutoPromoteDB.focusModifier or "shift" end
+    if AutoPromoteDB.focus.mouseButton == nil then AutoPromoteDB.focus.mouseButton = AutoPromoteDB.focusMouseButton or "1" end
+    AutoPromoteDB.focusModifier = AutoPromoteDB.focus.modifier
+    AutoPromoteDB.focusMouseButton = AutoPromoteDB.focus.mouseButton
 end
 
 function C.NormalizeName(name)
@@ -64,8 +73,7 @@ function C.SkinCheckBox(box)
     box._ccrtRefresh=refresh; box:HookScript("OnShow",refresh); refresh(box)
 end
 function C.SkinScrollBar(scroll)
-    local bar=scroll and scroll.ScrollBar; if not bar or bar._ccrtSkin then return end; bar._ccrtSkin=true
-    for _,k in ipairs({"Background","Track","Back","Forward"}) do if bar[k] then bar[k]:Hide() end end
+    local bar=scroll and scroll.ScrollBar; if not bar or bar._ccrtSkin then return end; bar._ccrtSkin=true; for _,k in ipairs({"Background","Track","Back","Forward"}) do if bar[k] then bar[k]:Hide() end end
 end
 function C.RegisterModule(name,build,refresh) C.modules[name]={build=build,refresh=refresh,built=false} end
 
