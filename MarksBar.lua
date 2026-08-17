@@ -119,37 +119,47 @@ local function ApplyBarLayout()
             button.icon:ClearAllPoints(); button.icon:SetPoint("TOPLEFT", 3, -3); button.icon:SetPoint("BOTTOMRIGHT", -3, 3)
         end
     end
-    bar:SetBackdropColor(0, 0, 0, 0); bar:SetBackdropBorderColor(0, 0, 0, 0); bar:SetScale(db.scale or 1); bar:SetAlpha(db.alpha or 1)
+    bar:SetBackdropColor(0, 0, 0, 0); bar:SetBackdropBorderColor(0, 0, 0, 0); bar:SetScale(db.scale or 1)
 end
 
 local function ApplyDisplayMode()
     if not bar then return end
-    if db.mouseoverDisplay then
-        RegisterStateDriver(bar, "visibility", "[mouseover] show; hide")
+    if db.enabled then
+        bar:Show()
+        if db.mouseoverDisplay then
+            bar:SetAlpha(bar:IsMouseOver() and (db.alpha or 1) or 0)
+        else
+            bar:SetAlpha(db.alpha or 1)
+        end
     else
-        UnregisterStateDriver(bar, "visibility")
-        if not InCombatLockdown() then bar:SetShown(db.enabled) end
+        bar:Hide()
     end
 end
 
 local function CreateBar()
     if bar then return bar end
-    bar = CreateFrame("Frame", "CCRaidToolsMarksBar", UIParent, "SecureHandlerStateTemplate,BackdropTemplate")
+    bar = CreateFrame("Frame", "CCRaidToolsMarksBar", UIParent, "BackdropTemplate")
     bar:SetMovable(true); bar:SetClampedToScreen(true); bar:EnableMouse(true); bar:RegisterForDrag("LeftButton")
     bar:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8", edgeFile="Interface\\Buttons\\WHITE8X8", edgeSize=1})
     bar:SetBackdropColor(0,0,0,0); bar:SetBackdropBorderColor(0,0,0,0)
     bar:SetScript("OnDragStart", function(self) if not db.locked and not InCombatLockdown() then self:StartMoving() end end)
     bar:SetScript("OnDragStop", function(self) if not InCombatLockdown() then self:StopMovingOrSizing(); SavePosition() end end)
+    bar:SetScript("OnUpdate", function(self)
+        if not db.enabled or not db.mouseoverDisplay then return end
+        local over = self:IsMouseOver()
+        local wanted = over and (db.alpha or 1) or 0
+        if self:GetAlpha() ~= wanted then self:SetAlpha(wanted) end
+    end)
     for i = 1, 8 do
         local b = MakeIconButton(bar, 30, 30); SetMarkIcon(b.icon, i); SetupSecureRaidButton(b, i)
         AddTooltip(b, "Marque de raid " .. i, "Clic gauche : poser   |   Clic droit : retirer"); buttons[i] = b
     end
     for i = 1, 8 do
         local b = MakeIconButton(bar, 23, 23)
-        local visualIndex = ({5,6,3,2,7,1,4,8})[i]
-        SetMarkIcon(b.icon, visualIndex); b.icon:SetVertexColor(1, 0.85, 0.35, 0.85)
-        SetupSecureWorldButton(b, ({5,6,3,2,7,1,4,8})[i])
-        AddTooltip(b, "Marqueur au sol " .. ({5,6,3,2,7,1,4,8})[i], "Clic gauche : placer   |   Clic droit : retirer"); worldButtons[i] = b
+        local wm = ({5,6,3,2,7,1,4,8})[i]
+        SetMarkIcon(b.icon, wm); b.icon:SetVertexColor(1, 0.85, 0.35, 0.85)
+        SetupSecureWorldButton(b, wm)
+        AddTooltip(b, "Marqueur au sol " .. wm, "Clic gauche : placer   |   Clic droit : retirer"); worldButtons[i] = b
     end
     RestorePosition(); ApplyBarLayout()
     if not InCombatLockdown() then ApplyDisplayMode() end
@@ -201,5 +211,5 @@ CreateBar(); SetLocked(db.locked)
 local combatEvents = CreateFrame("Frame")
 combatEvents:RegisterEvent("PLAYER_REGEN_ENABLED")
 combatEvents:SetScript("OnEvent", function()
-    if bar and not db.mouseoverDisplay then bar:SetShown(db.enabled) end
+    if bar then ApplyDisplayMode() end
 end)
