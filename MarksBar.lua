@@ -15,7 +15,6 @@ if db.x == nil then db.x = 0 end
 if db.y == nil then db.y = -180 end
 
 local MARK_ICON_TEXTURE = "Interface\\TargetingFrame\\UI-RaidTargetingIcon_"
-
 local bar
 local buttons = {}
 local worldButtons = {}
@@ -33,11 +32,6 @@ local function RestorePosition()
     bar:SetPoint(db.point or "CENTER", UIParent, db.relativePoint or "CENTER", db.x or 0, db.y or -180)
 end
 
--- IDs Blizzard uses for raid target markers:
--- 1 Star, 2 Circle, 3 Diamond, 4 Triangle,
--- 5 Moon, 6 Square, 7 Cross, 8 Skull.
--- Use Blizzard's individual icon textures so the displayed icon is
--- guaranteed to use the same ID as the secure /tm macro.
 local function SetMarkIcon(texture, index)
     texture:SetTexture(MARK_ICON_TEXTURE .. index)
     texture:SetTexCoord(0, 1, 0, 1)
@@ -139,8 +133,8 @@ local function CreateBar()
     bar:SetMovable(true); bar:SetClampedToScreen(true); bar:EnableMouse(true); bar:RegisterForDrag("LeftButton")
     bar:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8", edgeFile="Interface\\Buttons\\WHITE8X8", edgeSize=1})
     bar:SetBackdropColor(0,0,0,0); bar:SetBackdropBorderColor(0,0,0,0)
-    bar:SetScript("OnDragStart", function(self) if not db.locked then self:StartMoving() end end)
-    bar:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); SavePosition() end)
+    bar:SetScript("OnDragStart", function(self) if not db.locked and not InCombatLockdown() then self:StartMoving() end end)
+    bar:SetScript("OnDragStop", function(self) if not InCombatLockdown() then self:StopMovingOrSizing(); SavePosition() end end)
     for i = 1, 8 do
         local b = MakeIconButton(bar, 30, 30); SetMarkIcon(b.icon, i); SetupSecureRaidButton(b, i)
         AddTooltip(b, "Marque de raid " .. i, "Clic gauche : poser   |   Clic droit : retirer"); buttons[i] = b
@@ -149,12 +143,30 @@ local function CreateBar()
         local b = MakeIconButton(bar, 23, 23); SetMarkIcon(b.icon, i); b.icon:SetVertexColor(1, 0.85, 0.35, 0.85); SetupSecureWorldButton(b, i)
         AddTooltip(b, "Marqueur au sol " .. i, "Clic gauche : placer   |   Clic droit : retirer"); worldButtons[i] = b
     end
-    RestorePosition(); ApplyBarLayout(); bar:SetShown(db.enabled); return bar
+    RestorePosition(); ApplyBarLayout()
+    if not InCombatLockdown() then bar:SetShown(db.enabled) end
+    return bar
 end
 
-local function SetEnabled(value) db.enabled = value and true or false; CreateBar():SetShown(db.enabled) end
-local function SetLocked(value) db.locked = value and true or false; if bar then bar:SetMovable(not db.locked) end end
-local function ResetPosition() db.point, db.relativePoint, db.x, db.y = "CENTER", "CENTER", 0, -180; if bar then RestorePosition() end end
+local function SetEnabled(value)
+    db.enabled = value and true or false
+    if InCombatLockdown() then
+        if configRefresh then configRefresh() end
+        return
+    end
+    CreateBar():SetShown(db.enabled)
+end
+
+local function SetLocked(value)
+    db.locked = value and true or false
+    if bar and not InCombatLockdown() then bar:SetMovable(not db.locked) end
+end
+
+local function ResetPosition()
+    if InCombatLockdown() then return end
+    db.point, db.relativePoint, db.x, db.y = "CENTER", "CENTER", 0, -180
+    if bar then RestorePosition() end
+end
 
 local function BuildUI(parent)
     local title = parent:CreateFontString(nil,"OVERLAY","GameFontNormal"); title:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -30); title:SetText("Marks Bar :"); title:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
@@ -173,3 +185,9 @@ local function BuildUI(parent)
 end
 C.RegisterModule("MarksBar",BuildUI,function() if configRefresh then configRefresh() end end)
 CreateBar(); SetLocked(db.locked)
+
+local combatEvents = CreateFrame("Frame")
+combatEvents:RegisterEvent("PLAYER_REGEN_ENABLED")
+combatEvents:SetScript("OnEvent", function()
+    if bar then bar:SetShown(db.enabled) end
+end)
