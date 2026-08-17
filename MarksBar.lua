@@ -127,16 +127,18 @@ local function ApplyBarLayout()
     end
     bar:SetBackdropColor(0, 0, 0, 0); bar:SetBackdropBorderColor(0, 0, 0, 0)
     bar:SetScale(db.scale or 1)
-    bar:SetAlpha(db.alpha or 1)
 end
 
 local function ApplyDisplayMode()
     if not bar or InCombatLockdown() then return end
     if db.enabled then
         bar:SetShown(true)
-        bar:SetAlpha(db.mouseoverDisplay and 0 or (db.alpha or 1))
+        if not db.mouseoverDisplay then
+            bar:SetAlpha(db.alpha or 1)
+        end
     else
         bar:SetShown(false)
+        bar:SetAlpha(db.alpha or 1)
     end
 end
 
@@ -148,11 +150,14 @@ local function CreateBar()
     bar:SetBackdropColor(0,0,0,0); bar:SetBackdropBorderColor(0,0,0,0)
     bar:SetScript("OnDragStart", function(self) if not db.locked and not InCombatLockdown() then self:StartMoving() end end)
     bar:SetScript("OnDragStop", function(self) if not InCombatLockdown() then self:StopMovingOrSizing(); SavePosition() end end)
-    bar:SetScript("OnEnter", function(self)
-        if db.mouseoverDisplay and db.enabled and not InCombatLockdown() then self:SetAlpha(db.alpha or 1) end
-    end)
-    bar:SetScript("OnLeave", function(self)
-        if db.mouseoverDisplay and db.enabled and not InCombatLockdown() then self:SetAlpha(0) end
+
+    -- Do not use OnEnter/OnLeave here: child buttons can cause parent enter/leave transitions.
+    -- Instead, poll IsMouseOver so the bar remains visible while the cursor is over any part of it.
+    bar:SetScript("OnUpdate", function(self)
+        if db.mouseoverDisplay and db.enabled and not InCombatLockdown() then
+            local wantedAlpha = self:IsMouseOver() and (db.alpha or 1) or 0
+            if self:GetAlpha() ~= wantedAlpha then self:SetAlpha(wantedAlpha) end
+        end
     end)
 
     for i = 1, 8 do
@@ -161,11 +166,11 @@ local function CreateBar()
     end
     for i = 1, 8 do
         local b = MakeIconButton(bar, 23, 23)
-        local visualIndex = ({5,6,3,2,7,1,4,8})[i]
-        SetMarkIcon(b.icon, visualIndex)
+        local worldID = ({5,6,3,2,7,1,4,8})[i]
+        SetMarkIcon(b.icon, worldID)
         b.icon:SetVertexColor(1, 0.85, 0.35, 0.85)
-        SetupSecureWorldButton(b, ({5,6,3,2,7,1,4,8})[i])
-        AddTooltip(b, "Marqueur au sol " .. ({5,6,3,2,7,1,4,8})[i], "Clic gauche : placer   |   Clic droit : retirer"); worldButtons[i] = b
+        SetupSecureWorldButton(b, worldID)
+        AddTooltip(b, "Marqueur au sol " .. worldID, "Clic gauche : placer   |   Clic droit : retirer"); worldButtons[i] = b
     end
     RestorePosition(); ApplyBarLayout()
     if not InCombatLockdown() then ApplyDisplayMode() end
@@ -186,7 +191,6 @@ end
 local function SetMouseoverDisplay(value)
     db.mouseoverDisplay = value and true or false
     if bar and not InCombatLockdown() then
-        bar:EnableMouse(true)
         ApplyDisplayMode()
     end
 end
