@@ -1,5 +1,5 @@
 -- CC RaidTools - Guild Logo
--- Adds a subtle guild logo to the CC RaidTools configuration window.
+-- Adds a subtle guild watermark to the CC RaidTools configuration window.
 local ADDON_NAME = "CC_RaidTools"
 local LOGO = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\logo_ccraidtools.png"
 
@@ -9,20 +9,12 @@ local function ApplyGuildBranding()
     if not frame or frame._ccrtGuildBranding then return end
     frame._ccrtGuildBranding = true
 
-    -- Small logo beside the title.
-    local logo = frame:CreateTexture(nil, "OVERLAY")
-    logo:SetSize(24, 24)
-    logo:SetPoint("TOP", frame, "TOP", -67, -2)
-    logo:SetTexture(LOGO)
-    logo:SetAlpha(0.55)
-    frame._ccrtTitleLogo = logo
-
-    -- Very subtle watermark in the lower-right of the content area.
+    -- Discreet watermark in the lower-right of the configuration window.
     local watermark = frame:CreateTexture(nil, "BACKGROUND")
     watermark:SetSize(125, 125)
     watermark:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -24, 22)
     watermark:SetTexture(LOGO)
-    watermark:SetAlpha(0.075)
+    watermark:SetAlpha(0.18)
     frame._ccrtWatermark = watermark
 end
 
