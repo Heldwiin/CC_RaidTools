@@ -1,6 +1,9 @@
 -- CC RaidTools - AutoLog
 local C=CCRT
 local startedByAddon=false
+local lastStartAttempt=0
+local lastStopAttempt=0
+local ACTION_COOLDOWN=5
 
 local function CheckAutoLog()
     C.InitDB()
@@ -11,14 +14,30 @@ local function CheckAutoLog()
         if difficultyID==23 and d.dungeonMythic then shouldLog=true elseif difficultyID==8 and d.dungeonMythicPlus then shouldLog=true end
     end
     local active=LoggingCombat()
+    local now=GetTime()
+
     if shouldLog and not active then
-        LoggingCombat(true); startedByAddon=true; AutoPromoteDB.loggingStartedByAddon=true
-        print("|cff33ff99[CC RaidTools]|r Enregistrement des combats démarré.")
+        -- Several WoW instance/group events can fire in a short burst. Avoid
+        -- repeatedly calling LoggingCombat(true) and printing the same message.
+        if not startedByAddon and not AutoPromoteDB.loggingStartedByAddon and (now-lastStartAttempt)>=ACTION_COOLDOWN then
+            lastStartAttempt=now
+            LoggingCombat(true)
+            startedByAddon=true
+            AutoPromoteDB.loggingStartedByAddon=true
+            print("|cff33ff99[CC RaidTools]|r Enregistrement des combats démarré.")
+        end
     elseif not shouldLog and active and (startedByAddon or AutoPromoteDB.loggingStartedByAddon) then
-        LoggingCombat(false); startedByAddon=false; AutoPromoteDB.loggingStartedByAddon=false
-        print("|cff33ff99[CC RaidTools]|r Enregistrement des combats arrêté.")
+        -- Same protection for stop requests when multiple zone events arrive together.
+        if (now-lastStopAttempt)>=ACTION_COOLDOWN then
+            lastStopAttempt=now
+            LoggingCombat(false)
+            startedByAddon=false
+            AutoPromoteDB.loggingStartedByAddon=false
+            print("|cff33ff99[CC RaidTools]|r Enregistrement des combats arrêté.")
+        end
     elseif not active and not shouldLog then
-        startedByAddon=false; AutoPromoteDB.loggingStartedByAddon=false
+        startedByAddon=false
+        AutoPromoteDB.loggingStartedByAddon=false
     end
 end
 C.CheckAutoLog=CheckAutoLog
