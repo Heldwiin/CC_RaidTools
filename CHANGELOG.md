@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.1.1
+
+Correctifs, performances et nettoyage général.
+
+- Correction du défilement du Ready Check pour les raids importants.
+- Optimisation du rafraîchissement des auras du Ready Check avec cache par joueur.
+- Correction du mode Test du Ready Check.
+- Correction du défilement de la liste Auto Promote.
+- Sécurisation des accès aux champs d'aura potentiellement secrets.
+- Correction du mapping des World Markers et des tooltips `/wm`.
+- Correction du matching des rangs Auto Promote pour les joueurs inter-royaumes et homonymes.
+- Conservation des vérifications de combat pour les actions protégées.
+- Nettoyage des fonctions globales inutilisées et sécurisation du module Focus.
+
+## 1.1.0
+
+Clean-up, stabilité et sécurisation de l'addon.
+
+- Nettoyage général de l'architecture et des commandes.
+- Sécurisation des actions protégées et des changements pendant le combat.
+- Ready Check corrigé et optimisé.
+- AutoLog fiabilisé, notamment après `/reload`.
+- Marks Bar mieux protégée vis-à-vis du combat.
+- SavedVariables initialisées de manière défensive.
+- Interface et branding nettoyés.
+- Documentation et règles de développement mises à jour.
+
 ## 1.0
 
 Première version de référence de **CC RaidTools**.
