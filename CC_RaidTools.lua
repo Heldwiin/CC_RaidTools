@@ -95,6 +95,36 @@ local function SetMenuButtonSkin(button,selected)
     else button.bg:SetColorTexture(0.045,0.045,0.055,0.94); button.text:SetTextColor(0.90,0.90,0.90) end
 end
 
+-- Measure the currently selected module from its direct children.
+-- This lets each module determine its own required height without hard-coding sizes in the core.
+local function GetModuleHeight(panel)
+    if not panel then return 0 end
+    local top = panel:GetTop()
+    if not top then return 0 end
+    local lowest = top
+    for _,child in ipairs({panel:GetChildren()}) do
+        if child:IsShown() then
+            local bottom = child:GetBottom()
+            if bottom and bottom < lowest then lowest = bottom end
+        end
+    end
+    local height = top - lowest + 18
+    if height < 120 then height = 120 end
+    return height
+end
+
+local function ResizeMainFrame(name)
+    if not mainFrame or not mainFrame.modulePanels then return end
+    local panel = mainFrame.modulePanels[name]
+    if not panel then return end
+    local height = GetModuleHeight(panel)
+    -- The module list on the left is itself about 254 px tall, so keep enough room for it.
+    if height < 285 then height = 285 end
+    if height > 705 then height = 705 end
+    mainFrame:SetHeight(height)
+    mainFrame._ccrtLastHeight = height
+end
+
 local function BuildMainFrame()
     if mainFrame then return mainFrame end
     C.InitDB()
@@ -111,6 +141,11 @@ local function BuildMainFrame()
         for n,p in pairs(panels) do p:SetShown(n==name) end
         for n,b in pairs(buttons) do SetMenuButtonSkin(b,n==name) end
         local m=C.modules[name]; if m and m.refresh then m.refresh(panels[name]) end
+        if C_Timer and C_Timer.After then
+            C_Timer.After(0,function() if mainFrame and mainFrame:IsShown() then ResizeMainFrame(name) end end)
+        else
+            ResizeMainFrame(name)
+        end
     end
     for i,name in ipairs(order) do
         local b=CreateFrame("Button",nil,mainFrame); b:SetSize(116,28); b:SetPoint("TOPLEFT",8,-62-(i-1)*32)
