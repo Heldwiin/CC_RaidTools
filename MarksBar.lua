@@ -44,12 +44,10 @@ local function CreateBar()
     for i=1,8 do
         local b=MakeIconButton(bar,23,23)
         local wm=WORLD_MARK_COMMAND[i]
-        -- The icon uses Blizzard's target-marker index (same order as the target marker row).
-        -- Only the secure world-marker action uses the /wm command mapping.
         SetMarkIcon(b.icon,i)
         b.icon:SetVertexColor(1,0.85,0.35,0.85)
         SetupSecureWorldButton(b,wm)
-        AddTooltip(b,"Marqueur au sol "..i,"Clic gauche : placer   |   Clic droit : retirer")
+        AddTooltip(b,"Marqueur au sol "..i,"Commande monde : /wm "..wm.."   |   Clic gauche : placer   |   Clic droit : retirer")
         worldButtons[i]=b
     end
     RestorePosition(); ApplyBarLayout(); ApplyDisplayMode(); return bar
