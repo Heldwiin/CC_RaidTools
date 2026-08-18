@@ -14,3 +14,4 @@ Focus.lua
 MarksBar.lua
 CloseButtonSkin.lua
 GuildBranding.lua
+ModuleIcons.lua
