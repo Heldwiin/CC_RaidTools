@@ -59,7 +59,6 @@ end
 
 local function ApplyPanelIcon(panel, texturePath)
     if not panel or not texturePath then return end
-
     if not panel._ccrtModuleHeaderIconBg then
         local bg = panel:CreateTexture(nil, "BORDER")
         bg:SetSize(52, 52)
@@ -67,7 +66,6 @@ local function ApplyPanelIcon(panel, texturePath)
         bg:SetColorTexture(0.008, 0.008, 0.012, 0.72)
         panel._ccrtModuleHeaderIconBg = bg
     end
-
     if not panel._ccrtModuleHeaderIcon then
         local icon = panel:CreateTexture(nil, "ARTWORK")
         icon:SetSize(46, 46)
@@ -90,7 +88,6 @@ local function ApplyModuleIcons()
             local texturePath = MODULE_ICONS[moduleName]
             if texturePath then
                 StyleModuleButton(button)
-
                 if not button._ccrtModuleIconBg then
                     local iconBg = button:CreateTexture(nil, "ARTWORK")
                     iconBg:SetSize(31, 31)
@@ -98,7 +95,6 @@ local function ApplyModuleIcons()
                     iconBg:SetColorTexture(0.008, 0.008, 0.012, 0.90)
                     button._ccrtModuleIconBg = iconBg
                 end
-
                 if not button._ccrtModuleIcon then
                     local icon = button:CreateTexture(nil, "OVERLAY")
                     icon:SetSize(30, 30)
@@ -110,7 +106,6 @@ local function ApplyModuleIcons()
                     button._ccrtModuleIcon:SetTexture(texturePath)
                     button._ccrtModuleIcon:SetSize(30, 30)
                 end
-
                 if button.text then
                     button.text:ClearAllPoints()
                     button.text:SetPoint("LEFT", button._ccrtModuleIconBg, "RIGHT", 8, 0)
@@ -124,12 +119,20 @@ local function ApplyModuleIcons()
         end
     end
 
-    -- Each module page gets its own HD icon in the top-right corner.
-    -- This stays inside the content panel, so it never overlaps the CC RaidTools branding on the left.
     if frame.modulePanels then
         for moduleName, panel in pairs(frame.modulePanels) do
             local texturePath = MODULE_ICONS[moduleName]
             if texturePath then ApplyPanelIcon(panel, texturePath) end
+        end
+
+        -- Ready Check test button sits directly under the module enable switch.
+        local readyPanel = frame.modulePanels.ReadyCheck
+        local test = readyPanel and readyPanel.raidCheckTestButton
+        if test then
+            test:ClearAllPoints()
+            test:SetSize(92, 22)
+            test:SetPoint("TOPLEFT", readyPanel, "TOPLEFT", 10, -82)
+            test:SetText("Tester")
         end
     end
 end
