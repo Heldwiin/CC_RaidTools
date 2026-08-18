@@ -30,6 +30,8 @@ function AutoPromoteUI_RefreshRanks()
         r.rankIndex=info.index; r.rankName=info.name; r.text:SetText(info.name); local saved=AutoPromoteDB.rankNames[info.name]; if saved==nil then saved=AutoPromoteDB.ranks[info.index]; if saved~=nil then AutoPromoteDB.rankNames[info.name]=saved and true or false end end; AutoPromoteDB.ranks[info.index]=saved and true or false; r:SetChecked(saved and true or false); if r._ccrtRefresh then r:_ccrtRefresh() end; r:Show()
     end
     for i=#list+1,#rankRows do rankRows[i]:Hide() end
+    if mainFrame.rankChild then mainFrame.rankChild:SetHeight(math.max(26,#list*26)) end
+    if mainFrame.rankSection then mainFrame.rankSection:SetHeight(math.max(26,#list*26)) end
 end
 
 local function BuildUI(f)
@@ -41,7 +43,7 @@ local function BuildUI(f)
     local listLabel=f:CreateFontString(nil,"OVERLAY","GameFontNormal"); listLabel:SetPoint("TOPLEFT",add,"BOTTOMLEFT",0,-14); listLabel:SetText("Joueurs Auto Promote :"); listLabel:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
     local ns=CreateFrame("ScrollFrame",nil,f,"UIPanelScrollFrameTemplate"); ns:SetPoint("TOPLEFT",listLabel,"BOTTOMLEFT",0,-6); ns:SetSize(268,110); C.SkinScrollBar(ns); local nc=CreateFrame("Frame",nil,ns); nc:SetSize(260,110); ns:SetScrollChild(nc); f.nameChild=nc
     local rankLabel=f:CreateFontString(nil,"OVERLAY","GameFontNormal"); rankLabel:SetPoint("TOPLEFT",ns,"BOTTOMLEFT",-4,-14); rankLabel:SetText("Rang à Auto Promote :"); rankLabel:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
-    local rs=CreateFrame("ScrollFrame",nil,f,"UIPanelScrollFrameTemplate"); rs:SetPoint("TOPLEFT",rankLabel,"BOTTOMLEFT",4,-6); rs:SetSize(264,100); C.SkinScrollBar(rs); local rc=CreateFrame("Frame",nil,rs); rc:SetSize(256,100); rs:SetScrollChild(rc); f.rankChild=rc
+    local rc=CreateFrame("Frame",nil,f); rc:SetPoint("TOPLEFT",rankLabel,"BOTTOMLEFT",4,-6); rc:SetSize(256,182); f.rankChild=rc; f.rankSection=rc
     local ng=f:CreateFontString(nil,"OVERLAY","GameFontDisableSmall"); ng:SetPoint("TOPLEFT",rc); ng:SetText("Pas de guilde, ou liste des rangs en cours de chargement..."); ng:SetWidth(250); ng:SetJustifyH("LEFT"); f.noGuildText=ng
 end
 local function Refresh() C.InitDB(); RequestRoster(); RefreshRanksData(); AutoPromoteUI_RefreshNames(); AutoPromoteUI_RefreshRanks() end
