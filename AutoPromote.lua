@@ -2,7 +2,6 @@
 local C=CCRT
 local discoveredRanks,guildRankByName,pending={},{},{}
 local nameRows,rankRows={},{}
-
 local function RequestRoster() if not IsInGuild() then return end; if C_GuildInfo and C_GuildInfo.GuildRoster then C_GuildInfo.GuildRoster() elseif GuildRoster then GuildRoster() end end
 local function RefreshRanksData()
     wipe(discoveredRanks); wipe(guildRankByName); if not IsInGuild() then return end
@@ -13,6 +12,9 @@ local function CheckAndPromote()
     for i=1,GetNumGroupMembers() do local name,rank=GetRaidRosterInfo(i); if name and rank==0 then local should=AutoPromoteDB.names[name] and true or false; if not should then local idx=guildRankByName[C.StripRealm(name)]; local rn=idx and discoveredRanks[idx]; should=idx and (AutoPromoteDB.ranks[idx] or (rn and AutoPromoteDB.rankNames[rn])) end; if should then if InCombatLockdown() then pending[name]=true else PromoteToAssistant(name); print("|cff33ff99[CC RaidTools]|r "..name.." promu(e) assistant de raid.") end end end end
 end
 C.CheckAndPromote=CheckAndPromote
+function C.AddAutoPromoteName(name) C.InitDB(); name=C.NormalizeName(name); if not name then return false end; AutoPromoteDB.names[name]=true; return true end
+function C.RemoveAutoPromoteName(name) C.InitDB(); name=C.NormalizeName(name); if not name then return false end; AutoPromoteDB.names[name]=nil; return true end
+function C.ListAutoPromoteNames() C.InitDB(); local list={}; for n in pairs(AutoPromoteDB.names) do list[#list+1]=n end; table.sort(list); return list end
 
 local mainFrame
 function AutoPromoteUI_RefreshNames()
@@ -33,7 +35,6 @@ function AutoPromoteUI_RefreshRanks()
     if mainFrame.rankChild then mainFrame.rankChild:SetHeight(math.max(26,#list*26)) end
     if mainFrame.rankSection then mainFrame.rankSection:SetHeight(math.max(26,#list*26)) end
 end
-
 local function BuildUI(f)
     mainFrame=f
     local addLabel=f:CreateFontString(nil,"OVERLAY","GameFontNormal"); addLabel:SetPoint("TOPLEFT",16,-30); addLabel:SetText("Ajouter des joueurs (un par ligne, format Nom-Royaume) :"); addLabel:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B); addLabel:SetWidth(288); addLabel:SetHeight(28); addLabel:SetJustifyH("LEFT"); addLabel:SetJustifyV("TOP")
@@ -50,5 +51,11 @@ local function Refresh() C.InitDB(); RequestRoster(); RefreshRanksData(); AutoPr
 C.RegisterModule("AutoPromote",BuildUI,Refresh)
 
 local e=CreateFrame("Frame"); for _,ev in ipairs({"GROUP_ROSTER_UPDATE","PLAYER_ENTERING_WORLD","GUILD_ROSTER_UPDATE","PLAYER_REGEN_ENABLED"}) do e:RegisterEvent(ev) end
-e:SetScript("OnEvent",function(_,ev) if ev=="GUILD_ROSTER_UPDATE" then RefreshRanksData(); AutoPromoteUI_RefreshRanks() elseif ev=="PLAYER_REGEN_ENABLED" then for n in pairs(pending) do PromoteToAssistant(n); print("|cff33ff99[CC RaidTools]|r "..n.." promu(e) assistant de raid (après combat)."); pending[n]=nil end else CheckAndPromote() end end)
+e:SetScript("OnEvent",function(_,ev)
+    if ev=="GUILD_ROSTER_UPDATE" then RefreshRanksData(); AutoPromoteUI_RefreshRanks()
+    elseif ev=="PLAYER_REGEN_ENABLED" then
+        if IsInRaid() and UnitIsGroupLeader("player") then CheckAndPromote() end
+        wipe(pending)
+    else CheckAndPromote() end
+end)
 RequestRoster()
