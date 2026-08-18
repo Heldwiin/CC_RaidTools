@@ -1,16 +1,14 @@
 -- CC RaidTools - Module menu icons
--- Adds custom HD CC RaidTools icons to the module selector.
+-- Custom high-resolution icons for the module selector.
 local ADDON_NAME = "CC_RaidTools"
 
-local ICON_PATH = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\"
-
 local MODULE_ICONS = {
-    AutoPromote = ICON_PATH .. "AutoPromote.png",
-    AutoLog     = ICON_PATH .. "AutoLog.png",
-    ReadyCheck  = ICON_PATH .. "ReadyCheck.png",
-    InviteTool  = ICON_PATH .. "InviteTool.png",
-    Focus       = ICON_PATH .. "Focus.png",
-    MarksBar    = ICON_PATH .. "MarksBar.png",
+    AutoPromote = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\AutoPromote.png",
+    AutoLog     = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\AutoLog.png",
+    ReadyCheck  = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\ReadyCheck.png",
+    InviteTool  = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\InviteTool.png",
+    Focus       = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\Focus.png",
+    MarksBar    = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\MarksBar.png",
 }
 
 local function ApplyModuleIcons()
@@ -20,17 +18,19 @@ local function ApplyModuleIcons()
 
     for moduleName, button in pairs(frame.menuButtons) do
         local texturePath = MODULE_ICONS[moduleName]
-        if texturePath and not button._ccrtModuleIcon then
-            local icon = button:CreateTexture(nil, "ARTWORK")
-            icon:SetSize(20, 20)
-            icon:SetPoint("LEFT", button, "LEFT", 5, 0)
-            icon:SetTexture(texturePath)
-            icon:SetTexCoord(0, 1, 0, 1)
-            button._ccrtModuleIcon = icon
+        if texturePath then
+            if not button._ccrtModuleIcon then
+                local icon = button:CreateTexture(nil, "ARTWORK")
+                icon:SetSize(24, 24)
+                icon:SetPoint("LEFT", button, "LEFT", 5, 0)
+                icon:SetTexture(texturePath)
+                icon:SetTexCoord(0, 1, 0, 1)
+                button._ccrtModuleIcon = icon
+            end
 
             if button.text then
                 button.text:ClearAllPoints()
-                button.text:SetPoint("LEFT", icon, "RIGHT", 6, 0)
+                button.text:SetPoint("LEFT", button._ccrtModuleIcon, "RIGHT", 7, 0)
             end
         end
     end
