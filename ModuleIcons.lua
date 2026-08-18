@@ -1,5 +1,5 @@
 -- CC RaidTools - Module menu icons
--- Custom high-resolution icons and visual treatment for the module selector.
+-- Custom high-resolution icons and module header icons.
 local ADDON_NAME = "CC_RaidTools"
 
 local MODULE_ICONS = {
@@ -14,10 +14,8 @@ local MODULE_ICONS = {
 local function StyleModuleButton(button)
     if not button or button._ccrtModuleStyled then return end
     button._ccrtModuleStyled = true
-
     button:SetSize(128, 34)
 
-    -- Clean, compact card inspired by the reference UI.
     local bg = button:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.018, 0.018, 0.024, 0.96)
@@ -50,64 +48,88 @@ local function StyleModuleButton(button)
     button._ccrtModuleHover = hover
 
     button:HookScript("OnEnter", function(self)
-        if self._ccrtModuleBg then
-            self._ccrtModuleBg:SetColorTexture(0.075, 0.065, 0.10, 0.98)
-        end
-        if self._ccrtModuleAccent then
-            self._ccrtModuleAccent:SetColorTexture(0.451, 0.506, 1, 1)
-        end
+        if self._ccrtModuleBg then self._ccrtModuleBg:SetColorTexture(0.075, 0.065, 0.10, 0.98) end
+        if self._ccrtModuleAccent then self._ccrtModuleAccent:SetColorTexture(0.451, 0.506, 1, 1) end
     end)
     button:HookScript("OnLeave", function(self)
-        if self._ccrtModuleBg and not self.selected then
-            self._ccrtModuleBg:SetColorTexture(0.018, 0.018, 0.024, 0.96)
-        end
-        if self._ccrtModuleAccent and not self.selected then
-            self._ccrtModuleAccent:SetColorTexture(0.451, 0.506, 1, 0)
-        end
+        if self._ccrtModuleBg and not self.selected then self._ccrtModuleBg:SetColorTexture(0.018, 0.018, 0.024, 0.96) end
+        if self._ccrtModuleAccent and not self.selected then self._ccrtModuleAccent:SetColorTexture(0.451, 0.506, 1, 0) end
     end)
+end
+
+local function ApplyPanelIcon(panel, texturePath)
+    if not panel or not texturePath then return end
+
+    if not panel._ccrtModuleHeaderIconBg then
+        local bg = panel:CreateTexture(nil, "BORDER")
+        bg:SetSize(52, 52)
+        bg:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -8, -7)
+        bg:SetColorTexture(0.008, 0.008, 0.012, 0.72)
+        panel._ccrtModuleHeaderIconBg = bg
+    end
+
+    if not panel._ccrtModuleHeaderIcon then
+        local icon = panel:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(46, 46)
+        icon:SetPoint("CENTER", panel._ccrtModuleHeaderIconBg, "CENTER")
+        icon:SetTexture(texturePath)
+        icon:SetTexCoord(0, 1, 0, 1)
+        panel._ccrtModuleHeaderIcon = icon
+    else
+        panel._ccrtModuleHeaderIcon:SetTexture(texturePath)
+    end
 end
 
 local function ApplyModuleIcons()
     if not CCRT or not CCRT.GetMainFrame then return end
     local frame = CCRT.GetMainFrame()
-    if not frame or not frame.menuButtons then return end
+    if not frame then return end
 
-    for moduleName, button in pairs(frame.menuButtons) do
-        local texturePath = MODULE_ICONS[moduleName]
-        if texturePath then
-            StyleModuleButton(button)
+    if frame.menuButtons then
+        for moduleName, button in pairs(frame.menuButtons) do
+            local texturePath = MODULE_ICONS[moduleName]
+            if texturePath then
+                StyleModuleButton(button)
 
-            if not button._ccrtModuleIconBg then
-                local iconBg = button:CreateTexture(nil, "ARTWORK")
-                iconBg:SetSize(31, 31)
-                iconBg:SetPoint("LEFT", button, "LEFT", 1, 0)
-                iconBg:SetColorTexture(0.008, 0.008, 0.012, 0.90)
-                button._ccrtModuleIconBg = iconBg
-            end
+                if not button._ccrtModuleIconBg then
+                    local iconBg = button:CreateTexture(nil, "ARTWORK")
+                    iconBg:SetSize(31, 31)
+                    iconBg:SetPoint("LEFT", button, "LEFT", 1, 0)
+                    iconBg:SetColorTexture(0.008, 0.008, 0.012, 0.90)
+                    button._ccrtModuleIconBg = iconBg
+                end
 
-            if not button._ccrtModuleIcon then
-                local icon = button:CreateTexture(nil, "OVERLAY")
-                icon:SetSize(30, 30)
-                icon:SetPoint("CENTER", button._ccrtModuleIconBg, "CENTER")
-                icon:SetTexture(texturePath)
-                icon:SetTexCoord(0, 1, 0, 1)
-                button._ccrtModuleIcon = icon
-            else
-                button._ccrtModuleIcon:SetTexture(texturePath)
-                button._ccrtModuleIcon:SetSize(30, 30)
-            end
+                if not button._ccrtModuleIcon then
+                    local icon = button:CreateTexture(nil, "OVERLAY")
+                    icon:SetSize(30, 30)
+                    icon:SetPoint("CENTER", button._ccrtModuleIconBg, "CENTER")
+                    icon:SetTexture(texturePath)
+                    icon:SetTexCoord(0, 1, 0, 1)
+                    button._ccrtModuleIcon = icon
+                else
+                    button._ccrtModuleIcon:SetTexture(texturePath)
+                    button._ccrtModuleIcon:SetSize(30, 30)
+                end
 
-            if button.text then
-                button.text:ClearAllPoints()
-                button.text:SetPoint("LEFT", button._ccrtModuleIconBg, "RIGHT", 8, 0)
-                button.text:SetTextColor(0.96, 0.96, 0.96)
-                button.text:SetShadowOffset(1, -1)
-                button.text:SetShadowColor(0, 0, 0, 1)
-                local font, _, flags = button.text:GetFont()
-                if font then
-                    button.text:SetFont(font, 12, flags or "OUTLINE")
+                if button.text then
+                    button.text:ClearAllPoints()
+                    button.text:SetPoint("LEFT", button._ccrtModuleIconBg, "RIGHT", 8, 0)
+                    button.text:SetTextColor(0.96, 0.96, 0.96)
+                    button.text:SetShadowOffset(1, -1)
+                    button.text:SetShadowColor(0, 0, 0, 1)
+                    local font, _, flags = button.text:GetFont()
+                    if font then button.text:SetFont(font, 12, flags or "OUTLINE") end
                 end
             end
+        end
+    end
+
+    -- Each module page gets its own HD icon in the top-right corner.
+    -- This stays inside the content panel, so it never overlaps the CC RaidTools branding on the left.
+    if frame.modulePanels then
+        for moduleName, panel in pairs(frame.modulePanels) do
+            local texturePath = MODULE_ICONS[moduleName]
+            if texturePath then ApplyPanelIcon(panel, texturePath) end
         end
     end
 end
