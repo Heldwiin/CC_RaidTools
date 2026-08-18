@@ -25,15 +25,16 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.1.0**
+**1.1.1**
 
-### v1.1.0 — Clean-up & stabilité
+### v1.1.1 — Fixes & Performance
 
-- Nettoyage général de l'architecture et des commandes.
-- Sécurisation des éléments protégés et des actions en combat.
-- Ready Check corrigé et optimisé.
-- AutoLog fiabilisé, y compris après `/reload`.
-- Marks Bar mieux protégée contre les modifications pendant le combat.
-- SavedVariables initialisées de manière défensive.
-- Interface et branding nettoyés.
-- Documentation et règles de développement mises à jour.
+- Correction de l'affichage et du défilement du Ready Check pour les gros raids.
+- Optimisation du rafraîchissement des auras du Ready Check avec throttling.
+- Sécurisation supplémentaire de l'accès aux champs d'auras potentiellement protégés.
+- Correction du mode Test du Ready Check pour utiliser le cycle normal.
+- Correction du défilement de la liste Auto Promote.
+- Mise à jour de l'affichage de version du Ready Check.
+- Restauration des identifiants Vantus manquants et suppression du doublon.
+- Centralisation du mapping des marqueurs au sol.
+- Corrections générales de stabilité.
