@@ -5,7 +5,6 @@ CCRT=C
 C.modules=C.modules or {}
 C.BRAND_R=0.451; C.BRAND_G=0.506; C.BRAND_B=1
 local GUI_TEXTURES="Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\"
-
 function C.InitDB()
     AutoPromoteDB=AutoPromoteDB or {}
     AutoPromoteDB.names=AutoPromoteDB.names or {}
@@ -20,7 +19,7 @@ function C.NormalizeName(name) if not name then return nil end; name=name:gsub("
 function C.ApplyPanelSkin(frame)
     if not frame then return end
     frame:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
-    frame:SetBackdropColor(0.018,0.018,0.024,0.98); frame:SetBackdropBorderColor(0,0,0,1)
+    frame:SetBackdropColor(0.018,0.018,0.024,0.78); frame:SetBackdropBorderColor(0,0,0,1)
 end
 function C.SkinButton(button)
     if not button or button._ccrtSkin then return end; button._ccrtSkin=true
@@ -49,7 +48,16 @@ local function SaveMainFramePosition() if not mainFrame or not AutoPromoteDB the
 local function RestoreMainFramePosition() if not mainFrame then return end; mainFrame:ClearAllPoints(); local p=AutoPromoteDB and AutoPromoteDB.windowPos; if p and p.point then mainFrame:SetPoint(p.point,UIParent,p.relativePoint or p.point,p.x or 0,p.y or 0) else mainFrame:SetPoint("CENTER",UIParent,"CENTER",260,0) end end
 local function SetMenuButtonSkin(button,selected) button.selected=selected and true or false; if selected then button.bg:SetColorTexture(C.BRAND_R*0.28,C.BRAND_G*0.28,C.BRAND_B*0.28,0.95); button.text:SetTextColor(1,1,1) else button.bg:SetColorTexture(0.045,0.045,0.055,0.94); button.text:SetTextColor(0.90,0.90,0.90) end end
 local function GetModuleHeight(panel) if not panel then return 0 end; local top=panel:GetTop(); if not top then return 0 end; local lowest=top; for _,child in ipairs({panel:GetChildren()}) do if child:IsShown() then local bottom=child:GetBottom(); if bottom and bottom<lowest then lowest=bottom end end end; local height=top-lowest+18; if height<120 then height=120 end; return height end
-local function ResizeMainFrame(name) if not mainFrame or not mainFrame.modulePanels then return end; local panel=mainFrame.modulePanels[name]; if not panel then return end; local height=GetModuleHeight(panel); local minimums={AutoPromote=410,MarksBar=350}; if minimums[name] and height<minimums[name] then height=minimums[name] end; if height<285 then height=285 end; if height>705 then height=705 end; mainFrame:SetHeight(height); mainFrame._ccrtLastHeight=height end
+local function ResizeMainFrame(name)
+    if not mainFrame or not mainFrame.modulePanels then return end
+    local panel=mainFrame.modulePanels[name]; if not panel then return end
+    local height=GetModuleHeight(panel)
+    local minimums={AutoPromote=690,MarksBar=350}
+    if minimums[name] and height<minimums[name] then height=minimums[name] end
+    if height<285 then height=285 end
+    if height>705 then height=705 end
+    mainFrame:SetHeight(height); mainFrame._ccrtLastHeight=height
+end
 local function BuildMainFrame()
     if mainFrame then return mainFrame end; C.InitDB()
     mainFrame=CreateFrame("Frame","CCRaidToolsFrame",UIParent,"BackdropTemplate"); mainFrame:SetSize(640,705); mainFrame:SetMovable(true); mainFrame:EnableMouse(true); mainFrame:RegisterForDrag("LeftButton")
