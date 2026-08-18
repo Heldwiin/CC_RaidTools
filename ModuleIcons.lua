@@ -3,12 +3,17 @@
 local ADDON_NAME = "CC_RaidTools"
 
 local MODULE_ICONS = {
-    AutoPromote = "Interface\\Icons\\Achievement_GuildPerk_MassResurrection",
-    AutoLog     = "Interface\\Icons\\INV_Misc_Book_09",
-    ReadyCheck  = "Interface\\Icons\\Spell_Holy_DivineProtection",
+    -- Group leader crown
+    AutoPromote = "Interface\\GroupFrame\\UI-Group-LeaderIcon",
+    -- White parchment / note
+    AutoLog     = "Interface\\Icons\\INV_Misc_Note_01",
+    -- Native green Ready Check tick
+    ReadyCheck  = "Interface\\RaidFrame\\ReadyCheck-Ready",
+    -- Target icon
     InviteTool  = "Interface\\Icons\\INV_Misc_GroupLooking",
-    Focus       = "Interface\\Icons\\Ability_Hunter_MarkedForDeath",
-    MarksBar    = "Interface\\Icons\\Achievement_Raid_DragonSoul_MadnessofDeathwing",
+    Focus       = "Interface\\Icons\\Ability_Hunter_FocusedAim",
+    -- Raid marker icon (star)
+    MarksBar    = "Interface\\TargetingFrame\\UI-RaidTargetingIcon_1",
 }
 
 local function ApplyModuleIcons()
