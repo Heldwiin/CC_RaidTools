@@ -25,7 +25,15 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.1.1**
+**1.1.2**
+
+### v1.1.2 — Release packaging & clean-up
+
+- Synchronisation de toutes les chaînes de version sur 1.1.2.
+- Génération automatique de l'archive de release via GitHub Actions.
+- L'archive distribuée contient uniquement les fichiers nécessaires à l'addon.
+- Les fichiers de développement et de documentation (`AGENTS.md`, `README.md`, `CHANGELOG.md`, `.github/`, etc.) ne sont pas inclus dans le ZIP WoWUp.
+- Nettoyage général du processus de publication.
 
 ### v1.1.1 — Fixes & Performance
 
@@ -34,18 +42,16 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - Sécurisation supplémentaire de l'accès aux champs d'auras potentiellement protégés.
 - Correction du mode Test du Ready Check pour utiliser le cycle normal.
 - Correction du défilement de la liste Auto Promote.
-- Correction du matching des rangs Auto Promote pour les joueurs inter-royaumes et les homonymes.
+- Restauration des identifiants Vantus manquants.
 - Correction du mapping des World Markers et des tooltips `/wm`.
-- Nettoyage de fonctions globales inutilisées et sécurisation supplémentaire du module Focus.
-- Restauration des identifiants Vantus manquants et suppression du doublon.
-- Corrections générales de stabilité.
+- Améliorations générales de stabilité.
 
 ### v1.1.0 — Clean-up & stabilité
 
 - Nettoyage général de l'architecture et des commandes.
 - Sécurisation des éléments protégés et des actions en combat.
 - Ready Check corrigé et optimisé.
-- AutoLog fiabilisé, notamment après `/reload`.
+- AutoLog fiabilisé, y compris après `/reload`.
 - Marks Bar mieux protégée contre les modifications pendant le combat.
 - SavedVariables initialisées de manière défensive.
 - Interface et branding nettoyés.
