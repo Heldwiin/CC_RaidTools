@@ -1,79 +1,30 @@
 -- CC RaidTools - Core
 local ADDON_NAME="CC_RaidTools"
-local C=CCRT or {}
-CCRT=C
-C.modules=C.modules or {}
-C.BRAND_R=0.451; C.BRAND_G=0.506; C.BRAND_B=1
+local C=CCRT or {}; CCRT=C; C.modules=C.modules or {}; C.BRAND_R=0.451; C.BRAND_G=0.506; C.BRAND_B=1
 local GUI_TEXTURES="Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\"
 function C.InitDB()
-    AutoPromoteDB=AutoPromoteDB or {}
-    AutoPromoteDB.names=AutoPromoteDB.names or {}
-    AutoPromoteDB.ranks=AutoPromoteDB.ranks or {}
-    AutoPromoteDB.rankNames=AutoPromoteDB.rankNames or {}
-    AutoPromoteDB.windowPos=AutoPromoteDB.windowPos or {}
-    AutoPromoteDB.focus=AutoPromoteDB.focus or {}
-    AutoPromoteDB.marksBar=AutoPromoteDB.marksBar or {}
-    AutoPromoteDB.logging=AutoPromoteDB.logging or {}
-    local logging=AutoPromoteDB.logging
-    if logging.lfr==nil then logging.lfr=false end
-    if logging.normal==nil then logging.normal=false end
-    if logging.heroic==nil then logging.heroic=false end
-    if logging.mythic==nil then logging.mythic=false end
-    if logging.dungeonMythic==nil then logging.dungeonMythic=false end
-    if logging.dungeonMythicPlus==nil then logging.dungeonMythicPlus=false end
+    AutoPromoteDB=AutoPromoteDB or {}; AutoPromoteDB.names=AutoPromoteDB.names or {}; AutoPromoteDB.ranks=AutoPromoteDB.ranks or {}; AutoPromoteDB.rankNames=AutoPromoteDB.rankNames or {}; AutoPromoteDB.windowPos=AutoPromoteDB.windowPos or {}; AutoPromoteDB.focus=AutoPromoteDB.focus or {}; AutoPromoteDB.marksBar=AutoPromoteDB.marksBar or {}; AutoPromoteDB.logging=AutoPromoteDB.logging or {}
+    local logging=AutoPromoteDB.logging; if logging.lfr==nil then logging.lfr=false end; if logging.normal==nil then logging.normal=false end; if logging.heroic==nil then logging.heroic=false end; if logging.mythic==nil then logging.mythic=false end; if logging.dungeonMythic==nil then logging.dungeonMythic=false end; if logging.dungeonMythicPlus==nil then logging.dungeonMythicPlus=false end
+    if AutoPromoteDB.loggingStartedByAddon==nil then AutoPromoteDB.loggingStartedByAddon=false end
 end
 function C.StripRealm(name) return name and name:gsub("%-.*$","") end
 function C.NormalizeName(name) if not name then return nil end; name=name:gsub("^%s+",""):gsub("%s+$",""); if name=="" then return nil end; return name end
-function C.ApplyPanelSkin(frame)
-    if not frame then return end
-    frame:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
-    frame:SetBackdropColor(0.018,0.018,0.024,0.78); frame:SetBackdropBorderColor(0,0,0,1)
-end
-function C.SkinButton(button)
-    if not button or button._ccrtSkin then return end; button._ccrtSkin=true
-    local bg=button:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(0.045,0.045,0.055,0.94); button._ccrtBg=bg
-    local border=CreateFrame("Frame",nil,button,"BackdropTemplate"); border:SetAllPoints(); border:SetBackdrop({edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1}); border:SetBackdropBorderColor(0,0,0,1)
-    button:HookScript("OnEnter",function(self) self._ccrtBg:SetColorTexture(0.10,0.10,0.13,0.96) end); button:HookScript("OnLeave",function(self) self._ccrtBg:SetColorTexture(0.045,0.045,0.055,0.94) end)
-end
-function C.SkinCheckBox(box)
-    if not box or box._ccrtSkin then return end; box._ccrtSkin=true; box:SetSize(48,24); box:EnableMouse(true); box:RegisterForClicks("LeftButtonUp")
-    local CHECK_TEXTURE=GUI_TEXTURES.."ok-iconBlack.tga"; local CROSS_TEXTURE=GUI_TEXTURES.."cross-small.png"
-    box:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=2}); box:SetBackdropColor(0.01,0.01,0.012,1); box:SetBackdropBorderColor(0.01,0.01,0.012,1)
-    local left=box:CreateTexture(nil,"ARTWORK"); left:SetPoint("TOPLEFT",1,-1); left:SetSize(23,22); local right=box:CreateTexture(nil,"ARTWORK"); right:SetPoint("TOPRIGHT",-1,-1); right:SetSize(23,22)
-    local divider=box:CreateTexture(nil,"OVERLAY"); divider:SetPoint("TOP",box,"TOP",0,-1); divider:SetPoint("BOTTOM",box,"BOTTOM",0,1); divider:SetWidth(1); divider:SetColorTexture(0.01,0.01,0.012,1)
-    local checkmark=box:CreateTexture(nil,"OVERLAY"); checkmark:SetSize(22,22); checkmark:SetPoint("CENTER",box,"CENTER",12,0); checkmark:SetTexture(CHECK_TEXTURE); checkmark:SetVertexColor(0,0,0,1)
-    local crossmark=box:CreateTexture(nil,"OVERLAY"); crossmark:SetSize(22,22); crossmark:SetPoint("CENTER",box,"CENTER",-12,0); crossmark:SetTexture(CROSS_TEXTURE); crossmark:SetVertexColor(0.10,0.10,0.10,1)
-    local click=CreateFrame("Button",nil,box); click:SetAllPoints(box); click:RegisterForClicks("LeftButtonUp"); click:SetScript("OnClick",function() box:SetChecked(not box:GetChecked()); if box._ccrtRefresh then box:_ccrtRefresh() end; local handler=box:GetScript("OnClick"); if handler then handler(box) end end)
-    local hover=box:CreateTexture(nil,"HIGHLIGHT"); hover:SetAllPoints(box); hover:SetTexture("Interface\\Buttons\\WHITE8X8"); hover:SetVertexColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.08); hover:SetAlpha(0.08)
-    local function refresh(self) if self:GetChecked() then left:SetColorTexture(0.30,0.31,0.59,1); right:SetColorTexture(0.38,0.40,0.76,1); checkmark:Show(); crossmark:Hide() else left:SetColorTexture(0.30,0.30,0.30,1); right:SetColorTexture(0.09,0.09,0.09,1); crossmark:Show(); checkmark:Hide() end end
-    box._ccrtRefresh=refresh; box:HookScript("OnShow",refresh); refresh(box)
-end
+function C.ApplyPanelSkin(frame) if not frame then return end; frame:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1}); frame:SetBackdropColor(0.018,0.018,0.024,0.78); frame:SetBackdropBorderColor(0,0,0,1) end
+function C.SkinButton(button) if not button or button._ccrtSkin then return end; button._ccrtSkin=true; local bg=button:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); button._ccrtBg=bg; local border=CreateFrame("Frame",nil,button,"BackdropTemplate"); border:SetAllPoints(); border:SetBackdrop({edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1}); border:SetBackdropBorderColor(0,0,0,1); button:HookScript("OnEnter",function(self) self._ccrtBg:SetColorTexture(0.10,0.10,0.13,0.96) end); button:HookScript("OnLeave",function(self) self._ccrtBg:SetColorTexture(0.045,0.045,0.055,0.94) end); bg:SetColorTexture(0.045,0.045,0.055,0.94) end
+function C.SkinCheckBox(box) if not box or box._ccrtSkin then return end; box._ccrtSkin=true; box:SetSize(48,24); box:EnableMouse(true); box:RegisterForClicks("LeftButtonUp"); local CHECK_TEXTURE=GUI_TEXTURES.."ok-iconBlack.tga"; local CROSS_TEXTURE=GUI_TEXTURES.."cross-small.png"; box:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=2}); box:SetBackdropColor(0.01,0.01,0.012,1); box:SetBackdropBorderColor(0.01,0.01,0.012,1); local left=box:CreateTexture(nil,"ARTWORK"); left:SetPoint("TOPLEFT",1,-1); left:SetSize(23,22); local right=box:CreateTexture(nil,"ARTWORK"); right:SetPoint("TOPRIGHT",-1,-1); right:SetSize(23,22); local divider=box:CreateTexture(nil,"OVERLAY"); divider:SetPoint("TOP",box,"TOP",0,-1); divider:SetPoint("BOTTOM",box,"BOTTOM",0,1); divider:SetWidth(1); divider:SetColorTexture(0.01,0.01,0.012,1); local checkmark=box:CreateTexture(nil,"OVERLAY"); checkmark:SetSize(22,22); checkmark:SetPoint("CENTER",box,"CENTER",12,0); checkmark:SetTexture(CHECK_TEXTURE); checkmark:SetVertexColor(0,0,0,1); local crossmark=box:CreateTexture(nil,"OVERLAY"); crossmark:SetSize(22,22); crossmark:SetPoint("CENTER",box,"CENTER",-12,0); crossmark:SetTexture(CROSS_TEXTURE); crossmark:SetVertexColor(0.10,0.10,0.10,1); local click=CreateFrame("Button",nil,box); click:SetAllPoints(box); click:RegisterForClicks("LeftButtonUp"); click:SetScript("OnClick",function() box:SetChecked(not box:GetChecked()); if box._ccrtRefresh then box:_ccrtRefresh() end; local handler=box:GetScript("OnClick"); if handler then handler(box) end end); local hover=box:CreateTexture(nil,"HIGHLIGHT"); hover:SetAllPoints(box); hover:SetTexture("Interface\\Buttons\\WHITE8X8"); hover:SetVertexColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.08); hover:SetAlpha(0.08); local function refresh(self) if self:GetChecked() then left:SetColorTexture(0.30,0.31,0.59,1); right:SetColorTexture(0.38,0.40,0.76,1); checkmark:Show(); crossmark:Hide() else left:SetColorTexture(0.30,0.30,0.30,1); right:SetColorTexture(0.09,0.09,0.09,1); crossmark:Show(); checkmark:Hide() end end; box._ccrtRefresh=refresh; box:HookScript("OnShow",refresh); refresh(box) end
 function C.SkinScrollBar(scroll) local bar=scroll and scroll.ScrollBar; if not bar or bar._ccrtSkin then return end; bar._ccrtSkin=true; for _,k in ipairs({"Background","Track","Back","Forward"}) do if bar[k] then bar[k]:Hide() end end end
 function C.RegisterModule(name,build,refresh) C.modules[name]={build=build,refresh=refresh,built=false} end
-local mainFrame
-function C.GetMainFrame() return mainFrame end
+local mainFrame; function C.GetMainFrame() return mainFrame end
 local function SaveMainFramePosition() if not mainFrame or not AutoPromoteDB then return end; local point,_,relativePoint,x,y=mainFrame:GetPoint(1); if point then AutoPromoteDB.windowPos.point=point; AutoPromoteDB.windowPos.relativePoint=relativePoint or point; AutoPromoteDB.windowPos.x=x or 0; AutoPromoteDB.windowPos.y=y or 0 end end
 local function RestoreMainFramePosition() if not mainFrame then return end; mainFrame:ClearAllPoints(); local p=AutoPromoteDB and AutoPromoteDB.windowPos; if p and p.point then mainFrame:SetPoint(p.point,UIParent,p.relativePoint or p.point,p.x or 0,p.y or 0) else mainFrame:SetPoint("CENTER",UIParent,"CENTER",260,0) end end
 local function SetMenuButtonSkin(button,selected) button.selected=selected and true or false; if selected then button.bg:SetColorTexture(C.BRAND_R*0.28,C.BRAND_G*0.28,C.BRAND_B*0.28,0.95); button.text:SetTextColor(1,1,1) else button.bg:SetColorTexture(0.045,0.045,0.055,0.94); button.text:SetTextColor(0.90,0.90,0.90) end end
 local function GetModuleHeight(panel) if not panel then return 0 end; local top=panel:GetTop(); if not top then return 0 end; local lowest=top; for _,child in ipairs({panel:GetChildren()}) do if child:IsShown() then local bottom=child:GetBottom(); if bottom and bottom<lowest then lowest=bottom end end end; local height=top-lowest+18; if height<120 then height=120 end; return height end
-local function ResizeMainFrame(name)
-    if not mainFrame or not mainFrame.modulePanels then return end
-    local panel=mainFrame.modulePanels[name]; if not panel then return end
-    local height=GetModuleHeight(panel)
-    local minimums={AutoPromote=690,MarksBar=350}
-    if minimums[name] and height<minimums[name] then height=minimums[name] end
-    if height<285 then height=285 end
-    if height>705 then height=705 end
-    mainFrame:SetHeight(height); mainFrame._ccrtLastHeight=height
-end
+local function ResizeMainFrame(name) if not mainFrame or not mainFrame.modulePanels then return end; local panel=mainFrame.modulePanels[name]; if not panel then return end; local height=GetModuleHeight(panel); local minimums={AutoPromote=690,MarksBar=350}; if minimums[name] and height<minimums[name] then height=minimums[name] end; if height<285 then height=285 end; if height>705 then height=705 end; mainFrame:SetHeight(height); mainFrame._ccrtLastHeight=height end
 local function BuildMainFrame()
-    if mainFrame then return mainFrame end; C.InitDB()
-    mainFrame=CreateFrame("Frame","CCRaidToolsFrame",UIParent,"BackdropTemplate"); mainFrame:SetSize(640,705); mainFrame:SetMovable(true); mainFrame:EnableMouse(true); mainFrame:RegisterForDrag("LeftButton")
-    mainFrame:SetScript("OnDragStart",mainFrame.StartMoving); mainFrame:SetScript("OnDragStop",function(self) self:StopMovingOrSizing(); SaveMainFramePosition() end); C.ApplyPanelSkin(mainFrame); RestoreMainFramePosition()
+    if mainFrame then return mainFrame end; C.InitDB(); mainFrame=CreateFrame("Frame","CCRaidToolsFrame",UIParent,"BackdropTemplate"); mainFrame:SetSize(640,705); mainFrame:SetMovable(true); mainFrame:EnableMouse(true); mainFrame:RegisterForDrag("LeftButton"); mainFrame:SetScript("OnDragStart",mainFrame.StartMoving); mainFrame:SetScript("OnDragStop",function(self) self:StopMovingOrSizing(); SaveMainFramePosition() end); C.ApplyPanelSkin(mainFrame); RestoreMainFramePosition()
     local title=mainFrame:CreateFontString(nil,"OVERLAY","GameFontNormal"); title:SetPoint("TOP",0,-7); title:SetText("CC RaidTools"); title:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
     local close=CreateFrame("Button",nil,mainFrame); close:SetSize(22,22); close:SetPoint("TOPRIGHT",-4,-4); local closeTex=close:CreateTexture(nil,"ARTWORK"); closeTex:SetPoint("CENTER"); closeTex:SetSize(13,13); closeTex:SetTexture(GUI_TEXTURES.."Close.png"); closeTex:SetVertexColor(0.851,0.851,0.851,1); close:SetScript("OnEnter",function() closeTex:SetVertexColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,1) end); close:SetScript("OnLeave",function() closeTex:SetVertexColor(0.851,0.851,0.851,1) end); close:SetScript("OnClick",function() mainFrame:Hide() end)
-    local divider=mainFrame:CreateTexture(nil,"BORDER"); divider:SetPoint("TOPLEFT",132,-29); divider:SetPoint("BOTTOMLEFT",132,8); divider:SetWidth(1); divider:SetColorTexture(0,0,0,0.9)
-    local menuTitle=mainFrame:CreateFontString(nil,"OVERLAY","GameFontNormalSmall"); menuTitle:SetPoint("TOPLEFT",8,-37); menuTitle:SetText("Modules"); menuTitle:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
+    local divider=mainFrame:CreateTexture(nil,"BORDER"); divider:SetPoint("TOPLEFT",132,-29); divider:SetPoint("BOTTOMLEFT",132,8); divider:SetWidth(1); divider:SetColorTexture(0,0,0,0.9); local menuTitle=mainFrame:CreateFontString(nil,"OVERLAY","GameFontNormalSmall"); menuTitle:SetPoint("TOPLEFT",8,-37); menuTitle:SetText("Modules"); menuTitle:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
     local content=CreateFrame("Frame",nil,mainFrame); content:SetPoint("TOPLEFT",133,-31); content:SetPoint("BOTTOMRIGHT",-5,7); mainFrame.content=content
     local order={"AutoPromote","AutoLog","ReadyCheck","InviteTool","Focus","MarksBar"}; local labels={AutoPromote="Auto Promote",AutoLog="AutoLog",ReadyCheck="Ready Check",InviteTool="Invite Tool",Focus="Focus",MarksBar="Marks Bar"}; local buttons={}; local panels={}
     local function Select(name) for n,p in pairs(panels) do p:SetShown(n==name) end; for n,b in pairs(buttons) do SetMenuButtonSkin(b,n==name) end; local m=C.modules[name]; if m and m.refresh then m.refresh(panels[name]) end; if C_Timer and C_Timer.After then C_Timer.After(0,function() if mainFrame and mainFrame:IsShown() then ResizeMainFrame(name) end end) else ResizeMainFrame(name) end end
@@ -82,6 +33,16 @@ local function BuildMainFrame()
     mainFrame.modulePanels=panels; mainFrame.menuButtons=buttons; mainFrame:Hide(); Select("AutoPromote"); return mainFrame
 end
 function C.ToggleUI() local f=BuildMainFrame(); if f:IsShown() then f:Hide() else f:Show() end end
-SLASH_CCRAIDTOOLS1="/ccrt"
-SlashCmdList["CCRAIDTOOLS"]=function(msg) C.InitDB(); if not msg or msg:match("^%s*$") then C.ToggleUI(); return end; print("|cff33ff99CC RaidTools|r - utilise simplement /ccrt pour ouvrir la configuration.") end
+local function PrintHelp() print("|cff33ff99CC RaidTools|r commandes:"); print("/ccrt - ouvrir la configuration"); print("/ccrt add Nom-Royaume - ajouter un joueur"); print("/ccrt remove Nom-Royaume - retirer un joueur"); print("/ccrt list - lister les joueurs Auto Promote"); print("/ccrt debug - diagnostic du groupe/instance"); print("/ccrt raidcheck - ouvrir le Ready Check") end
+local function HandleSlash(msg)
+    C.InitDB(); msg=(msg or ""):match("^%s*(.-)%s*$") or ""; local cmd,arg=msg:match("^(%S+)%s*(.-)%s*$"); cmd=cmd and cmd:lower() or ""
+    if cmd=="" then C.ToggleUI(); return end
+    if cmd=="add" then if C.AddAutoPromoteName and C.AddAutoPromoteName(arg) then print("|cff33ff99[CC RaidTools]|r Joueur ajouté : "..arg); if mainFrame and mainFrame.modulePanels and mainFrame.modulePanels.AutoPromote then AutoPromoteUI_RefreshNames() end else print("|cffff6666[CC RaidTools]|r Nom invalide.") end
+    elseif cmd=="remove" then if C.RemoveAutoPromoteName and C.RemoveAutoPromoteName(arg) then print("|cff33ff99[CC RaidTools]|r Joueur retiré : "..arg); if mainFrame and mainFrame.modulePanels and mainFrame.modulePanels.AutoPromote then AutoPromoteUI_RefreshNames() end else print("|cffff6666[CC RaidTools]|r Nom invalide.") end
+    elseif cmd=="list" then local list=C.ListAutoPromoteNames and C.ListAutoPromoteNames() or {}; if #list==0 then print("|cff33ff99[CC RaidTools]|r Aucun joueur configuré.") else print("|cff33ff99[CC RaidTools]|r Auto Promote : "..table.concat(list,", ")) end
+    elseif cmd=="debug" then local name,instanceType,difficultyID,difficultyName,_,_,_,mapID=GetInstanceInfo(); print("|cff33ff99[CC RaidTools]|r Instance: "..tostring(name).." | type="..tostring(instanceType).." | difficulté="..tostring(difficultyID).." ("..tostring(difficultyName)..") | map="..tostring(mapID)); print("Groupe: "..tostring(GetNumGroupMembers()).." | raid="..tostring(IsInRaid()).." | leader="..tostring(UnitIsGroupLeader("player")))
+    elseif cmd=="raidcheck" then if C.ShowReadyCheck then C.ShowReadyCheck(nil,true) else print("|cffff6666[CC RaidTools]|r Ready Check indisponible.") end
+    elseif cmd=="help" then PrintHelp() else PrintHelp() end
+end
+SLASH_CCRAIDTOOLS1="/ccrt"; SLASH_CCRAIDTOOLS2="/ccraidtools"; SLASH_CCRAIDTOOLS3="/ap"; SlashCmdList["CCRAIDTOOLS"]=HandleSlash
 local coreEvents=CreateFrame("Frame"); coreEvents:RegisterEvent("ADDON_LOADED"); coreEvents:SetScript("OnEvent",function(_,event,arg1) if event=="ADDON_LOADED" and arg1==ADDON_NAME then C.InitDB(); print("|cff33ff99[CC RaidTools]|r v1.0.4 chargé") end end)
