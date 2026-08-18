@@ -13,6 +13,16 @@ function C.InitDB()
     AutoPromoteDB.windowPos=AutoPromoteDB.windowPos or {}
     AutoPromoteDB.focus=AutoPromoteDB.focus or {}
     AutoPromoteDB.marksBar=AutoPromoteDB.marksBar or {}
+    -- AutoLog settings were added after the initial SavedVariables schema.
+    -- Initialize them individually so existing users and fresh installs both work.
+    AutoPromoteDB.logging=AutoPromoteDB.logging or {}
+    local logging=AutoPromoteDB.logging
+    if logging.lfr==nil then logging.lfr=false end
+    if logging.normal==nil then logging.normal=false end
+    if logging.heroic==nil then logging.heroic=false end
+    if logging.mythic==nil then logging.mythic=false end
+    if logging.dungeonMythic==nil then logging.dungeonMythic=false end
+    if logging.dungeonMythicPlus==nil then logging.dungeonMythicPlus=false end
 end
 function C.StripRealm(name) return name and name:gsub("%-.*$","") end
 function C.NormalizeName(name) if not name then return nil end; name=name:gsub("^%s+",""):gsub("%s+$",""); if name=="" then return nil end; return name end
