@@ -2,7 +2,11 @@
 local C = CCRT
 local db
 local MARK_ICON_TEXTURE = "Interface\\TargetingFrame\\UI-RaidTargetingIcon_"
-local WORLD_MARK_COMMAND = { [1]=5, [2]=6, [3]=3, [4]=2, [5]=7, [6]=1, [7]=4, [8]=8 }
+-- Display /wm order requested by CC:
+-- 1 square, 2 triangle, 3 diamond, 4 cross, 5 star, 6 circle, 7 moon, 8 skull.
+-- Blizzard world-marker IDs are: square=1, triangle=2, diamond=3, cross=4,
+-- circle=5, moon=6, star=7, skull=8.
+local WORLD_MARK_COMMAND = { [1]=1, [2]=2, [3]=3, [4]=4, [5]=7, [6]=5, [7]=6, [8]=8 }
 local bar; local buttons={}; local worldButtons={}; local configRefresh; local layoutPending=false
 local function SavePosition() if not bar or not db or InCombatLockdown() then return end; local point,_,relativePoint,x,y=bar:GetPoint(1); if point then db.point=point; db.relativePoint=relativePoint or point; db.x=x or 0; db.y=y or 0 end end
 local function RestorePosition() if not bar or not db or InCombatLockdown() then return end; bar:ClearAllPoints(); bar:SetPoint(db.point or "CENTER",UIParent,db.relativePoint or "CENTER",db.x or 0,db.y or -180) end
@@ -37,7 +41,15 @@ local function CreateBar()
     bar:SetScript("OnDragStart",function(self) if not db.locked and not InCombatLockdown() then self:StartMoving() end end); bar:SetScript("OnDragStop",function(self) if not InCombatLockdown() then self:StopMovingOrSizing(); SavePosition() end end)
     bar:SetScript("OnUpdate",function(self) if not db or not db.enabled or not db.mouseoverDisplay then return end; local wanted=self:IsMouseOver() and (db.alpha or 1) or 0; if self:GetAlpha()~=wanted then self:SetAlpha(wanted) end end)
     for i=1,8 do local b=MakeIconButton(bar,30,30); SetMarkIcon(b.icon,i); SetupSecureRaidButton(b,i); AddTooltip(b,"Marque de raid "..i,"Clic gauche : poser   |   Clic droit : retirer"); buttons[i]=b end
-    for i=1,8 do local b=MakeIconButton(bar,23,23); local wm=({5,6,3,2,7,1,4,8})[i]; SetMarkIcon(b.icon,wm); b.icon:SetVertexColor(1,0.85,0.35,0.85); SetupSecureWorldButton(b,wm); AddTooltip(b,"Marqueur au sol "..wm,"Clic gauche : placer   |   Clic droit : retirer"); worldButtons[i]=b end
+    for i=1,8 do
+        local b=MakeIconButton(bar,23,23)
+        local wm=WORLD_MARK_COMMAND[i]
+        SetMarkIcon(b.icon,wm)
+        b.icon:SetVertexColor(1,0.85,0.35,0.85)
+        SetupSecureWorldButton(b,wm)
+        AddTooltip(b,"Marqueur au sol "..i,"Clic gauche : placer   |   Clic droit : retirer")
+        worldButtons[i]=b
+    end
     RestorePosition(); ApplyBarLayout(); ApplyDisplayMode(); return bar
 end
 local function SetEnabled(value) if not db then return end; db.enabled=value and true or false; if InCombatLockdown() then return end; CreateBar(); ApplyDisplayMode() end
@@ -62,7 +74,7 @@ C.RegisterModule("MarksBar",BuildUI,function() if configRefresh then configRefre
 local events=CreateFrame("Frame"); events:RegisterEvent("ADDON_LOADED"); events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:SetScript("OnEvent",function(_,event,arg1)
     if event=="ADDON_LOADED" and arg1=="CC_RaidTools" then
-        C.InitDB(); db=AutoPromoteDB.marksBar; db.scale=db.scale or 1; db.alpha=db.alpha or 1; db.point=db.point or "CENTER"; db.relativePoint=db.relativePoint or "CENTER"; db.x=db.x or 0; db.y=db.y or -180; CreateBar(); SetLocked(db.locked); ApplyBarLayout(); ApplyDisplayMode(); if configRefresh then configRefresh() end
+        C.InitDB(); db=AutoPromoteDB.marksBar; db.scale=db.scale or 1; db.alpha=db.alpha or 1; db.point=db.point or "CENTER"; db.relativePoint=db.relativePoint or "CENTER"; db.x=db.x or 0; db.y=db.y or -180; db.orientation=db.orientation or "HORIZONTAL"; db.mouseoverDisplay=db.mouseoverDisplay or false; db.locked=db.locked or false; db.enabled=db.enabled or false; CreateBar(); SetLocked(db.locked); ApplyBarLayout(); ApplyDisplayMode(); if configRefresh then configRefresh() end
     elseif event=="PLAYER_REGEN_ENABLED" then
         if layoutPending then ApplyBarLayoutNow() end
         if bar then ApplyDisplayMode() end
