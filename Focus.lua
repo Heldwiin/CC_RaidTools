@@ -33,9 +33,9 @@ local focusButton=CreateFrame("CheckButton","CCRTFocusButton",UIParent,"SecureUn
 focusButton:SetAttribute("type1","macro"); focusButton:SetAttribute("macrotext","/focus mouseover")
 local defaultUnitFrames={PlayerFrame,PetFrame,PartyMemberFrame1,PartyMemberFrame2,PartyMemberFrame3,PartyMemberFrame4,PartyMemberFrame1PetFrame,PartyMemberFrame2PetFrame,PartyMemberFrame3PetFrame,PartyMemberFrame4PetFrame,TargetFrame,TargetofTargetFrame}
 
-function ApplyDefaultUnitFrameBindings()
+local function ApplyDefaultUnitFrameBindings()
     if InCombatLockdown() or not modifier then return end
-    for _,frame in ipairs(defaultUnitFrames) do SetFocusHotkey(frame) end
+    for _,frame in ipairs(defaultUnitFrames) do if frame then SetFocusHotkey(frame) end end
 end
 
 local function ApplyFocusBinding()
