@@ -1,6 +1,6 @@
 -- CC RaidTools - Auto Promote
 local C=CCRT
-local discoveredRanks,guildRankByName,pending={},{},{}
+local discoveredRanks,guildRankByName={},{},{}
 local nameRows,rankRows={},{}
 local function RequestRoster() if not IsInGuild() then return end; if C_GuildInfo and C_GuildInfo.GuildRoster then C_GuildInfo.GuildRoster() elseif GuildRoster then GuildRoster() end end
 local function RefreshRanksData()
@@ -9,7 +9,7 @@ local function RefreshRanksData()
 end
 local function CheckAndPromote()
     C.InitDB(); if not IsInRaid() or not UnitIsGroupLeader("player") then return end
-    for i=1,GetNumGroupMembers() do local name,rank=GetRaidRosterInfo(i); if name and rank==0 then local should=AutoPromoteDB.names[name] and true or false; if not should then local idx=guildRankByName[C.StripRealm(name)]; local rn=idx and discoveredRanks[idx]; should=idx and (AutoPromoteDB.ranks[idx] or (rn and AutoPromoteDB.rankNames[rn])) end; if should then if InCombatLockdown() then pending[name]=true else PromoteToAssistant(name); print("|cff33ff99[CC RaidTools]|r "..name.." promu(e) assistant de raid.") end end end end
+    for i=1,GetNumGroupMembers() do local name,rank=GetRaidRosterInfo(i); if name and rank==0 then local should=AutoPromoteDB.names[name] and true or false; if not should then local idx=guildRankByName[C.StripRealm(name)]; local rn=idx and discoveredRanks[idx]; should=idx and (AutoPromoteDB.ranks[idx] or (rn and AutoPromoteDB.rankNames[rn])) end; if should and not InCombatLockdown() then PromoteToAssistant(name); print("|cff33ff99[CC RaidTools]|r "..name.." promu(e) assistant de raid.") end end end
 end
 C.CheckAndPromote=CheckAndPromote
 function C.AddAutoPromoteName(name) C.InitDB(); name=C.NormalizeName(name); if not name then return false end; AutoPromoteDB.names[name]=true; return true end
@@ -56,7 +56,6 @@ e:SetScript("OnEvent",function(_,ev)
     if ev=="GUILD_ROSTER_UPDATE" then RefreshRanksData(); AutoPromoteUI_RefreshRanks()
     elseif ev=="PLAYER_REGEN_ENABLED" then
         if IsInRaid() and UnitIsGroupLeader("player") then CheckAndPromote() end
-        wipe(pending)
     else CheckAndPromote() end
 end)
 RequestRoster()
