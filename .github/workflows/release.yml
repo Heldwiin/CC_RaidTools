@@ -21,7 +21,17 @@ jobs:
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
           mkdir -p dist/CC_RaidTools
-          rsync -a --exclude='.git' --exclude='.github' --exclude='dist' ./ dist/CC_RaidTools/
+
+          rsync -a \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='dist/' \
+            --exclude='AGENTS.md' \
+            --exclude='README.md' \
+            --exclude='CHANGELOG.md' \
+            --exclude='LICENSE' \
+            ./ dist/CC_RaidTools/
+
           cd dist
           zip -r "CC_RaidTools-${VERSION}.zip" CC_RaidTools
 
@@ -37,6 +47,7 @@ jobs:
               --title "CC RaidTools ${VERSION}" \
               --generate-notes
           fi
+
           gh release upload "${GITHUB_REF_NAME}" \
             "dist/CC_RaidTools-${VERSION}.zip" \
             --clobber
