@@ -1,20 +1,25 @@
 -- CC RaidTools - Auto Promote
 local C=CCRT
-local discoveredRanks,guildRankByName={},{},{}
+local discoveredRanks,guildRankByFullName,guildRankByShort={},{},{}
 local nameRows,rankRows={},{}
 local function RequestRoster() if not IsInGuild() then return end; if C_GuildInfo and C_GuildInfo.GuildRoster then C_GuildInfo.GuildRoster() elseif GuildRoster then GuildRoster() end end
 local function RefreshRanksData()
-    wipe(discoveredRanks); wipe(guildRankByName); if not IsInGuild() then return end
-    for i=1,(GetNumGuildMembers and GetNumGuildMembers() or 0) do local name,rankName,rankIndex=GetGuildRosterInfo(i); if name and rankIndex~=nil then discoveredRanks[rankIndex]=rankName; guildRankByName[C.StripRealm(name)]=rankIndex end end
+    wipe(discoveredRanks); wipe(guildRankByFullName); wipe(guildRankByShort); if not IsInGuild() then return end
+    for i=1,(GetNumGuildMembers and GetNumGuildMembers() or 0) do local name,rankName,rankIndex=GetGuildRosterInfo(i); if name and rankIndex~=nil then discoveredRanks[rankIndex]=rankName; guildRankByFullName[name]=rankIndex; local short=C.StripRealm(name); if short and not guildRankByShort[short] then guildRankByShort[short]=rankIndex elseif short then guildRankByShort[short]=false end end end
+end
+local function GetGuildRankIndex(name)
+    if not name then return nil end
+    local idx=guildRankByFullName[name]
+    if idx~=nil then return idx end
+    local short=C.StripRealm(name); local fallback=short and guildRankByShort[short]
+    if fallback~=false then return fallback end
+    return nil
 end
 local function CheckAndPromote()
     C.InitDB(); if not IsInRaid() or not UnitIsGroupLeader("player") then return end
-    for i=1,GetNumGroupMembers() do local name,rank=GetRaidRosterInfo(i); if name and rank==0 then local should=AutoPromoteDB.names[name] and true or false; if not should then local idx=guildRankByName[C.StripRealm(name)]; local rn=idx and discoveredRanks[idx]; should=idx and (AutoPromoteDB.ranks[idx] or (rn and AutoPromoteDB.rankNames[rn])) end; if should and not InCombatLockdown() then PromoteToAssistant(name); print("|cff33ff99[CC RaidTools]|r "..name.." promu(e) assistant de raid.") end end end
+    for i=1,GetNumGroupMembers() do local name,rank=GetRaidRosterInfo(i); if name and rank==0 then local should=AutoPromoteDB.names[name] or AutoPromoteDB.names[C.StripRealm(name)] or false; if not should then local idx=GetGuildRankIndex(name); local rn=idx and discoveredRanks[idx]; should=idx and (AutoPromoteDB.ranks[idx] or (rn and AutoPromoteDB.rankNames[rn])) end; if should and not InCombatLockdown() then PromoteToAssistant(name); print("|cff33ff99[CC RaidTools]|r "..name.." promu(e) assistant de raid.") end end end
 end
 C.CheckAndPromote=CheckAndPromote
-function C.AddAutoPromoteName(name) C.InitDB(); name=C.NormalizeName(name); if not name then return false end; AutoPromoteDB.names[name]=true; return true end
-function C.RemoveAutoPromoteName(name) C.InitDB(); name=C.NormalizeName(name); if not name then return false end; AutoPromoteDB.names[name]=nil; return true end
-function C.ListAutoPromoteNames() C.InitDB(); local list={}; for n in pairs(AutoPromoteDB.names) do list[#list+1]=n end; table.sort(list); return list end
 
 local mainFrame
 function AutoPromoteUI_RefreshNames()
@@ -54,8 +59,7 @@ C.RegisterModule("AutoPromote",BuildUI,Refresh)
 local e=CreateFrame("Frame"); for _,ev in ipairs({"GROUP_ROSTER_UPDATE","PLAYER_ENTERING_WORLD","GUILD_ROSTER_UPDATE","PLAYER_REGEN_ENABLED"}) do e:RegisterEvent(ev) end
 e:SetScript("OnEvent",function(_,ev)
     if ev=="GUILD_ROSTER_UPDATE" then RefreshRanksData(); AutoPromoteUI_RefreshRanks()
-    elseif ev=="PLAYER_REGEN_ENABLED" then
-        if IsInRaid() and UnitIsGroupLeader("player") then CheckAndPromote() end
+    elseif ev=="PLAYER_REGEN_ENABLED" then if IsInRaid() and UnitIsGroupLeader("player") then CheckAndPromote() end
     else CheckAndPromote() end
 end)
 RequestRoster()
