@@ -25,7 +25,14 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.1.5**
+**1.1.6**
+
+### v1.1.6 — Ready Check & stabilité
+
+- Restauration complète du cycle Ready Check après le nettoyage de la version précédente.
+- Restauration du bouton Test et des événements READY_CHECK, READY_CHECK_CONFIRM et READY_CHECK_FINISHED.
+- Conservation du cache d'auras, du throttling UNIT_AURA et du défilement jusqu'à 40 joueurs.
+- Synchronisation de toutes les chaînes de version sur 1.1.6.
 
 ### v1.1.5 — Interface & branding
 
