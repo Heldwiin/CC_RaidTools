@@ -14,17 +14,9 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - Compteur dynamique des joueurs prêts dans l'en-tête du Ready Check (ex. 3/20).
 - Interface personnalisée sombre/transparente avec bordures pixel.
 
-## Commandes
+## Commande
 
-- `/ccrt` : ouvre la configuration.
-- `/ccraidtools` : alias de `/ccrt`.
-- `/ap` : alias conservé pour ouvrir la configuration.
-- `/ccrt add Nom-Royaume` : ajoute un joueur à l'Auto Promote.
-- `/ccrt remove Nom-Royaume` : retire un joueur.
-- `/ccrt list` : affiche les joueurs configurés.
-- `/ccrt debug` : affiche les informations du groupe et de l'instance.
-- `/ccrt raidcheck` : ouvre manuellement la fenêtre Ready Check.
-- `/ccrt help` : affiche l'aide.
+- `/ccrt` : ouvre la configuration de CC RaidTools.
 
 ## Version
 
