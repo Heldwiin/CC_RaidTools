@@ -1,19 +1,16 @@
 -- CC RaidTools - Module menu icons
--- Adds small native WoW icons to the module selector.
+-- Adds custom HD CC RaidTools icons to the module selector.
 local ADDON_NAME = "CC_RaidTools"
 
+local ICON_PATH = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\"
+
 local MODULE_ICONS = {
-    -- Group leader crown
-    AutoPromote = "Interface\\GroupFrame\\UI-Group-LeaderIcon",
-    -- White parchment / note
-    AutoLog     = "Interface\\Icons\\INV_Misc_Note_01",
-    -- Native green Ready Check tick
-    ReadyCheck  = "Interface\\RaidFrame\\ReadyCheck-Ready",
-    -- Target icon
-    InviteTool  = "Interface\\Icons\\INV_Misc_GroupLooking",
-    Focus       = "Interface\\Icons\\Ability_Hunter_FocusedAim",
-    -- Raid marker icon (star)
-    MarksBar    = "Interface\\TargetingFrame\\UI-RaidTargetingIcon_1",
+    AutoPromote = ICON_PATH .. "AutoPromote.png",
+    AutoLog     = ICON_PATH .. "AutoLog.png",
+    ReadyCheck  = ICON_PATH .. "ReadyCheck.png",
+    InviteTool  = ICON_PATH .. "InviteTool.png",
+    Focus       = ICON_PATH .. "Focus.png",
+    MarksBar    = ICON_PATH .. "MarksBar.png",
 }
 
 local function ApplyModuleIcons()
@@ -28,7 +25,7 @@ local function ApplyModuleIcons()
             icon:SetSize(20, 20)
             icon:SetPoint("LEFT", button, "LEFT", 5, 0)
             icon:SetTexture(texturePath)
-            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            icon:SetTexCoord(0, 1, 0, 1)
             button._ccrtModuleIcon = icon
 
             if button.text then
