@@ -15,36 +15,54 @@ local function StyleModuleButton(button)
     if not button or button._ccrtModuleStyled then return end
     button._ccrtModuleStyled = true
 
-    button:SetSize(120, 30)
+    button:SetSize(128, 34)
 
-    -- Slightly brighter dark panel behind each module, with a crisp border.
+    -- Clean, compact card inspired by the reference UI.
     local bg = button:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0.025, 0.025, 0.035, 0.94)
+    bg:SetColorTexture(0.018, 0.018, 0.024, 0.96)
     button._ccrtModuleBg = bg
 
-    local border = CreateFrame("Frame", nil, button, "BackdropTemplate")
-    border:SetAllPoints()
-    border:SetBackdrop({
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-    })
-    border:SetBackdropBorderColor(0.10, 0.10, 0.13, 0.95)
-    button._ccrtModuleBorder = border
+    local topLine = button:CreateTexture(nil, "BORDER")
+    topLine:SetPoint("TOPLEFT", 1, -1)
+    topLine:SetPoint("TOPRIGHT", -1, -1)
+    topLine:SetHeight(1)
+    topLine:SetColorTexture(0.16, 0.16, 0.20, 0.9)
+    button._ccrtModuleTopLine = topLine
+
+    local bottomLine = button:CreateTexture(nil, "BORDER")
+    bottomLine:SetPoint("BOTTOMLEFT", 1, 1)
+    bottomLine:SetPoint("BOTTOMRIGHT", -1, 1)
+    bottomLine:SetHeight(1)
+    bottomLine:SetColorTexture(0.005, 0.005, 0.008, 0.95)
+    button._ccrtModuleBottomLine = bottomLine
+
+    local leftAccent = button:CreateTexture(nil, "BORDER")
+    leftAccent:SetPoint("TOPLEFT", 0, -1)
+    leftAccent:SetPoint("BOTTOMLEFT", 0, 1)
+    leftAccent:SetWidth(2)
+    leftAccent:SetColorTexture(0.451, 0.506, 1, 0.0)
+    button._ccrtModuleAccent = leftAccent
 
     local hover = button:CreateTexture(nil, "HIGHLIGHT")
     hover:SetAllPoints()
-    hover:SetColorTexture(0.18, 0.18, 0.24, 0.22)
+    hover:SetColorTexture(0.16, 0.13, 0.22, 0.30)
     button._ccrtModuleHover = hover
 
     button:HookScript("OnEnter", function(self)
         if self._ccrtModuleBg then
-            self._ccrtModuleBg:SetColorTexture(0.08, 0.07, 0.11, 0.98)
+            self._ccrtModuleBg:SetColorTexture(0.075, 0.065, 0.10, 0.98)
+        end
+        if self._ccrtModuleAccent then
+            self._ccrtModuleAccent:SetColorTexture(0.451, 0.506, 1, 1)
         end
     end)
     button:HookScript("OnLeave", function(self)
         if self._ccrtModuleBg and not self.selected then
-            self._ccrtModuleBg:SetColorTexture(0.025, 0.025, 0.035, 0.94)
+            self._ccrtModuleBg:SetColorTexture(0.018, 0.018, 0.024, 0.96)
+        end
+        if self._ccrtModuleAccent and not self.selected then
+            self._ccrtModuleAccent:SetColorTexture(0.451, 0.506, 1, 0)
         end
     end)
 end
@@ -61,29 +79,34 @@ local function ApplyModuleIcons()
 
             if not button._ccrtModuleIconBg then
                 local iconBg = button:CreateTexture(nil, "ARTWORK")
-                iconBg:SetSize(28, 28)
+                iconBg:SetSize(31, 31)
                 iconBg:SetPoint("LEFT", button, "LEFT", 1, 0)
-                iconBg:SetColorTexture(0.01, 0.01, 0.014, 0.72)
+                iconBg:SetColorTexture(0.008, 0.008, 0.012, 0.90)
                 button._ccrtModuleIconBg = iconBg
             end
 
             if not button._ccrtModuleIcon then
-                local icon = button:CreateTexture(nil, "ARTWORK")
-                icon:SetSize(24, 24)
+                local icon = button:CreateTexture(nil, "OVERLAY")
+                icon:SetSize(30, 30)
                 icon:SetPoint("CENTER", button._ccrtModuleIconBg, "CENTER")
                 icon:SetTexture(texturePath)
                 icon:SetTexCoord(0, 1, 0, 1)
                 button._ccrtModuleIcon = icon
             else
                 button._ccrtModuleIcon:SetTexture(texturePath)
+                button._ccrtModuleIcon:SetSize(30, 30)
             end
 
             if button.text then
                 button.text:ClearAllPoints()
-                button.text:SetPoint("LEFT", button._ccrtModuleIconBg, "RIGHT", 7, 0)
+                button.text:SetPoint("LEFT", button._ccrtModuleIconBg, "RIGHT", 8, 0)
                 button.text:SetTextColor(0.96, 0.96, 0.96)
                 button.text:SetShadowOffset(1, -1)
                 button.text:SetShadowColor(0, 0, 0, 1)
+                local font, _, flags = button.text:GetFont()
+                if font then
+                    button.text:SetFont(font, 12, flags or "OUTLINE")
+                end
             end
         end
     end
