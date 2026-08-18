@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.4
+
+Correctifs de fiabilité et de sécurité.
+
+- AutoLog couvre tous les donjons Mythique et Mythique+ sans filtrage arbitraire par carte.
+- Focus n'altère plus les frames sécurisées créées par d'autres addons.
+- Synchronisation de la version affichée dans le Ready Check.
+- Watermark de guilde rendu plus discret.
+
 ## 1.1.2
 
 Release packaging et nettoyage du processus de publication.
