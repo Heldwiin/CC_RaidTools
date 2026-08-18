@@ -1,59 +1,36 @@
 -- CC RaidTools - Core
-local ADDON_NAME = ...
-CCRT = CCRT or {}
-local C = CCRT
-
-C.BRAND_R, C.BRAND_G, C.BRAND_B = 0.451, 0.506, 1
-C.modules = C.modules or {}
-
+local ADDON_NAME="CC_RaidTools"
+local C=CCRT or {}
+CCRT=C
+C.modules=C.modules or {}
+C.BRAND_R=0.451; C.BRAND_G=0.506; C.BRAND_B=1
 local GUI_TEXTURES="Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\"
 
 function C.InitDB()
-    if not AutoPromoteDB then AutoPromoteDB = {} end
-    AutoPromoteDB.names = AutoPromoteDB.names or {}
-    AutoPromoteDB.ranks = AutoPromoteDB.ranks or {}
-    AutoPromoteDB.rankNames = AutoPromoteDB.rankNames or {}
-    AutoPromoteDB.logging = AutoPromoteDB.logging or { lfr=false, normal=false, heroic=false, mythic=false }
-    if AutoPromoteDB.raidCheckEnabled == nil then AutoPromoteDB.raidCheckEnabled = true end
-    AutoPromoteDB.windowPos = AutoPromoteDB.windowPos or {}
-    AutoPromoteDB.marksBar = AutoPromoteDB.marksBar or {}
-    if AutoPromoteDB.marksBar.enabled == nil then AutoPromoteDB.marksBar.enabled = false end
-    if AutoPromoteDB.marksBar.locked == nil then AutoPromoteDB.marksBar.locked = false end
-    if AutoPromoteDB.marksBar.mouseoverDisplay == nil then AutoPromoteDB.marksBar.mouseoverDisplay = false end
-    AutoPromoteDB.focus = AutoPromoteDB.focus or {}
-    if AutoPromoteDB.focus.modifier == nil then AutoPromoteDB.focus.modifier = AutoPromoteDB.focusModifier or "shift" end
-    if AutoPromoteDB.focus.mouseButton == nil then AutoPromoteDB.focus.mouseButton = AutoPromoteDB.focusMouseButton or "1" end
-    AutoPromoteDB.focusModifier = AutoPromoteDB.focus.modifier
-    AutoPromoteDB.focusMouseButton = AutoPromoteDB.focus.mouseButton
+    AutoPromoteDB=AutoPromoteDB or {}
+    AutoPromoteDB.names=AutoPromoteDB.names or {}
+    AutoPromoteDB.ranks=AutoPromoteDB.ranks or {}
+    AutoPromoteDB.rankNames=AutoPromoteDB.rankNames or {}
+    AutoPromoteDB.windowPos=AutoPromoteDB.windowPos or {}
+    AutoPromoteDB.focus=AutoPromoteDB.focus or {}
+    AutoPromoteDB.marksBar=AutoPromoteDB.marksBar or {}
 end
 
-function C.NormalizeName(name)
-    if not name then return nil end
-    name=name:gsub("^%s+",""):gsub("%s+$","")
-    return name~="" and name or nil
-end
-function C.StripRealm(name) if not name then return name end return name:match("^([^%-]+)") or name end
+function C.StripRealm(name) return name and name:gsub("%-.*$","") end
+function C.NormalizeName(name) if not name then return nil end; name=name:gsub("^%s+",""):gsub("%s+$",""); if name=="" then return nil end; return name end
 
 function C.ApplyPanelSkin(frame)
-    if not frame or frame._ccrtSkin then return end
-    frame._ccrtSkin=true
-    local bg=frame:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(0.025,0.025,0.035,0.82); frame._ccrtBg=bg
-    local border=CreateFrame("Frame",nil,frame,"BackdropTemplate"); border:SetAllPoints(); border:SetBackdrop({edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1}); border:SetBackdropBorderColor(0,0,0,1); frame._ccrtBorder=border
-    local divider=frame:CreateTexture(nil,"BORDER"); divider:SetPoint("TOPLEFT",1,-28); divider:SetPoint("TOPRIGHT",-1,-28); divider:SetHeight(1); divider:SetColorTexture(0,0,0,0.95)
+    frame:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
+    frame:SetBackdropColor(0.018,0.018,0.024,0.98); frame:SetBackdropBorderColor(0,0,0,1)
 end
-
 function C.SkinButton(button)
     if not button or button._ccrtSkin then return end
     button._ccrtSkin=true
-    for _,k in ipairs({"Left","Middle","Right","LeftDisabled","MiddleDisabled","RightDisabled"}) do if button[k] then button[k]:Hide() end end
-    if button.SetNormalTexture then button:SetNormalTexture(""); button:SetPushedTexture(""); button:SetDisabledTexture("") end
     local bg=button:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(0.045,0.045,0.055,0.94); button._ccrtBg=bg
     local border=CreateFrame("Frame",nil,button,"BackdropTemplate"); border:SetAllPoints(); border:SetBackdrop({edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1}); border:SetBackdropBorderColor(0,0,0,1)
     button:HookScript("OnEnter",function(self) self._ccrtBg:SetColorTexture(0.10,0.10,0.13,0.96) end)
     button:HookScript("OnLeave",function(self) self._ccrtBg:SetColorTexture(0.045,0.045,0.055,0.94) end)
 end
-
--- SwitchBox
 function C.SkinCheckBox(box)
     if not box or box._ccrtSkin then return end
     box._ccrtSkin=true; box:SetSize(48,24); box:EnableMouse(true); box:RegisterForClicks("LeftButtonUp")
@@ -67,14 +44,10 @@ function C.SkinCheckBox(box)
     local click=CreateFrame("Button",nil,box); click:SetAllPoints(box); click:RegisterForClicks("LeftButtonUp")
     click:SetScript("OnClick",function() box:SetChecked(not box:GetChecked()); if box._ccrtRefresh then box:_ccrtRefresh() end; local handler=box:GetScript("OnClick"); if handler then handler(box) end end)
     local hover=box:CreateTexture(nil,"HIGHLIGHT"); hover:SetAllPoints(box); hover:SetTexture("Interface\\Buttons\\WHITE8X8"); hover:SetVertexColor(C.BRAND_R,C.BRAND_G,C.BRAND_B,0.08); hover:SetAlpha(0.08)
-    local function refresh(self)
-        if self:GetChecked() then left:SetColorTexture(0.30,0.31,0.59,1); right:SetColorTexture(0.38,0.40,0.76,1); checkmark:Show(); crossmark:Hide() else left:SetColorTexture(0.30,0.30,0.30,1); right:SetColorTexture(0.09,0.09,0.09,1); crossmark:Show(); checkmark:Hide() end
-    end
+    local function refresh(self) if self:GetChecked() then left:SetColorTexture(0.30,0.31,0.59,1); right:SetColorTexture(0.38,0.40,0.76,1); checkmark:Show(); crossmark:Hide() else left:SetColorTexture(0.30,0.30,0.30,1); right:SetColorTexture(0.09,0.09,0.09,1); crossmark:Show(); checkmark:Hide() end end
     box._ccrtRefresh=refresh; box:HookScript("OnShow",refresh); refresh(box)
 end
-function C.SkinScrollBar(scroll)
-    local bar=scroll and scroll.ScrollBar; if not bar or bar._ccrtSkin then return end; bar._ccrtSkin=true; for _,k in ipairs({"Background","Track","Back","Forward"}) do if bar[k] then bar[k]:Hide() end end
-end
+function C.SkinScrollBar(scroll) local bar=scroll and scroll.ScrollBar; if not bar or bar._ccrtSkin then return end; bar._ccrtSkin=true; for _,k in ipairs({"Background","Track","Back","Forward"}) do if bar[k] then bar[k]:Hide() end end end
 function C.RegisterModule(name,build,refresh) C.modules[name]={build=build,refresh=refresh,built=false} end
 
 local mainFrame
@@ -91,38 +64,29 @@ local function RestoreMainFramePosition()
 end
 local function SetMenuButtonSkin(button,selected)
     button.selected=selected and true or false
-    if selected then button.bg:SetColorTexture(C.BRAND_R*0.28,C.BRAND_G*0.28,C.BRAND_B*0.28,0.95); button.text:SetTextColor(1,1,1)
-    else button.bg:SetColorTexture(0.045,0.045,0.055,0.94); button.text:SetTextColor(0.90,0.90,0.90) end
+    if selected then button.bg:SetColorTexture(C.BRAND_R*0.28,C.BRAND_G*0.28,C.BRAND_B*0.28,0.95); button.text:SetTextColor(1,1,1) else button.bg:SetColorTexture(0.045,0.045,0.055,0.94); button.text:SetTextColor(0.90,0.90,0.90) end
 end
 
--- Measure the currently selected module from its direct children.
--- This lets each module determine its own required height without hard-coding sizes in the core.
+local MODULE_MIN_HEIGHT={AutoPromote=410,MarksBar=350}
 local function GetModuleHeight(panel)
     if not panel then return 0 end
-    local top = panel:GetTop()
-    if not top then return 0 end
-    local lowest = top
+    local top=panel:GetTop(); if not top then return 0 end
+    local lowest=top
     for _,child in ipairs({panel:GetChildren()}) do
-        if child:IsShown() then
-            local bottom = child:GetBottom()
-            if bottom and bottom < lowest then lowest = bottom end
-        end
+        if child:IsShown() then local bottom=child:GetBottom(); if bottom and bottom<lowest then lowest=bottom end end
     end
-    local height = top - lowest + 18
-    if height < 120 then height = 120 end
+    local height=top-lowest+18
+    if height<120 then height=120 end
     return height
 end
-
 local function ResizeMainFrame(name)
     if not mainFrame or not mainFrame.modulePanels then return end
-    local panel = mainFrame.modulePanels[name]
-    if not panel then return end
-    local height = GetModuleHeight(panel)
-    -- The module list on the left is itself about 254 px tall, so keep enough room for it.
-    if height < 285 then height = 285 end
-    if height > 705 then height = 705 end
-    mainFrame:SetHeight(height)
-    mainFrame._ccrtLastHeight = height
+    local panel=mainFrame.modulePanels[name]; if not panel then return end
+    local height=GetModuleHeight(panel)
+    if MODULE_MIN_HEIGHT[name] and height<MODULE_MIN_HEIGHT[name] then height=MODULE_MIN_HEIGHT[name] end
+    if height<285 then height=285 end
+    if height>705 then height=705 end
+    mainFrame:SetHeight(height); mainFrame._ccrtLastHeight=height
 end
 
 local function BuildMainFrame()
@@ -141,23 +105,17 @@ local function BuildMainFrame()
         for n,p in pairs(panels) do p:SetShown(n==name) end
         for n,b in pairs(buttons) do SetMenuButtonSkin(b,n==name) end
         local m=C.modules[name]; if m and m.refresh then m.refresh(panels[name]) end
-        if C_Timer and C_Timer.After then
-            C_Timer.After(0,function() if mainFrame and mainFrame:IsShown() then ResizeMainFrame(name) end end)
-        else
-            ResizeMainFrame(name)
-        end
+        if C_Timer and C_Timer.After then C_Timer.After(0,function() if mainFrame and mainFrame:IsShown() then ResizeMainFrame(name) end end) else ResizeMainFrame(name) end
     end
     for i,name in ipairs(order) do
         local b=CreateFrame("Button",nil,mainFrame); b:SetSize(116,28); b:SetPoint("TOPLEFT",8,-62-(i-1)*32)
         local bg=b:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); b.bg=bg
         local t=b:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); t:SetPoint("LEFT",8,0); t:SetText(labels[name]); b.text=t
-        b:SetScript("OnEnter",function(self) if not self.selected then self.bg:SetColorTexture(0.09,0.09,0.12,0.96) end end); b:SetScript("OnLeave",function(self) if not self.selected then self.bg:SetColorTexture(0.045,0.045,0.055,0.94) end end); b:SetScript("OnClick",function() Select(name) end)
-        buttons[name]=b
+        b:SetScript("OnEnter",function(self) if not self.selected then self.bg:SetColorTexture(0.09,0.09,0.12,0.96) end end); b:SetScript("OnLeave",function(self) if not self.selected then self.bg:SetColorTexture(0.045,0.045,0.055,0.94) end end); b:SetScript("OnClick",function() Select(name) end); buttons[name]=b
     end
     for _,name in ipairs(order) do local p=CreateFrame("Frame",nil,content); p:SetAllPoints(); p:Hide(); panels[name]=p; local m=C.modules[name]; if m and m.build and not m.built then m.build(p); m.built=true end end
     mainFrame.modulePanels=panels; mainFrame.menuButtons=buttons; mainFrame:Hide(); Select("AutoPromote"); return mainFrame
 end
 function C.ToggleUI() local f=BuildMainFrame(); if f:IsShown() then f:Hide() else f:Show() end end
-SLASH_CCRAIDTOOLS1="/ccrt"
-SlashCmdList["CCRAIDTOOLS"]=function(msg) C.InitDB(); if not msg or msg:match("^%s*$") then C.ToggleUI(); return end; print("|cff33ff99CC RaidTools|r - utilise simplement /ccrt pour ouvrir la configuration.") end
+SLASH_CCRAIDTOOLS1="/ccrt"; SlashCmdList["CCRAIDTOOLS"]=function(msg) C.InitDB(); if not msg or msg:match("^%s*$") then C.ToggleUI(); return end; print("|cff33ff99CC RaidTools|r - utilise simplement /ccrt pour ouvrir la configuration.") end
 local coreEvents=CreateFrame("Frame"); coreEvents:RegisterEvent("ADDON_LOADED"); coreEvents:SetScript("OnEvent",function(_,event,arg1) if event=="ADDON_LOADED" and arg1==ADDON_NAME then C.InitDB(); print("|cff33ff99[CC RaidTools]|r v1.0 chargé") end end)
