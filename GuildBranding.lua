@@ -10,14 +10,15 @@ local function ApplyGuildBranding()
     frame._ccrtGuildBranding = true
 
     local watermark = frame:CreateTexture(nil, "ARTWORK")
-    watermark:SetSize(190, 190)
-    watermark:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -18, 18)
+    -- Keep the guild watermark clearly separated from the module header icon.
+    watermark:SetSize(160, 160)
+    watermark:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -12, 6)
     watermark:SetTexture(LOGO)
     watermark:SetAlpha(1.0)
     frame._ccrtWatermark = watermark
 end
 
-local events = CreateFrame("Frame")
+events = CreateFrame("Frame")
 events:RegisterEvent("ADDON_LOADED")
 events:SetScript("OnEvent", function(_, _, addonName)
     if addonName ~= ADDON_NAME then return end
