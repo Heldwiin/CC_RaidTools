@@ -1,0 +1,36 @@
+name: Release CC_RaidTools
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Package addon
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p dist/CC_RaidTools
+          rsync -a --exclude='.git' --exclude='.github' --exclude='dist' ./ dist/CC_RaidTools/
+          cd dist
+          zip -r "CC_RaidTools-${VERSION}.zip" CC_RaidTools
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "${GITHUB_REF_NAME}" \
+            "dist/CC_RaidTools-${VERSION}.zip" \
+            --title "CC RaidTools ${VERSION}" \
+            --generate-notes
