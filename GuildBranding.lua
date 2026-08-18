@@ -18,7 +18,7 @@ local function ApplyGuildBranding()
     frame._ccrtWatermark = watermark
 end
 
-events = CreateFrame("Frame")
+local events = CreateFrame("Frame")
 events:RegisterEvent("ADDON_LOADED")
 events:SetScript("OnEvent", function(_, _, addonName)
     if addonName ~= ADDON_NAME then return end
