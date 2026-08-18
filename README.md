@@ -6,7 +6,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 - Auto Promote de joueurs configurés manuellement.
 - Auto Promote selon les rangs de guilde sélectionnés.
-- AutoLog configurable pour LFR, Normal, Héroïque et Mythique.
+- AutoLog configurable pour LFR, Normal, Héroïque, Mythique, Donjon Mythique et Mythique+.
 - Fenêtre Ready Check automatique lors d'un appel.
 - Statut dynamique OK / KO / WAIT.
 - Vérification des consommables : repas, flacon, rune et rune de Vantus.
@@ -17,14 +17,15 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 ## Commandes
 
 - `/ccrt` : ouvre la configuration.
-- `/ccraidtools` : ouvre la configuration.
-- `/ap` : ancienne commande conservée pour compatibilité.
+- `/ccraidtools` : alias de `/ccrt`.
+- `/ap` : alias conservé pour ouvrir la configuration.
 - `/ccrt add Nom-Royaume` : ajoute un joueur à l'Auto Promote.
 - `/ccrt remove Nom-Royaume` : retire un joueur.
 - `/ccrt list` : affiche les joueurs configurés.
-- `/ccrt debug` : diagnostic du raid.
+- `/ccrt debug` : affiche les informations du groupe et de l'instance.
 - `/ccrt raidcheck` : ouvre manuellement la fenêtre Ready Check.
+- `/ccrt help` : affiche l'aide.
 
 ## Version
 
-**1.0**
+**1.0.4**
