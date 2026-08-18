@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.6
+
+Correctif Ready Check et synchronisation de release.
+
+- Restauration complète du cycle Ready Check après le nettoyage de la version précédente.
+- Restauration du bouton Test et des événements READY_CHECK, READY_CHECK_CONFIRM et READY_CHECK_FINISHED.
+- Conservation du cache d'auras, du throttling UNIT_AURA et du défilement jusqu'à 40 joueurs.
+- Synchronisation des chaînes de version sur 1.1.6.
+
 ## 1.1.5
 
 Interface, branding et stabilité.
