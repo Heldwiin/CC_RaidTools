@@ -59,22 +59,28 @@ end
 
 local function ApplyPanelIcon(panel, texturePath)
     if not panel or not texturePath then return end
-    if not panel._ccrtModuleHeaderIconBg then
-        local bg = panel:CreateTexture(nil, "BORDER")
-        bg:SetSize(52, 52)
-        bg:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -8, -7)
-        bg:SetColorTexture(0.008, 0.008, 0.012, 0.72)
-        panel._ccrtModuleHeaderIconBg = bg
+
+    -- The PNGs already have transparent backgrounds. Do not create a backing square:
+    -- the icon should float cleanly over the module panel.
+    if panel._ccrtModuleHeaderIconBg then
+        panel._ccrtModuleHeaderIconBg:Hide()
     end
+
     if not panel._ccrtModuleHeaderIcon then
         local icon = panel:CreateTexture(nil, "ARTWORK")
-        icon:SetSize(46, 46)
-        icon:SetPoint("CENTER", panel._ccrtModuleHeaderIconBg, "CENTER")
+        icon:SetSize(72, 72)
+        icon:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -5, -3)
         icon:SetTexture(texturePath)
         icon:SetTexCoord(0, 1, 0, 1)
+        icon:SetAlpha(1)
         panel._ccrtModuleHeaderIcon = icon
     else
+        panel._ccrtModuleHeaderIcon:SetSize(72, 72)
+        panel._ccrtModuleHeaderIcon:ClearAllPoints()
+        panel._ccrtModuleHeaderIcon:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -5, -3)
         panel._ccrtModuleHeaderIcon:SetTexture(texturePath)
+        panel._ccrtModuleHeaderIcon:SetAlpha(1)
+        panel._ccrtModuleHeaderIcon:Show()
     end
 end
 
