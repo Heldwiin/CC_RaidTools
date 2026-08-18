@@ -20,6 +20,7 @@ local mainFrame
 function AutoPromoteUI_RefreshNames()
     if not mainFrame then return end
     local sorted={}; for n in pairs(AutoPromoteDB.names) do table.insert(sorted,n) end; table.sort(sorted)
+    if mainFrame.nameChild then mainFrame.nameChild:SetHeight(math.max(110,#sorted*20)) end
     for i,n in ipairs(sorted) do local r=nameRows[i]; if not r then r=CreateFrame("Frame",nil,mainFrame.nameChild); r:SetSize(260,20); r:SetPoint("TOPLEFT",0,-(i-1)*20); r.text=r:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); r.text:SetPoint("LEFT",4,0); r.text:SetWidth(210); r.text:SetJustifyH("LEFT"); r.remove=CreateFrame("Button",nil,r,"UIPanelCloseButton"); r.remove:SetSize(20,20); r.remove:SetPoint("RIGHT"); r.remove:SetScript("OnClick",function() AutoPromoteDB.names[r.name]=nil; AutoPromoteUI_RefreshNames() end); nameRows[i]=r end; r.name=n; r.text:SetText(n); r:Show() end
     for i=#sorted+1,#nameRows do nameRows[i]:Hide() end
 end
