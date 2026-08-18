@@ -25,7 +25,14 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.1.2**
+**1.1.4**
+
+### v1.1.4 — Fiabilité & sécurité
+
+- AutoLog couvre tous les donjons Mythique et Mythique+.
+- Focus n'altère plus les frames sécurisées externes.
+- Synchronisation des versions affichées.
+- Watermark de guilde plus discret.
 
 ### v1.1.2 — Release packaging & clean-up
 

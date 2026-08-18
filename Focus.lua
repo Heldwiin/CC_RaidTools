@@ -14,29 +14,8 @@ local function GetBindingKey()
     return string.upper(modifier).."-BUTTON"..mouseButton
 end
 
-local function SetFocusHotkey(frame)
-    if not frame or InCombatLockdown() or not modifier or not mouseButton then return end
-    if previousModifier and previousMouseButton then
-        frame:SetAttribute(previousModifier.."-type"..previousMouseButton,nil)
-    end
-    frame:SetAttribute(modifier.."-type"..mouseButton,"focus")
-end
-
-local function CreateFrame_Hook(type,name,parent,template)
-    if template=="SecureUnitButtonTemplate" and name then
-        SetFocusHotkey(_G[name])
-    end
-end
-hooksecurefunc("CreateFrame",CreateFrame_Hook)
-
 local focusButton=CreateFrame("CheckButton","CCRTFocusButton",UIParent,"SecureUnitButtonTemplate")
 focusButton:SetAttribute("type1","macro"); focusButton:SetAttribute("macrotext","/focus mouseover")
-local defaultUnitFrames={PlayerFrame,PetFrame,PartyMemberFrame1,PartyMemberFrame2,PartyMemberFrame3,PartyMemberFrame4,PartyMemberFrame1PetFrame,PartyMemberFrame2PetFrame,PartyMemberFrame3PetFrame,PartyMemberFrame4PetFrame,TargetFrame,TargetofTargetFrame}
-
-local function ApplyDefaultUnitFrameBindings()
-    if InCombatLockdown() or not modifier then return end
-    for _,frame in ipairs(defaultUnitFrames) do if frame then SetFocusHotkey(frame) end end
-end
 
 local function ApplyFocusBinding()
     if InCombatLockdown() or not modifier or not mouseButton then return end
@@ -44,7 +23,6 @@ local function ApplyFocusBinding()
     local oldKey=previousModifier and previousMouseButton and (string.upper(previousModifier).."-BUTTON"..previousMouseButton)
     if oldKey and oldKey~=newKey then SetOverrideBinding(focusButton,true,oldKey,nil) end
     SetOverrideBindingClick(focusButton,true,newKey,"CCRTFocusButton")
-    ApplyDefaultUnitFrameBindings()
     previousModifier=modifier
     previousMouseButton=mouseButton
 end
@@ -112,8 +90,8 @@ events:SetScript("OnEvent",function(_,event,arg1)
         mouseButton=focusDB.mouseButton or "1"
         focusDB.modifier=modifier; focusDB.mouseButton=mouseButton
         AutoPromoteDB.focusModifier=modifier; AutoPromoteDB.focusMouseButton=mouseButton
-        ApplyDefaultUnitFrameBindings(); ApplyFocusBinding(); RefreshUI()
+        ApplyFocusBinding(); RefreshUI()
     elseif event=="PLAYER_REGEN_ENABLED" then
-        ApplyDefaultUnitFrameBindings(); ApplyFocusBinding()
+        ApplyFocusBinding()
     end
 end)

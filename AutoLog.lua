@@ -4,10 +4,10 @@ local startedByAddon=false
 
 local function CheckAutoLog()
     C.InitDB()
-    local _,instanceType,difficultyID,_,_,_,_,mapID=GetInstanceInfo()
+    local _,instanceType,difficultyID=GetInstanceInfo()
     local d=AutoPromoteDB.logging
     local shouldLog=instanceType=="raid" and ((difficultyID==17 and d.lfr) or (difficultyID==14 and d.normal) or (difficultyID==15 and d.heroic) or (difficultyID==16 and d.mythic))
-    if instanceType=="party" and mapID and tonumber(mapID) and mapID>=959 then
+    if instanceType=="party" then
         if difficultyID==23 and d.dungeonMythic then shouldLog=true elseif difficultyID==8 and d.dungeonMythicPlus then shouldLog=true end
     end
     local active=LoggingCombat()
