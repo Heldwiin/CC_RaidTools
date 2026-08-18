@@ -33,16 +33,6 @@ local function BuildMainFrame()
     mainFrame.modulePanels=panels; mainFrame.menuButtons=buttons; mainFrame:Hide(); Select("AutoPromote"); return mainFrame
 end
 function C.ToggleUI() local f=BuildMainFrame(); if f:IsShown() then f:Hide() else f:Show() end end
-local function PrintHelp() print("|cff33ff99CC RaidTools|r commandes:"); print("/ccrt - ouvrir la configuration"); print("/ccrt add Nom-Royaume - ajouter un joueur"); print("/ccrt remove Nom-Royaume - retirer un joueur"); print("/ccrt list - lister les joueurs Auto Promote"); print("/ccrt debug - diagnostic du groupe/instance"); print("/ccrt raidcheck - ouvrir le Ready Check") end
-local function HandleSlash(msg)
-    C.InitDB(); msg=(msg or ""):match("^%s*(.-)%s*$") or ""; local cmd,arg=msg:match("^(%S+)%s*(.-)%s*$"); cmd=cmd and cmd:lower() or ""
-    if cmd=="" then C.ToggleUI(); return end
-    if cmd=="add" then if C.AddAutoPromoteName and C.AddAutoPromoteName(arg) then print("|cff33ff99[CC RaidTools]|r Joueur ajouté : "..arg); if mainFrame and mainFrame.modulePanels and mainFrame.modulePanels.AutoPromote then AutoPromoteUI_RefreshNames() end else print("|cffff6666[CC RaidTools]|r Nom invalide.") end
-    elseif cmd=="remove" then if C.RemoveAutoPromoteName and C.RemoveAutoPromoteName(arg) then print("|cff33ff99[CC RaidTools]|r Joueur retiré : "..arg); if mainFrame and mainFrame.modulePanels and mainFrame.modulePanels.AutoPromote then AutoPromoteUI_RefreshNames() end else print("|cffff6666[CC RaidTools]|r Nom invalide.") end
-    elseif cmd=="list" then local list=C.ListAutoPromoteNames and C.ListAutoPromoteNames() or {}; if #list==0 then print("|cff33ff99[CC RaidTools]|r Aucun joueur configuré.") else print("|cff33ff99[CC RaidTools]|r Auto Promote : "..table.concat(list,", ")) end
-    elseif cmd=="debug" then local name,instanceType,difficultyID,difficultyName,_,_,_,mapID=GetInstanceInfo(); print("|cff33ff99[CC RaidTools]|r Instance: "..tostring(name).." | type="..tostring(instanceType).." | difficulté="..tostring(difficultyID).." ("..tostring(difficultyName)..") | map="..tostring(mapID)); print("Groupe: "..tostring(GetNumGroupMembers()).." | raid="..tostring(IsInRaid()).." | leader="..tostring(UnitIsGroupLeader("player")))
-    elseif cmd=="raidcheck" then if C.ShowReadyCheck then C.ShowReadyCheck(nil,true) else print("|cffff6666[CC RaidTools]|r Ready Check indisponible.") end
-    elseif cmd=="help" then PrintHelp() else PrintHelp() end
-end
-SLASH_CCRAIDTOOLS1="/ccrt"; SLASH_CCRAIDTOOLS2="/ccraidtools"; SLASH_CCRAIDTOOLS3="/ap"; SlashCmdList["CCRAIDTOOLS"]=HandleSlash
+local function HandleSlash(msg) C.InitDB(); C.ToggleUI() end
+SLASH_CCRAIDTOOLS1="/ccrt"; SlashCmdList["CCRAIDTOOLS"]=HandleSlash
 local coreEvents=CreateFrame("Frame"); coreEvents:RegisterEvent("ADDON_LOADED"); coreEvents:SetScript("OnEvent",function(_,event,arg1) if event=="ADDON_LOADED" and arg1==ADDON_NAME then C.InitDB(); print("|cff33ff99[CC RaidTools]|r v1.0.4 chargé") end end)
