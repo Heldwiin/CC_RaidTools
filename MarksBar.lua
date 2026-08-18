@@ -2,11 +2,11 @@
 local C = CCRT
 local db
 local MARK_ICON_TEXTURE = "Interface\\TargetingFrame\\UI-RaidTargetingIcon_"
--- Display /wm order requested by CC:
+-- Display order follows the Blizzard target-marker order:
+-- 1 star, 2 circle, 3 diamond, 4 triangle, 5 moon, 6 square, 7 cross, 8 skull.
+-- /wm command mapping supplied for CC:
 -- 1 square, 2 triangle, 3 diamond, 4 cross, 5 star, 6 circle, 7 moon, 8 skull.
--- Blizzard world-marker IDs are: square=1, triangle=2, diamond=3, cross=4,
--- circle=5, moon=6, star=7, skull=8.
-local WORLD_MARK_COMMAND = { [1]=1, [2]=2, [3]=3, [4]=4, [5]=7, [6]=5, [7]=6, [8]=8 }
+local WORLD_MARK_COMMAND = { [1]=5, [2]=6, [3]=3, [4]=2, [5]=7, [6]=1, [7]=4, [8]=8 }
 local bar; local buttons={}; local worldButtons={}; local configRefresh; local layoutPending=false
 local function SavePosition() if not bar or not db or InCombatLockdown() then return end; local point,_,relativePoint,x,y=bar:GetPoint(1); if point then db.point=point; db.relativePoint=relativePoint or point; db.x=x or 0; db.y=y or 0 end end
 local function RestorePosition() if not bar or not db or InCombatLockdown() then return end; bar:ClearAllPoints(); bar:SetPoint(db.point or "CENTER",UIParent,db.relativePoint or "CENTER",db.x or 0,db.y or -180) end
@@ -44,7 +44,9 @@ local function CreateBar()
     for i=1,8 do
         local b=MakeIconButton(bar,23,23)
         local wm=WORLD_MARK_COMMAND[i]
-        SetMarkIcon(b.icon,wm)
+        -- The icon uses Blizzard's target-marker index (same order as the target marker row).
+        -- Only the secure world-marker action uses the /wm command mapping.
+        SetMarkIcon(b.icon,i)
         b.icon:SetVertexColor(1,0.85,0.35,0.85)
         SetupSecureWorldButton(b,wm)
         AddTooltip(b,"Marqueur au sol "..i,"Clic gauche : placer   |   Clic droit : retirer")
