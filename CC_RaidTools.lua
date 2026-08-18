@@ -13,8 +13,6 @@ function C.InitDB()
     AutoPromoteDB.windowPos=AutoPromoteDB.windowPos or {}
     AutoPromoteDB.focus=AutoPromoteDB.focus or {}
     AutoPromoteDB.marksBar=AutoPromoteDB.marksBar or {}
-    -- AutoLog settings were added after the initial SavedVariables schema.
-    -- Initialize them individually so existing users and fresh installs both work.
     AutoPromoteDB.logging=AutoPromoteDB.logging or {}
     local logging=AutoPromoteDB.logging
     if logging.lfr==nil then logging.lfr=false end
@@ -86,4 +84,4 @@ end
 function C.ToggleUI() local f=BuildMainFrame(); if f:IsShown() then f:Hide() else f:Show() end end
 SLASH_CCRAIDTOOLS1="/ccrt"
 SlashCmdList["CCRAIDTOOLS"]=function(msg) C.InitDB(); if not msg or msg:match("^%s*$") then C.ToggleUI(); return end; print("|cff33ff99CC RaidTools|r - utilise simplement /ccrt pour ouvrir la configuration.") end
-local coreEvents=CreateFrame("Frame"); coreEvents:RegisterEvent("ADDON_LOADED"); coreEvents:SetScript("OnEvent",function(_,event,arg1) if event=="ADDON_LOADED" and arg1==ADDON_NAME then C.InitDB(); print("|cff33ff99[CC RaidTools]|r v1.0.3 chargé") end end)
+local coreEvents=CreateFrame("Frame"); coreEvents:RegisterEvent("ADDON_LOADED"); coreEvents:SetScript("OnEvent",function(_,event,arg1) if event=="ADDON_LOADED" and arg1==ADDON_NAME then C.InitDB(); print("|cff33ff99[CC RaidTools]|r v1.0.4 chargé") end end)
