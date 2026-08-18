@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.5
+
+Interface, branding et stabilité.
+
+- Nouvelles icônes HD personnalisées pour les six modules.
+- Menu des modules modernisé avec icônes, sélection et survol plus lisibles.
+- Icône du module affichée en haut à droite de chaque panneau.
+- Watermark Caelestis Concilium repositionné pour éviter les chevauchements avec les icônes de module.
+- Correction du spam de messages AutoLog lors des rafraîchissements/reloads.
+- Version Ready Check synchronisée sur 1.1.5.
+
 ## 1.1.4
 
 Correctifs de fiabilité et de sécurité.
