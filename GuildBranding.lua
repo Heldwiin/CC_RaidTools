@@ -14,7 +14,7 @@ local function ApplyGuildBranding()
     watermark:SetSize(170, 170)
     watermark:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -18, 18)
     watermark:SetTexture(LOGO)
-    watermark:SetAlpha(0.30)
+    watermark:SetAlpha(0.70)
     frame._ccrtWatermark = watermark
 end
 
