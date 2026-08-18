@@ -9,12 +9,12 @@ local function ApplyGuildBranding()
     if not frame or frame._ccrtGuildBranding then return end
     frame._ccrtGuildBranding = true
 
-    -- Guild watermark in the lower-right of the configuration window.
+    -- More visible guild watermark in the lower-right of the configuration window.
     local watermark = frame:CreateTexture(nil, "BACKGROUND")
-    watermark:SetSize(125, 125)
-    watermark:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -24, 22)
+    watermark:SetSize(145, 145)
+    watermark:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -22, 22)
     watermark:SetTexture(LOGO)
-    watermark:SetAlpha(0.28)
+    watermark:SetAlpha(0.50)
     frame._ccrtWatermark = watermark
 end
 
