@@ -9,25 +9,46 @@ local mouseButton
 local previousModifier
 local previousMouseButton
 
-local function GetBindingKey() return string.upper(modifier).."-BUTTON"..mouseButton end
+local function GetBindingKey()
+    if not modifier or not mouseButton then return nil end
+    return string.upper(modifier).."-BUTTON"..mouseButton
+end
+
 local function SetFocusHotkey(frame)
-    if not frame or InCombatLockdown() then return end
-    if previousModifier and previousMouseButton then frame:SetAttribute(previousModifier.."-type"..previousMouseButton,nil) end
+    if not frame or InCombatLockdown() or not modifier or not mouseButton then return end
+    if previousModifier and previousMouseButton then
+        frame:SetAttribute(previousModifier.."-type"..previousMouseButton,nil)
+    end
     frame:SetAttribute(modifier.."-type"..mouseButton,"focus")
 end
-local function CreateFrame_Hook(type,name,parent,template) if template=="SecureUnitButtonTemplate" and name then SetFocusHotkey(_G[name]) end end
+
+local function CreateFrame_Hook(type,name,parent,template)
+    if template=="SecureUnitButtonTemplate" and name then
+        SetFocusHotkey(_G[name])
+    end
+end
 hooksecurefunc("CreateFrame",CreateFrame_Hook)
 
 local focusButton=CreateFrame("CheckButton","CCRTFocusButton",UIParent,"SecureUnitButtonTemplate")
 focusButton:SetAttribute("type1","macro"); focusButton:SetAttribute("macrotext","/focus mouseover")
 local defaultUnitFrames={PlayerFrame,PetFrame,PartyMemberFrame1,PartyMemberFrame2,PartyMemberFrame3,PartyMemberFrame4,PartyMemberFrame1PetFrame,PartyMemberFrame2PetFrame,PartyMemberFrame3PetFrame,PartyMemberFrame4PetFrame,TargetFrame,TargetofTargetFrame}
-function ApplyDefaultUnitFrameBindings() if InCombatLockdown() or not modifier then return end; for _,frame in ipairs(defaultUnitFrames) do SetFocusHotkey(frame) end end
+
+function ApplyDefaultUnitFrameBindings()
+    if InCombatLockdown() or not modifier then return end
+    for _,frame in ipairs(defaultUnitFrames) do SetFocusHotkey(frame) end
+end
+
 local function ApplyFocusBinding()
     if InCombatLockdown() or not modifier or not mouseButton then return end
-    local newKey=GetBindingKey(); local oldKey=previousModifier and previousMouseButton and (string.upper(previousModifier).."-BUTTON"..previousMouseButton)
+    local newKey=GetBindingKey()
+    local oldKey=previousModifier and previousMouseButton and (string.upper(previousModifier).."-BUTTON"..previousMouseButton)
     if oldKey and oldKey~=newKey then SetOverrideBinding(focusButton,true,oldKey,nil) end
-    SetOverrideBindingClick(focusButton,true,newKey,"CCRTFocusButton"); ApplyDefaultUnitFrameBindings(); previousModifier=modifier; previousMouseButton=mouseButton
+    SetOverrideBindingClick(focusButton,true,newKey,"CCRTFocusButton")
+    ApplyDefaultUnitFrameBindings()
+    previousModifier=modifier
+    previousMouseButton=mouseButton
 end
+
 local function SaveFocusSettings()
     if not focusDB then return end
     focusDB.modifier=modifier
@@ -64,6 +85,7 @@ local modifierValues={{"Shift","shift"},{"Alt","alt"},{"Ctrl","ctrl"}}
 local mouseValues={{"Left","1"},{"Right","2"},{"Middle","3"},{"Mouse 4","4"},{"Mouse 5","5"}}
 local modifierDrop
 local mouseDrop
+
 local function BuildUI(f)
     local label=f:CreateFontString(nil,"OVERLAY","GameFontNormal"); label:SetPoint("TOPLEFT",f,"TOPLEFT",12,-30); label:SetText("Focus :"); label:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
     local modifierLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); modifierLabel:SetPoint("TOPLEFT",label,"BOTTOMLEFT",0,-8); modifierLabel:SetText("Touche")
@@ -71,10 +93,12 @@ local function BuildUI(f)
     local mouseLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); mouseLabel:SetPoint("TOPLEFT",modifierLabel,"TOPLEFT",158,0); mouseLabel:SetText("Clic souris")
     mouseDrop=CreateSwitchMenu(f,mouseValues,mouseButton,function(value) mouseButton=value; SaveFocusSettings(); ApplyFocusBinding() end); mouseDrop:SetPoint("TOPLEFT",modifierDrop,"TOPLEFT",158,0)
 end
+
 local function RefreshUI()
-    if modifierDrop then modifierDrop:SetValue(focusDB.modifier) end
-    if mouseDrop then mouseDrop:SetValue(focusDB.mouseButton) end
+    if modifierDrop and focusDB then modifierDrop:SetValue(focusDB.modifier) end
+    if mouseDrop and focusDB then mouseDrop:SetValue(focusDB.mouseButton) end
 end
+
 C.RegisterModule("Focus",BuildUI,RefreshUI)
 
 local events=CreateFrame("Frame")
