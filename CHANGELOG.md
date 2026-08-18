@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.2
+
+Release packaging et nettoyage du processus de publication.
+
+- Synchronisation de toutes les chaînes de version sur 1.1.2.
+- Génération automatique du ZIP de release via GitHub Actions.
+- Le ZIP distribué contient uniquement les fichiers nécessaires à l'addon.
+- Les fichiers de développement et de documentation ne sont pas inclus dans l'archive WoWUp.
+- Nettoyage général du processus de publication.
+
 ## 1.1.1
 
 Correctifs, performances et nettoyage général.
