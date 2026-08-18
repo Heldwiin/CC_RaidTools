@@ -196,13 +196,13 @@ Use actual WoW UI textures where possible rather than emoji or text glyphs.
 
 ## Commands
 
-The primary configuration command is:
+The addon intentionally exposes **one command only**:
 
-`/ccrt`
+`/ccrt` — opens the configuration window.
 
-Do not document commands that are not actually implemented.
+Do not add aliases, subcommands, debug commands, or undocumented slash commands unless the user explicitly requests them.
 
-If commands such as `/ccrt add`, `/ccrt remove`, `/ccrt list`, `/ccrt debug`, `/ccrt raidcheck`, `/ccraidtools`, or `/ap` are documented, keep the implementation and documentation synchronized.
+Keep README and in-game behavior synchronized with this rule.
 
 ## Versioning and releases
 
