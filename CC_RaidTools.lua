@@ -35,4 +35,4 @@ end
 function C.ToggleUI() local f=BuildMainFrame(); if f:IsShown() then f:Hide() else f:Show() end end
 local function HandleSlash(msg) C.InitDB(); C.ToggleUI() end
 SLASH_CCRAIDTOOLS1="/ccrt"; SlashCmdList["CCRAIDTOOLS"]=HandleSlash
-local coreEvents=CreateFrame("Frame"); coreEvents:RegisterEvent("ADDON_LOADED"); coreEvents:SetScript("OnEvent",function(_,event,arg1) if event=="ADDON_LOADED" and arg1==ADDON_NAME then C.InitDB(); print("|cff33ff99[CC RaidTools]|r v1.1.1 chargé") end end)
+local coreEvents=CreateFrame("Frame"); coreEvents:RegisterEvent("ADDON_LOADED"); coreEvents:SetScript("OnEvent",function(_,event,arg1) if event=="ADDON_LOADED" and arg1==ADDON_NAME then C.InitDB(); print("|cff33ff99[CC RaidTools]|r v1.1.2 chargé") end end)
