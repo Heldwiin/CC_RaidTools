@@ -49,7 +49,7 @@ local function StyleModuleButton(button)
 
     button:HookScript("OnEnter", function(self)
         if self._ccrtModuleBg then self._ccrtModuleBg:SetColorTexture(0.075, 0.065, 0.10, 0.98) end
-        if self._ccrtModuleAccent then self._ccrtModuleAccent:SetColorTexture(0.451, 0.506, 1, 1) end
+        if self._ccrtModuleAccent and not self.selected then self._ccrtModuleAccent:SetColorTexture(0.451, 0.506, 1, 1) end
     end)
     button:HookScript("OnLeave", function(self)
         if self._ccrtModuleBg and not self.selected then self._ccrtModuleBg:SetColorTexture(0.018, 0.018, 0.024, 0.96) end
@@ -60,8 +60,7 @@ end
 local function ApplyPanelIcon(panel, texturePath)
     if not panel or not texturePath then return end
 
-    -- The PNGs already have transparent backgrounds. Do not create a backing square:
-    -- the icon should float cleanly over the module panel.
+    -- The PNGs already have transparent backgrounds. Do not create a backing square.
     if panel._ccrtModuleHeaderIconBg then
         panel._ccrtModuleHeaderIconBg:Hide()
     end
@@ -84,6 +83,19 @@ local function ApplyPanelIcon(panel, texturePath)
     end
 end
 
+local function SyncMenuAccents(frame)
+    if not frame or not frame.menuButtons then return end
+    for _, button in pairs(frame.menuButtons) do
+        if button._ccrtModuleAccent then
+            if button.selected then
+                button._ccrtModuleAccent:SetColorTexture(0.451, 0.506, 1, 1)
+            else
+                button._ccrtModuleAccent:SetColorTexture(0.451, 0.506, 1, 0)
+            end
+        end
+    end
+end
+
 local function ApplyModuleIcons()
     if not CCRT or not CCRT.GetMainFrame then return end
     local frame = CCRT.GetMainFrame()
@@ -94,6 +106,7 @@ local function ApplyModuleIcons()
             local texturePath = MODULE_ICONS[moduleName]
             if texturePath then
                 StyleModuleButton(button)
+
                 if not button._ccrtModuleIconBg then
                     local iconBg = button:CreateTexture(nil, "ARTWORK")
                     iconBg:SetSize(31, 31)
@@ -112,6 +125,7 @@ local function ApplyModuleIcons()
                     button._ccrtModuleIcon:SetTexture(texturePath)
                     button._ccrtModuleIcon:SetSize(30, 30)
                 end
+
                 if button.text then
                     button.text:ClearAllPoints()
                     button.text:SetPoint("LEFT", button._ccrtModuleIconBg, "RIGHT", 8, 0)
@@ -120,6 +134,18 @@ local function ApplyModuleIcons()
                     button.text:SetShadowColor(0, 0, 0, 1)
                     local font, _, flags = button.text:GetFont()
                     if font then button.text:SetFont(font, 12, flags or "OUTLINE") end
+                end
+
+                -- The core changes button.selected inside its click handler.
+                -- Re-sync the accent after selection so the old module cannot keep the blue line.
+                if not button._ccrtAccentSyncHooked then
+                    button._ccrtAccentSyncHooked = true
+                    button:HookScript("OnClick", function()
+                        C_Timer.After(0, function()
+                            local f = CCRT and CCRT.GetMainFrame and CCRT.GetMainFrame()
+                            if f then SyncMenuAccents(f) end
+                        end)
+                    end)
                 end
             end
         end
@@ -131,7 +157,6 @@ local function ApplyModuleIcons()
             if texturePath then ApplyPanelIcon(panel, texturePath) end
         end
 
-        -- Ready Check test button sits directly under the module enable switch.
         local readyPanel = frame.modulePanels.ReadyCheck
         local test = readyPanel and readyPanel.raidCheckTestButton
         if test then
@@ -141,6 +166,8 @@ local function ApplyModuleIcons()
             test:SetText("Tester")
         end
     end
+
+    SyncMenuAccents(frame)
 end
 
 local events = CreateFrame("Frame")
