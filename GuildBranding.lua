@@ -9,11 +9,11 @@ local function ApplyGuildBranding()
     if not frame or frame._ccrtGuildBranding then return end
     frame._ccrtGuildBranding = true
 
-    local watermark = frame:CreateTexture(nil, "BACKGROUND")
-    watermark:SetSize(170, 170)
+    local watermark = frame:CreateTexture(nil, "ARTWORK")
+    watermark:SetSize(190, 190)
     watermark:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -18, 18)
     watermark:SetTexture(LOGO)
-    watermark:SetAlpha(0.95)
+    watermark:SetAlpha(1.0)
     frame._ccrtWatermark = watermark
 end
 
