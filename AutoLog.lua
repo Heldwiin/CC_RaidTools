@@ -1,63 +1,96 @@
 -- CC RaidTools - AutoLog
 local C=CCRT
 local startedByAddon=false
-local loggingState=nil
-local lastStateQuery=0
-local lastStartAttempt=0
-local lastStopAttempt=0
-local ACTION_COOLDOWN=5
-local STATE_QUERY_COOLDOWN=10
+local lastActionAttempt=0
+local pendingTimer=nil
+local ACTION_RETRY_DELAY=10.5
 
-local function GetLoggingState(force)
-    local now=GetTime()
-    if not force and loggingState~=nil and (now-lastStateQuery)<STATE_QUERY_COOLDOWN then
-        return loggingState
-    end
-    local state=LoggingCombat()
-    if state~=nil then
-        loggingState=state and true or false
-        lastStateQuery=now
-    end
-    return loggingState
-end
-
-local function CheckAutoLog(forceStateQuery)
+local function IsLoggingTarget()
     C.InitDB()
     local _,instanceType,difficultyID=GetInstanceInfo()
     local d=AutoPromoteDB.logging
-    local shouldLog=instanceType=="raid" and ((difficultyID==17 and d.lfr) or (difficultyID==14 and d.normal) or (difficultyID==15 and d.heroic) or (difficultyID==16 and d.mythic))
-    if instanceType=="party" then
-        if difficultyID==23 and d.dungeonMythic then shouldLog=true elseif difficultyID==8 and d.dungeonMythicPlus then shouldLog=true end
+
+    if instanceType=="raid" then
+        return (difficultyID==17 and d.lfr)
+            or (difficultyID==14 and d.normal)
+            or (difficultyID==15 and d.heroic)
+            or (difficultyID==16 and d.mythic)
     end
 
-    local active=GetLoggingState(forceStateQuery)
+    if instanceType=="party" then
+        -- WoW Retail: 23 = Mythic 0, 8 = Mythic Keystone (M+).
+        return (difficultyID==23 and d.dungeonMythic)
+            or (difficultyID==8 and d.dungeonMythicPlus)
+    end
+
+    return false
+end
+
+local function ScheduleRetry()
+    if pendingTimer then return end
+    pendingTimer=true
+    C_Timer.After(ACTION_RETRY_DELAY,function()
+        pendingTimer=nil
+        C.CheckAutoLog(true)
+    end)
+end
+
+local function CheckAutoLog(forceQuery)
+    C.InitDB()
+    local shouldLog=IsLoggingTarget()
     local now=GetTime()
 
-    if shouldLog and active==false then
-        if not startedByAddon and not AutoPromoteDB.loggingStartedByAddon and (now-lastStartAttempt)>=ACTION_COOLDOWN then
-            lastStartAttempt=now
-            local result=LoggingCombat(true)
-            if result==true then
-                loggingState=true
-                startedByAddon=true
-                AutoPromoteDB.loggingStartedByAddon=true
-                print("|cff33ff99[CC RaidTools]|r Enregistrement des combats démarré.")
-            end
+    if shouldLog then
+        -- If CC already owns the logging session (including after /reload),
+        -- do not query or toggle LoggingCombat again.
+        if startedByAddon or AutoPromoteDB.loggingStartedByAddon then
+            startedByAddon=true
+            AutoPromoteDB.loggingStartedByAddon=true
+            return
         end
-    elseif not shouldLog and active==true and (startedByAddon or AutoPromoteDB.loggingStartedByAddon) then
-        if (now-lastStopAttempt)>=ACTION_COOLDOWN then
-            lastStopAttempt=now
-            local result=LoggingCombat(false)
-            if result==false then
-                loggingState=false
-                startedByAddon=false
-                AutoPromoteDB.loggingStartedByAddon=false
-                print("|cff33ff99[CC RaidTools]|r Enregistrement des combats arrêté.")
-            end
+
+        -- Query the state only when we are entering a logging target. This
+        -- avoids exhausting the global LoggingCombat() rate limit with zone
+        -- and group events.
+        if now-lastActionAttempt<1 then return end
+        lastActionAttempt=now
+        local active=LoggingCombat()
+        if active==nil then
+            ScheduleRetry()
+            return
         end
-    elseif active==false and not shouldLog then
-        startedByAddon=false
-        AutoPromoteDB.loggingStartedByAddon=false
+        if active then
+            -- Logging was already enabled manually. Never claim ownership and
+            -- never stop it when the player leaves the instance.
+            return
+        end
+
+        local result=LoggingCombat(true)
+        if result==true then
+            startedByAddon=true
+            AutoPromoteDB.loggingStartedByAddon=true
+            print("|cff33ff99[CC RaidTools]|r Enregistrement des combats démarré.")
+        else
+            -- nil means the API was rate limited; retry after the documented
+            -- cooldown instead of pretending logging started.
+            ScheduleRetry()
+        end
+        return
+    end
+
+    -- Only stop logging when CC actually started it. Manual /combatlog usage
+    -- is deliberately left untouched.
+    if startedByAddon or AutoPromoteDB.loggingStartedByAddon then
+        if now-lastActionAttempt<1 then return end
+        lastActionAttempt=now
+        local result=LoggingCombat(false)
+        if result==false then
+            startedByAddon=false
+            AutoPromoteDB.loggingStartedByAddon=false
+            print("|cff33ff99[CC RaidTools]|r Enregistrement des combats arrêté.")
+        elseif result==nil then
+            ScheduleRetry()
+        end
     end
 end
 C.CheckAutoLog=CheckAutoLog
@@ -69,7 +102,7 @@ local function BuildUI(f)
     for _,info in ipairs({{"LFR","lfr"},{"Normal","normal"},{"Héroïque","heroic"},{"Mythique","mythic"},{"Donjon Mythique","dungeonMythic"},{"Donjon Mythique+","dungeonMythicPlus"}}) do
         local chk=CreateFrame("CheckButton",nil,f,"BackdropTemplate"); chk:SetSize(48,24); C.SkinCheckBox(chk); chk:SetPoint("TOPLEFT",previous,"BOTTOMLEFT",0,-3)
         local text=chk:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); text:SetPoint("LEFT",chk,"RIGHT",7,0); text:SetText(info[1])
-        chk:SetScript("OnClick",function(self) AutoPromoteDB.logging[info[2]]=self:GetChecked() and true or false; if self._ccrtRefresh then self:_ccrtRefresh() end; CheckAutoLog(true) end)
+        chk:SetScript("OnClick",function(self) AutoPromoteDB.logging[info[2]]=self:GetChecked() and true or false; if self._ccrtRefresh then self:_ccrtRefresh() end; C.CheckAutoLog(true) end)
         checks[info[2]]=chk; previous=chk
     end
 end
@@ -79,16 +112,17 @@ end
 C.RegisterModule("AutoLog",BuildUI,Refresh)
 
 local e=CreateFrame("Frame")
-for _,ev in ipairs({"ADDON_LOADED","PLAYER_ENTERING_WORLD","ZONE_CHANGED_NEW_AREA","GROUP_ROSTER_UPDATE","CHALLENGE_MODE_START","PLAYER_DIFFICULTY_CHANGED","UPDATE_INSTANCE_INFO"}) do e:RegisterEvent(ev) end
+for _,ev in ipairs({"ADDON_LOADED","PLAYER_ENTERING_WORLD","ZONE_CHANGED_NEW_AREA","CHALLENGE_MODE_START","PLAYER_DIFFICULTY_CHANGED","UPDATE_INSTANCE_INFO"}) do e:RegisterEvent(ev) end
 e:SetScript("OnEvent",function(_,event,arg1)
     if event=="ADDON_LOADED" and arg1=="CC_RaidTools" then
         C.InitDB()
         startedByAddon=AutoPromoteDB.loggingStartedByAddon and true or false
-        loggingState=nil
-        C_Timer.After(2,function() CheckAutoLog(true) end)
+        C_Timer.After(2,function() C.CheckAutoLog(true) end)
     elseif event=="CHALLENGE_MODE_START" then
-        C_Timer.After(1,function() CheckAutoLog(true) end)
+        -- Mirrors Method Raid Tools: evaluate shortly after the keystone
+        -- countdown starts, when GetInstanceInfo() reports difficulty 8.
+        C_Timer.After(1,function() C.CheckAutoLog(true) end)
     else
-        C_Timer.After(2,CheckAutoLog)
+        C_Timer.After(2,C.CheckAutoLog)
     end
 end)
