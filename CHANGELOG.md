@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.7
+
+Correctif AutoLog Mythique+.
+
+- Correction du démarrage de l'enregistrement des combats en Mythique+.
+- Détection du lancement de clé via `CHALLENGE_MODE_START` avec délai de 1 seconde, suivant le comportement validé de Method Raid Tools.
+- Suppression des interrogations répétées de `LoggingCombat()` qui pouvaient perturber le démarrage du log.
+- Conservation de la propriété du logging pour que CC RaidTools n'arrête jamais un combat log lancé manuellement.
+
 ## 1.1.6
 
 Correctif Ready Check et synchronisation de release.
