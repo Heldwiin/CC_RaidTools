@@ -1,11 +1,27 @@
 -- CC RaidTools - AutoLog
 local C=CCRT
 local startedByAddon=false
+local loggingState=nil
+local lastStateQuery=0
 local lastStartAttempt=0
 local lastStopAttempt=0
 local ACTION_COOLDOWN=5
+local STATE_QUERY_COOLDOWN=10
 
-local function CheckAutoLog()
+local function GetLoggingState(force)
+    local now=GetTime()
+    if not force and loggingState~=nil and (now-lastStateQuery)<STATE_QUERY_COOLDOWN then
+        return loggingState
+    end
+    local state=LoggingCombat()
+    if state~=nil then
+        loggingState=state and true or false
+        lastStateQuery=now
+    end
+    return loggingState
+end
+
+local function CheckAutoLog(forceStateQuery)
     C.InitDB()
     local _,instanceType,difficultyID=GetInstanceInfo()
     local d=AutoPromoteDB.logging
@@ -13,29 +29,33 @@ local function CheckAutoLog()
     if instanceType=="party" then
         if difficultyID==23 and d.dungeonMythic then shouldLog=true elseif difficultyID==8 and d.dungeonMythicPlus then shouldLog=true end
     end
-    local active=LoggingCombat()
+
+    local active=GetLoggingState(forceStateQuery)
     local now=GetTime()
 
-    if shouldLog and not active then
-        -- Several WoW instance/group events can fire in a short burst. Avoid
-        -- repeatedly calling LoggingCombat(true) and printing the same message.
+    if shouldLog and active==false then
         if not startedByAddon and not AutoPromoteDB.loggingStartedByAddon and (now-lastStartAttempt)>=ACTION_COOLDOWN then
             lastStartAttempt=now
-            LoggingCombat(true)
-            startedByAddon=true
-            AutoPromoteDB.loggingStartedByAddon=true
-            print("|cff33ff99[CC RaidTools]|r Enregistrement des combats démarré.")
+            local result=LoggingCombat(true)
+            if result==true then
+                loggingState=true
+                startedByAddon=true
+                AutoPromoteDB.loggingStartedByAddon=true
+                print("|cff33ff99[CC RaidTools]|r Enregistrement des combats démarré.")
+            end
         end
-    elseif not shouldLog and active and (startedByAddon or AutoPromoteDB.loggingStartedByAddon) then
-        -- Same protection for stop requests when multiple zone events arrive together.
+    elseif not shouldLog and active==true and (startedByAddon or AutoPromoteDB.loggingStartedByAddon) then
         if (now-lastStopAttempt)>=ACTION_COOLDOWN then
             lastStopAttempt=now
-            LoggingCombat(false)
-            startedByAddon=false
-            AutoPromoteDB.loggingStartedByAddon=false
-            print("|cff33ff99[CC RaidTools]|r Enregistrement des combats arrêté.")
+            local result=LoggingCombat(false)
+            if result==false then
+                loggingState=false
+                startedByAddon=false
+                AutoPromoteDB.loggingStartedByAddon=false
+                print("|cff33ff99[CC RaidTools]|r Enregistrement des combats arrêté.")
+            end
         end
-    elseif not active and not shouldLog then
+    elseif active==false and not shouldLog then
         startedByAddon=false
         AutoPromoteDB.loggingStartedByAddon=false
     end
@@ -49,7 +69,7 @@ local function BuildUI(f)
     for _,info in ipairs({{"LFR","lfr"},{"Normal","normal"},{"Héroïque","heroic"},{"Mythique","mythic"},{"Donjon Mythique","dungeonMythic"},{"Donjon Mythique+","dungeonMythicPlus"}}) do
         local chk=CreateFrame("CheckButton",nil,f,"BackdropTemplate"); chk:SetSize(48,24); C.SkinCheckBox(chk); chk:SetPoint("TOPLEFT",previous,"BOTTOMLEFT",0,-3)
         local text=chk:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); text:SetPoint("LEFT",chk,"RIGHT",7,0); text:SetText(info[1])
-        chk:SetScript("OnClick",function(self) AutoPromoteDB.logging[info[2]]=self:GetChecked() and true or false; if self._ccrtRefresh then self:_ccrtRefresh() end; CheckAutoLog() end)
+        chk:SetScript("OnClick",function(self) AutoPromoteDB.logging[info[2]]=self:GetChecked() and true or false; if self._ccrtRefresh then self:_ccrtRefresh() end; CheckAutoLog(true) end)
         checks[info[2]]=chk; previous=chk
     end
 end
@@ -62,9 +82,13 @@ local e=CreateFrame("Frame")
 for _,ev in ipairs({"ADDON_LOADED","PLAYER_ENTERING_WORLD","ZONE_CHANGED_NEW_AREA","GROUP_ROSTER_UPDATE","CHALLENGE_MODE_START","PLAYER_DIFFICULTY_CHANGED","UPDATE_INSTANCE_INFO"}) do e:RegisterEvent(ev) end
 e:SetScript("OnEvent",function(_,event,arg1)
     if event=="ADDON_LOADED" and arg1=="CC_RaidTools" then
-        C.InitDB(); startedByAddon=AutoPromoteDB.loggingStartedByAddon and true or false
-        if not LoggingCombat() then startedByAddon=false; AutoPromoteDB.loggingStartedByAddon=false end
+        C.InitDB()
+        startedByAddon=AutoPromoteDB.loggingStartedByAddon and true or false
+        loggingState=nil
+        C_Timer.After(2,function() CheckAutoLog(true) end)
+    elseif event=="CHALLENGE_MODE_START" then
+        C_Timer.After(1,function() CheckAutoLog(true) end)
+    else
         C_Timer.After(2,CheckAutoLog)
-    elseif event=="CHALLENGE_MODE_START" then C_Timer.After(1,CheckAutoLog)
-    else C_Timer.After(2,CheckAutoLog) end
+    end
 end)
