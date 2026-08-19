@@ -25,7 +25,14 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.1.6**
+**1.1.7**
+
+### v1.1.7 — Correctif AutoLog Mythique+
+
+- Correction du démarrage de l'enregistrement des combats en Mythique+.
+- Détection du lancement de clé via `CHALLENGE_MODE_START` avec délai de 1 seconde, suivant le comportement validé de Method Raid Tools.
+- Suppression des interrogations répétées de `LoggingCombat()` qui pouvaient perturber le démarrage du log.
+- Conservation de la propriété du logging pour que CC RaidTools n'arrête jamais un combat log lancé manuellement.
 
 ### v1.1.6 — Ready Check & stabilité
 
@@ -33,49 +40,3 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - Restauration du bouton Test et des événements READY_CHECK, READY_CHECK_CONFIRM et READY_CHECK_FINISHED.
 - Conservation du cache d'auras, du throttling UNIT_AURA et du défilement jusqu'à 40 joueurs.
 - Synchronisation de toutes les chaînes de version sur 1.1.6.
-
-### v1.1.5 — Interface & branding
-
-- Nouvelles icônes HD personnalisées pour les six modules.
-- Menu des modules modernisé avec icônes, sélection et survol plus lisibles.
-- Icône du module affichée en haut à droite de chaque panneau.
-- Watermark Caelestis Concilium repositionné pour éviter les chevauchements avec les icônes de module.
-- Correction du spam de messages AutoLog lors des rafraîchissements/reloads.
-- Version Ready Check synchronisée sur 1.1.5.
-
-### v1.1.4 — Fiabilité & sécurité
-
-- AutoLog couvre tous les donjons Mythique et Mythique+.
-- Focus n'altère plus les frames sécurisées externes.
-- Synchronisation des versions affichées.
-- Watermark de guilde plus discret.
-
-### v1.1.2 — Release packaging & clean-up
-
-- Synchronisation de toutes les chaînes de version sur 1.1.2.
-- Génération automatique de l'archive de release via GitHub Actions.
-- L'archive distribuée contient uniquement les fichiers nécessaires à l'addon.
-- Les fichiers de développement et de documentation (`AGENTS.md`, `README.md`, `CHANGELOG.md`, `.github/`, etc.) ne sont pas inclus dans le ZIP WoWUp.
-- Nettoyage général du processus de publication.
-
-### v1.1.1 — Fixes & Performance
-
-- Correction du défilement du Ready Check pour les raids jusqu'à 40 joueurs.
-- Optimisation du scan des auras avec un cache par joueur et des mises à jour via `UNIT_AURA`.
-- Sécurisation supplémentaire de l'accès aux champs d'auras potentiellement protégés.
-- Correction du mode Test du Ready Check pour utiliser le cycle normal.
-- Correction du défilement de la liste Auto Promote.
-- Restauration des identifiants Vantus manquants.
-- Correction du mapping des World Markers et des tooltips `/wm`.
-- Améliorations générales de stabilité.
-
-### v1.1.0 — Clean-up & stabilité
-
-- Nettoyage général de l'architecture et des commandes.
-- Sécurisation des éléments protégés et des actions en combat.
-- Ready Check corrigé et optimisé.
-- AutoLog fiabilisé, y compris après `/reload`.
-- Marks Bar mieux protégée contre les modifications pendant le combat.
-- SavedVariables initialisées de manière défensive.
-- Interface et branding nettoyés.
-- Documentation et règles de développement mises à jour.
