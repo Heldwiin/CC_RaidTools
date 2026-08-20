@@ -7,6 +7,7 @@ local ROW_H = 20
 local HEADER_H = 52
 local TIMER_H = 18
 local EXTRA_H = 16
+local TIMER_TEXTURE = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\atrocity.tga"
 
 local frame
 local timerBar
@@ -26,8 +27,8 @@ local function EnsureTimer()
     timerBar:SetValue(DURATION)
     timerBar:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 12, 10)
     timerBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -12, 10)
-    timerBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-    timerBar:SetStatusBarColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 0.85)
+    timerBar:SetStatusBarTexture(TIMER_TEXTURE)
+    timerBar:SetStatusBarColor(1, 1, 1, 1)
     timerBar.bg = timerBar:CreateTexture(nil, "BACKGROUND")
     timerBar.bg:SetAllPoints()
     timerBar.bg:SetColorTexture(0.08, 0.08, 0.10, 0.8)
@@ -88,8 +89,6 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("READY_CHECK")
 eventFrame:SetScript("OnEvent", function()
-    -- Start the 30-second countdown when the Ready Check actually opens,
-    -- not when READY_CHECK_FINISHED fires. The latter can be ~10 seconds later.
     if FindFrame() then
         ResizeFrame()
         StartCountdown()
