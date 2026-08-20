@@ -38,10 +38,28 @@ local function EnsureTimer()
     timerText:SetText("Fermeture dans 30s")
 end
 
+local function HideScrollBar()
+    if not frame or not frame.scrollFrame then return end
+    local scroll = frame.scrollFrame
+    if scroll.ScrollBar then
+        scroll.ScrollBar:Hide()
+        scroll.ScrollBar:EnableMouse(false)
+    end
+    if scroll.ScrollUpButton then scroll.ScrollUpButton:Hide(); scroll.ScrollUpButton:EnableMouse(false) end
+    if scroll.ScrollDownButton then scroll.ScrollDownButton:Hide(); scroll.ScrollDownButton:EnableMouse(false) end
+    if scroll.scrollBar then
+        scroll.scrollBar:Hide()
+        scroll.scrollBar:EnableMouse(false)
+    end
+end
+
 local function ResizeFrame()
     if not frame or not frame:IsShown() then return end
     local count = GetRaidCount()
-    if count == lastCount then return end
+    if count == lastCount then
+        HideScrollBar()
+        return
+    end
     lastCount = count
 
     local rowsHeight = math.max(ROW_H, count * ROW_H)
@@ -50,10 +68,13 @@ local function ResizeFrame()
     frame:SetHeight(frameHeight)
     if frame.scrollFrame then
         frame.scrollFrame:SetHeight(rowsHeight)
+        frame.scrollFrame:SetVerticalScroll(0)
     end
     if frame.child then
         frame.child:SetHeight(rowsHeight)
     end
+
+    HideScrollBar()
 
     if timerBar then
         timerBar:ClearAllPoints()
@@ -83,8 +104,6 @@ local function UpdateTimerDisplay()
 end
 
 local function StartCountdown()
-    -- Start from the READY_CHECK event itself. The Ready Check frame can be
-    -- created a little later, so do not wait for the frame before starting time.
     finishAt = GetTime() + DURATION
     if frame then
         EnsureTimer()
@@ -106,6 +125,7 @@ local function FindFrame()
 
     EnsureTimer()
     ResizeFrame()
+    HideScrollBar()
 
     if not hooked then
         hooked = true
@@ -113,6 +133,7 @@ local function FindFrame()
             lastCount = nil
             C_Timer.After(0, ResizeFrame)
             UpdateTimerDisplay()
+            HideScrollBar()
         end)
         frame:HookScript("OnHide", StopCountdown)
     end
@@ -123,8 +144,6 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("READY_CHECK")
 eventFrame:SetScript("OnEvent", function()
-    -- Start the countdown immediately when Blizzard fires READY_CHECK.
-    -- Do not wait for READY_CHECK_FINISHED or for the custom frame to exist.
     StartCountdown()
     FindFrame()
 end)
@@ -136,6 +155,7 @@ eventFrame:SetScript("OnUpdate", function()
 
     if frame and frame:IsShown() then
         ResizeFrame()
+        HideScrollBar()
         UpdateTimerDisplay()
     elseif not finishAt then
         lastCount = nil
