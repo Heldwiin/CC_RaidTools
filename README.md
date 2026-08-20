@@ -6,12 +6,15 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 - Auto Promote de joueurs configurés manuellement.
 - Auto Promote selon les rangs de guilde sélectionnés.
-- AutoLog configurable pour LFR, Normal, Héroïque, Mythique, Donjon Mythique et Mythique+.
+- AutoLog configurable pour LFR, Normal, Héroïque, Mythique et Donjons (M0 / M+).
 - Fenêtre Ready Check automatique lors d'un appel.
 - Statut dynamique OK / KO / WAIT.
 - Vérification des consommables : repas, flacon, rune et rune de Vantus.
 - Affichage des buffs de raid Mage (Intel), Guerrier (PA), Druide, Prêtre (Endu) et Chaman.
 - Compteur dynamique des joueurs prêts dans l'en-tête du Ready Check (ex. 3/20).
+- Fenêtre Ready Check redimensionnée automatiquement selon le nombre de joueurs, jusqu'à 40 joueurs sans ascenseur visible.
+- Barre de fermeture avec compte à rebours et texture personnalisée Atrocity.
+- Fermeture automatique rapide lorsque tout le monde est prêt.
 - Marks Bar avec marques de raid et marqueurs au sol.
 - Barre configurable en horizontal ou vertical, avec position sauvegardée et affichage au mouseover.
 - Focus configurable avec modificateur et bouton de souris.
@@ -25,7 +28,20 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.1.7**
+**1.1.8**
+
+### v1.1.8 — AutoLog Donjons & Ready Check
+
+- Fusion des options Donjons Mythique et Mythique+ en une seule option Donjons (M0 / M+).
+- Correction du démarrage de l'AutoLog en Mythique+ avec `CHALLENGE_MODE_START` et délai d'une seconde.
+- Alignement de la logique de démarrage des donjons sur le comportement validé avec Method Raid Tools.
+- Fenêtre Ready Check redimensionnée automatiquement selon le nombre de joueurs.
+- Suppression de l'ascenseur visible du Ready Check.
+- Barre de fermeture utilisant `atrocity.tga`.
+- Timer de fermeture démarré dès l'ouverture du Ready Check.
+- Fermeture automatique environ 2 secondes après que tout le monde est prêt.
+- Fusion des améliorations Ready Check dans `ReadyCheck.lua`.
+- Version affichée dans la fenêtre Ready Check synchronisée avec la release.
 
 ### v1.1.7 — Correctif AutoLog Mythique+
 
