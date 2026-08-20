@@ -7,45 +7,36 @@ local ACTION_COOLDOWN=5
 
 local function IsLoggingActive()
     if C_ChatInfo and C_ChatInfo.IsLoggingCombat then
-        local enabled=C_ChatInfo.IsLoggingCombat()
-        return enabled and true or false
+        return C_ChatInfo.IsLoggingCombat() and true or false
     end
-    return nil
+    return false
 end
 
 local function StartLogging()
     local now=GetTime()
     if startedByAddon or AutoPromoteDB.loggingStartedByAddon then return end
     if (now-lastStartAttempt)<ACTION_COOLDOWN then return end
-
     lastStartAttempt=now
-    local wasActive=IsLoggingActive()
-    if wasActive==true then
-        return
-    end
 
-    -- Intentionally do not call LoggingCombat() as a state query.
-    -- The M+ path follows Method Raid Tools: CHALLENGE_MODE_START -> 1s -> LoggingCombat(true).
-    local result=LoggingCombat(true)
-    if result==true or result==nil then
-        startedByAddon=true
-        AutoPromoteDB.loggingStartedByAddon=true
-        print("|cff33ff99[CC RaidTools]|r Enregistrement des combats démarré.")
-    end
+    -- Never use LoggingCombat() as a state query.  The actual M+ start is
+    -- triggered by CHALLENGE_MODE_START and delayed by one second, like MRT.
+    if IsLoggingActive() then return end
+
+    LoggingCombat(true)
+    startedByAddon=true
+    AutoPromoteDB.loggingStartedByAddon=true
+    print("|cff33ff99[CC RaidTools]|r Enregistrement des combats démarré.")
 end
 
 local function StopLogging()
     local now=GetTime()
     if not startedByAddon and not AutoPromoteDB.loggingStartedByAddon then return end
     if (now-lastStopAttempt)<ACTION_COOLDOWN then return end
-
     lastStopAttempt=now
-    local result=LoggingCombat(false)
-    if result==false or result==nil then
-        startedByAddon=false
-        AutoPromoteDB.loggingStartedByAddon=false
-        print("|cff33ff99[CC RaidTools]|r Enregistrement des combats arrêté.")
-    end
+    LoggingCombat(false)
+    startedByAddon=false
+    AutoPromoteDB.loggingStartedByAddon=false
+    print("|cff33ff99[CC RaidTools]|r Enregistrement des combats arrêté.")
 end
 
 local function IsLoggingTarget()
@@ -60,9 +51,9 @@ local function IsLoggingTarget()
             or (difficultyID==16 and d.mythic)
     end
 
+    -- One "Donjons" setting: Mythique 0 and Mythique+ are logged together.
     if instanceType=="party" then
-        return (difficultyID==23 and d.dungeonMythic)
-            or (difficultyID==8 and d.dungeonMythicPlus)
+        return (difficultyID==23 or difficultyID==8) and d.dungeons
     end
 
     return false
@@ -70,10 +61,8 @@ end
 
 local function StartChallengeLogging()
     C.InitDB()
-    if not AutoPromoteDB.logging.dungeonMythicPlus then return end
-    if IsLoggingActive()==true then return end
-
-    -- Same trigger/timing as MRT for Mythic+: do not run the generic scan here.
+    if not AutoPromoteDB.logging.dungeons then return end
+    if IsLoggingActive() then return end
     StartLogging()
 end
 
@@ -91,7 +80,7 @@ local checks={}
 local function BuildUI(f)
     local label=f:CreateFontString(nil,"OVERLAY","GameFontNormal"); label:SetPoint("TOPLEFT",f,"TOPLEFT",12,-30); label:SetText("AutoLog :"); label:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
     local previous=label
-    for _,info in ipairs({{"LFR","lfr"},{"Normal","normal"},{"Héroïque","heroic"},{"Mythique","mythic"},{"Donjon Mythique","dungeonMythic"},{"Donjon Mythique+","dungeonMythicPlus"}}) do
+    for _,info in ipairs({{"LFR","lfr"},{"Normal","normal"},{"Héroïque","heroic"},{"Mythique","mythic"},{"Donjons (M0 / M+)","dungeons"}}) do
         local chk=CreateFrame("CheckButton",nil,f,"BackdropTemplate"); chk:SetSize(48,24); C.SkinCheckBox(chk); chk:SetPoint("TOPLEFT",previous,"BOTTOMLEFT",0,-3)
         local text=chk:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); text:SetPoint("LEFT",chk,"RIGHT",7,0); text:SetText(info[1])
         chk:SetScript("OnClick",function(self) AutoPromoteDB.logging[info[2]]=self:GetChecked() and true or false; if self._ccrtRefresh then self:_ccrtRefresh() end; CheckAutoLog() end)
@@ -99,7 +88,12 @@ local function BuildUI(f)
     end
 end
 local function Refresh()
-    C.InitDB(); for k,chk in pairs(checks) do chk:SetChecked(AutoPromoteDB.logging[k] and true or false); if chk._ccrtRefresh then chk:_ccrtRefresh() end end
+    C.InitDB()
+    -- Migrate the previous two dungeon settings into the unified setting.
+    if AutoPromoteDB.logging.dungeons==nil then
+        AutoPromoteDB.logging.dungeons=AutoPromoteDB.logging.dungeonMythic or AutoPromoteDB.logging.dungeonMythicPlus or false
+    end
+    for k,chk in pairs(checks) do chk:SetChecked(AutoPromoteDB.logging[k] and true or false); if chk._ccrtRefresh then chk:_ccrtRefresh() end end
 end
 C.RegisterModule("AutoLog",BuildUI,Refresh)
 
