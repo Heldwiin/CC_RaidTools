@@ -14,6 +14,7 @@ local timerBar
 local timerText
 local finishAt
 local lastCount
+local hooked
 
 local function GetRaidCount()
     return math.max(0, math.min(GetNumGroupMembers() or 0, MAX_ROWS))
@@ -61,13 +62,34 @@ local function ResizeFrame()
     end
 end
 
-local function StartCountdown()
+local function UpdateTimerDisplay()
+    if not finishAt then return end
     if not frame then return end
     EnsureTimer()
-    finishAt = GetTime() + DURATION
+
+    local remaining = math.max(0, finishAt - GetTime())
     timerBar:SetMinMaxValues(0, DURATION)
-    timerBar:SetValue(DURATION)
-    timerText:SetText("Fermeture dans 30s")
+    timerBar:SetValue(remaining)
+    timerText:SetText(string.format("Fermeture dans %ds", math.ceil(remaining)))
+
+    if remaining <= 0 then
+        finishAt = nil
+        timerBar:SetValue(0)
+        timerText:SetText("")
+        if frame:IsShown() then
+            frame:Hide()
+        end
+    end
+end
+
+local function StartCountdown()
+    -- Start from the READY_CHECK event itself. The Ready Check frame can be
+    -- created a little later, so do not wait for the frame before starting time.
+    finishAt = GetTime() + DURATION
+    if frame then
+        EnsureTimer()
+        UpdateTimerDisplay()
+    end
 end
 
 local function StopCountdown()
@@ -81,53 +103,45 @@ end
 local function FindFrame()
     frame = _G["CCRaidToolsRaidCheckFrame"]
     if not frame then return false end
+
     EnsureTimer()
     ResizeFrame()
+
+    if not hooked then
+        hooked = true
+        frame:HookScript("OnShow", function()
+            lastCount = nil
+            C_Timer.After(0, ResizeFrame)
+            UpdateTimerDisplay()
+        end)
+        frame:HookScript("OnHide", StopCountdown)
+    end
+
     return true
 end
 
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("READY_CHECK")
 eventFrame:SetScript("OnEvent", function()
-    if FindFrame() then
-        ResizeFrame()
-        StartCountdown()
-    end
+    -- Start the countdown immediately when Blizzard fires READY_CHECK.
+    -- Do not wait for READY_CHECK_FINISHED or for the custom frame to exist.
+    StartCountdown()
+    FindFrame()
 end)
 
 eventFrame:SetScript("OnUpdate", function()
     if not frame then
         FindFrame()
-        return
     end
 
-    if not frame:IsShown() then
-        StopCountdown()
+    if frame and frame:IsShown() then
+        ResizeFrame()
+        UpdateTimerDisplay()
+    elseif not finishAt then
         lastCount = nil
-        return
-    end
-
-    ResizeFrame()
-
-    if finishAt then
-        local remaining = math.max(0, finishAt - GetTime())
-        if timerBar then
-            timerBar:SetValue(remaining)
-            timerText:SetText(string.format("Fermeture dans %ds", math.ceil(remaining)))
-        end
-        if remaining <= 0 then
-            StopCountdown()
-            frame:Hide()
-        end
     end
 end)
 
 C_Timer.After(0, function()
-    if FindFrame() then
-        frame:HookScript("OnShow", function()
-            lastCount = nil
-            C_Timer.After(0, ResizeFrame)
-        end)
-        frame:HookScript("OnHide", StopCountdown)
-    end
+    FindFrame()
 end)
