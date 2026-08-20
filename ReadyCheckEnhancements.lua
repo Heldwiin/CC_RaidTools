@@ -1,8 +1,7 @@
 -- CC RaidTools - Ready Check UI enhancements
--- Adds a visible post-ready-check countdown and resizes the window to fit the raid.
+-- Adds a visible countdown from the start of the Ready Check and resizes the window to fit the raid.
 local C = CCRT
 local DURATION = 30
-local MIN_ROWS = 1
 local MAX_ROWS = 40
 local ROW_H = 20
 local HEADER_H = 52
@@ -44,16 +43,16 @@ local function ResizeFrame()
     lastCount = count
 
     local rowsHeight = math.max(ROW_H, count * ROW_H)
-    local scrollHeight = rowsHeight
-    local frameHeight = HEADER_H + scrollHeight + TIMER_H + EXTRA_H
+    local frameHeight = HEADER_H + rowsHeight + TIMER_H + EXTRA_H
 
     frame:SetHeight(frameHeight)
     if frame.scrollFrame then
-        frame.scrollFrame:SetHeight(scrollHeight)
+        frame.scrollFrame:SetHeight(rowsHeight)
     end
     if frame.child then
-        frame.child:SetHeight(scrollHeight)
+        frame.child:SetHeight(rowsHeight)
     end
+
     if timerBar then
         timerBar:ClearAllPoints()
         timerBar:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 12, 10)
@@ -87,22 +86,22 @@ local function FindFrame()
 end
 
 local eventFrame = CreateFrame("Frame")
-eventFrame:RegisterEvent("READY_CHECK_FINISHED")
-eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-eventFrame:SetScript("OnEvent", function(_, event)
-    if event == "READY_CHECK_FINISHED" then
-        if FindFrame() then
-            ResizeFrame()
-            StartCountdown()
-        end
+eventFrame:RegisterEvent("READY_CHECK")
+eventFrame:SetScript("OnEvent", function()
+    -- Start the 30-second countdown when the Ready Check actually opens,
+    -- not when READY_CHECK_FINISHED fires. The latter can be ~10 seconds later.
+    if FindFrame() then
+        ResizeFrame()
+        StartCountdown()
     end
 end)
 
-eventFrame:SetScript("OnUpdate", function(_, elapsed)
+eventFrame:SetScript("OnUpdate", function()
     if not frame then
         FindFrame()
         return
     end
+
     if not frame:IsShown() then
         StopCountdown()
         lastCount = nil
@@ -119,11 +118,11 @@ eventFrame:SetScript("OnUpdate", function(_, elapsed)
         end
         if remaining <= 0 then
             StopCountdown()
+            frame:Hide()
         end
     end
 end)
 
--- Re-apply sizing whenever the Ready Check is shown, including Test mode.
 C_Timer.After(0, function()
     if FindFrame() then
         frame:HookScript("OnShow", function()
