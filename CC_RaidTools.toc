@@ -10,6 +10,7 @@ CC_RaidTools.lua
 AutoPromote.lua
 AutoLog.lua
 ReadyCheck.lua
+ReadyCheckEnhancements.lua
 InviteTool.lua
 Focus.lua
 MarksBar.lua
