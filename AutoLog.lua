@@ -18,15 +18,16 @@ local function StartLogging()
     if startedByAddon or AutoPromoteDB.loggingStartedByAddon then return end
     if (now-lastStartAttempt)<ACTION_COOLDOWN then return end
 
-    -- Do not use LoggingCombat() as a state query here: the API is heavily
-    -- rate limited. C_ChatInfo.IsLoggingCombat() provides the current state
-    -- without consuming the LoggingCombat() call budget.
-    local active=IsLoggingActive()
-    if active==true then return end
-
     lastStartAttempt=now
+    local wasActive=IsLoggingActive()
+    if wasActive==true then
+        return
+    end
+
+    -- Intentionally do not call LoggingCombat() as a state query.
+    -- The M+ path follows Method Raid Tools: CHALLENGE_MODE_START -> 1s -> LoggingCombat(true).
     local result=LoggingCombat(true)
-    if result==true then
+    if result==true or result==nil then
         startedByAddon=true
         AutoPromoteDB.loggingStartedByAddon=true
         print("|cff33ff99[CC RaidTools]|r Enregistrement des combats démarré.")
@@ -40,7 +41,7 @@ local function StopLogging()
 
     lastStopAttempt=now
     local result=LoggingCombat(false)
-    if result==false then
+    if result==false or result==nil then
         startedByAddon=false
         AutoPromoteDB.loggingStartedByAddon=false
         print("|cff33ff99[CC RaidTools]|r Enregistrement des combats arrêté.")
@@ -65,6 +66,15 @@ local function IsLoggingTarget()
     end
 
     return false
+end
+
+local function StartChallengeLogging()
+    C.InitDB()
+    if not AutoPromoteDB.logging.dungeonMythicPlus then return end
+    if IsLoggingActive()==true then return end
+
+    -- Same trigger/timing as MRT for Mythic+: do not run the generic scan here.
+    StartLogging()
 end
 
 local function CheckAutoLog()
@@ -101,9 +111,7 @@ e:SetScript("OnEvent",function(_,event,arg1)
         startedByAddon=AutoPromoteDB.loggingStartedByAddon and true or false
         C_Timer.After(2,CheckAutoLog)
     elseif event=="CHALLENGE_MODE_START" then
-        -- Match Method Raid Tools: start logging one second after the
-        -- challenge begins, when the instance reports difficulty 8.
-        C_Timer.After(1,CheckAutoLog)
+        C_Timer.After(1,StartChallengeLogging)
     else
         C_Timer.After(2,CheckAutoLog)
     end
