@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.1.9
+
+Ready Check groupe et buffs dynamiques.
+
+- Ajout du mode **groupe 5 joueurs** au Ready Check, en plus du mode raid.
+- Suppression du check **Vantus** en groupe.
+- Affichage dynamique des buffs selon les classes présentes dans le groupe.
+- Ajout du buff **Évocateur / Bronze** dans les modes groupe et raid.
+- Largeur de la fenêtre adaptée automatiquement au contenu du groupe.
+- Repositionnement des icônes et colonnes pour conserver l'alignement du mode raid.
+- Conservation du timer de fermeture avec `atrocity.tga`.
+- Conservation de la fermeture automatique lorsque tout le monde est prêt.
+
 ## 1.1.8
 
 Correctif AutoLog Donjons et optimisation du Ready Check.
