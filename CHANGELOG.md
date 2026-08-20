@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.1.8
+
+Correctif AutoLog Donjons et optimisation du Ready Check.
+
+- Fusion des options **Donjons Mythique** et **Mythique+** en une seule option **Donjons (M0 / M+)**.
+- Correction du démarrage de l'AutoLog en Mythique+ avec `CHALLENGE_MODE_START` et délai d'une seconde.
+- Alignement de la logique de démarrage des donjons sur le comportement validé avec Method Raid Tools.
+- Optimisation du Ready Check avec une fenêtre dont la hauteur s'adapte automatiquement au nombre de joueurs du raid.
+- Suppression de l'ascenseur visible du Ready Check : tous les joueurs sont affichés directement jusqu'à 40 joueurs.
+- Ajout d'une barre de progression de fermeture utilisant la texture `atrocity.tga`.
+- Le timer de fermeture démarre dès l'ouverture du Ready Check.
+- Affichage du compte à rebours jusqu'à 30 secondes.
+- Fermeture automatique environ 2 secondes après que tout le monde est prêt.
+- Fusion de toutes les améliorations Ready Check dans `ReadyCheck.lua` et suppression de `ReadyCheckEnhancements.lua`.
+- Version affichée dans la fenêtre Ready Check synchronisée avec la release.
+
 ## 1.1.7
 
 Correctif AutoLog Mythique+.
