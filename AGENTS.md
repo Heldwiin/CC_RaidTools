@@ -208,13 +208,23 @@ Keep README and in-game behavior synchronized with this rule.
 
 Version is stored in `CC_RaidTools.toc`.
 
-When the user explicitly asks to increment the version:
-1. Update `## Version:` in the TOC.
-2. Update any in-game displayed version string if present.
-3. Do not create a GitHub Release unless explicitly requested.
-4. Use the project's incremental versioning convention (`1.0.0`, `1.0.1`, `1.0.2`, etc.).
+When the user asks to prepare, bump, finalize, or release a new version, synchronize the version everywhere it is visibly or explicitly stored. At minimum:
 
-Do not silently increment the release version for ordinary bug fixes unless requested.
+1. Update `## Version:` in `CC_RaidTools.toc`.
+2. Update the in-game loading message in `CC_RaidTools.lua` (for example `v1.1.9 chargé`).
+3. **Update the Ready Check window title in `ReadyCheck.lua`** (for example `CC RaidTools - Ready Check v1.1.9`). This is mandatory for every release.
+4. Update the displayed version in `README.md` and its release/version section if present.
+5. Add/update the corresponding entry in `CHANGELOG.md`.
+6. Search the entire repository for the previous version string and update any remaining user-visible release/version references.
+7. Before declaring the release ready, verify that all of the above files contain the same target version.
+
+When only a bug fix is requested and no version bump is requested, do not silently increment the release version.
+
+When preparing a release, do not change already-tested functional code merely to synchronize version strings. In particular, if `ReadyCheck.lua` is already validated, only change its version/title string unless a functional change was explicitly requested.
+
+Do not create a GitHub Release unless explicitly requested.
+
+Use the project's incremental versioning convention (`1.0.0`, `1.0.1`, `1.0.2`, etc.).
 
 ## Testing checklist
 
