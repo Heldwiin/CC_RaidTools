@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.11
+
+Ready Check : timer réel et fermeture fiable.
+
+- Correction de la fermeture automatique du Ready Check en groupe et en raid via la fin réelle du Ready Check Blizzard.
+- Fermeture environ 2 secondes après que tout le monde est prêt.
+- Utilisation de la durée réelle fournie au lancement du Ready Check au lieu d'une durée fixe de 30 secondes.
+- Barre de compte à rebours rendue plus fluide.
+- Conservation du mode groupe dynamique, du mode raid et du buff **Évocateur / Bronze**.
+
 ## 1.1.10
 
 Optimisation du redimensionnement du Ready Check.
