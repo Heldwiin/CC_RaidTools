@@ -10,7 +10,8 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - Fenêtre Ready Check automatique lors d'un appel.
 - Statut dynamique OK / KO / WAIT.
 - Vérification des consommables : repas, flacon, rune et rune de Vantus.
-- Affichage des buffs de raid Mage (Intel), Guerrier (PA), Druide, Prêtre (Endu) et Chaman.
+- Affichage des buffs de raid Mage (Intel), Guerrier (PA), Druide, Prêtre (Endu), Chaman et Évocateur (Bronze).
+- En groupe 5 joueurs, affichage dynamique uniquement des buffs correspondant aux classes présentes et suppression du check Vantus.
 - Compteur dynamique des joueurs prêts dans l'en-tête du Ready Check (ex. 3/20).
 - Fenêtre Ready Check redimensionnée automatiquement selon le nombre de joueurs, jusqu'à 40 joueurs sans ascenseur visible.
 - Barre de fermeture avec compte à rebours et texture personnalisée Atrocity.
@@ -28,7 +29,18 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.1.8**
+**1.1.9**
+
+### v1.1.9 — Ready Check Groupe & Buffs dynamiques
+
+- Ajout du mode **groupe 5 joueurs** au Ready Check, en complément du mode raid.
+- Suppression du check **Vantus** en groupe.
+- Affichage dynamique des buffs selon les classes présentes dans le groupe.
+- Ajout du buff **Évocateur / Bronze** dans les modes groupe et raid.
+- Largeur de la fenêtre adaptée automatiquement au contenu du groupe.
+- Repositionnement des icônes et colonnes pour conserver l'alignement du mode raid.
+- Conservation du timer de fermeture avec `atrocity.tga`.
+- Conservation de la fermeture automatique lorsque tout le monde est prêt.
 
 ### v1.1.8 — AutoLog Donjons & Ready Check
 
