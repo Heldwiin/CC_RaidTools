@@ -1,3 +1,102 @@
+-- CC RaidTools - Ready Check
+local C=CCRT
+local frame,rows,statuses,auraStatuses,hideTimer,auraRefreshTimer; rows={}; statuses={}; auraStatuses={}; local ROW_H=20
+local DURATION=30
+local MAX_ROWS=40
+local HEADER_H=52
+local TIMER_H=18
+local EXTRA_H=16
+local TIMER_TEXTURE="Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\atrocity.tga"
+local timerBar,timerText,finishAt,lastCount
+local FOOD={[308488]=1,[308506]=1,[308434]=1,[308514]=1,[327708]=1,[327706]=1,[327709]=1,[308525]=1,[327707]=1,[308637]=1,[308474]=1,[308504]=1,[308430]=1,[308509]=1,[327704]=1,[327701]=1,[327705]=1,[327702]=1,[382145]=1,[382150]=1,[382146]=1,[396092]=1,[382246]=1,[382247]=1,[382152]=1,[382153]=1,[382157]=1,[382230]=1,[382231]=1,[382232]=1,[382154]=1,[382155]=1,[382156]=1,[382234]=1,[382235]=1}
+local FLASK={[1236763]=1,[1239355]=1,[1235057]=1,[1239755]=1,[1236767]=1,[1235111]=1,[1235110]=1,[1235108]=1}; local RUNE={[224001]=1,[270058]=1,[317065]=1,[347901]=1,[367405]=1,[393438]=1,[453250]=1,[1234969]=1,[1242347]=1,[1264426]=1}; local INT={[1459]=1,[264760]=1}; local AP={[6673]=1,[264761]=1}; local DRUID={[1126]=1}; local STAM={[21562]=1,[264764]=1}; local SHAM={[462854]=1}; local BRONZE={[364342]=1}
+local VANTUS={[269276]=1,[269405]=1,[269408]=1,[269407]=1,[269409]=1,[269411]=1,[269412]=1,[269413]=1,[298622]=1,[298640]=1,[298642]=1,[298643]=1,[298644]=1,[298645]=1,[302914]=1,[306475]=1,[306480]=1,[306476]=1,[306477]=1,[306478]=1,[306484]=1,[306485]=1,[306479]=1,[313550]=1,[313551]=1,[313554]=1,[313556]=1,[311445]=1,[334132]=1,[311448]=1,[311446]=1,[311447]=1,[311449]=1,[311450]=1,[311451]=1,[311452]=1,[354384]=1,[354385]=1,[354386]=1,[354392]=1,[354393]=1,[384233]=1,[384234]=1,[384235]=1,[384229]=1,[384228]=1,[384227]=1,[384192]=1,[384203]=1,[384201]=1,[384239]=1,[384240]=1,[384241]=1,[384245]=1,[384246]=1,[384247]=1,[384220]=1,[384221]=1,[384222]=1,[384210]=1,[384209]=1,[384208]=1,[384214]=1,[384215]=1,[384216]=1,[384154]=1,[384248]=1,[384306]=1}
+local vantusPrefix
+local function GetVantusPrefix() if vantusPrefix~=nil then return vantusPrefix end; vantusPrefix=false; local n=C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(237825) or (GetSpellInfo and GetSpellInfo(237825)); if n then local p=n:match("^(.-)[:%-：]"); if p and p~="" then vantusPrefix="^"..p end end; return vantusPrefix end
+local function SafeValue(value) if value==nil then return nil end; if issecretvalue and issecretvalue(value) then return nil end; if canaccessvalue and not canaccessvalue(value) then return nil end; return value end
+local function SafeAuraField(a,key) if not a then return nil end; local ok,value=pcall(function() return a[key] end); if not ok then return nil end; return SafeValue(value) end
+local function SafeID(a) return SafeAuraField(a,"spellId") end
+local function AuraStatus(unit) local food,flask,rune,vantus,intel,ap,druid,stam,sham,bronze=false,false,false,false,false,false,false,false,false,false; if not unit or not UnitExists(unit) or (C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()) then return food,flask,rune,vantus,intel,ap,druid,stam,sham,bronze end; local prefix=GetVantusPrefix(); for i=1,80 do local a=C_UnitAuras and C_UnitAuras.GetAuraDataByIndex and C_UnitAuras.GetAuraDataByIndex(unit,i,"HELPFUL"); if not a then break end; local id=SafeID(a); if id then local icon=SafeAuraField(a,"icon"); local auraName=SafeAuraField(a,"name"); food=food or FOOD[id] or icon==136000; flask=flask or FLASK[id]; rune=rune or RUNE[id]; vantus=vantus or VANTUS[id] or (prefix and auraName and auraName:find(prefix)); intel=intel or INT[id]; ap=ap or AP[id]; druid=druid or DRUID[id]; stam=stam or STAM[id]; sham=sham or SHAM[id]; bronze=bronze or BRONZE[id] end end; return food,flask,rune,vantus,intel,ap,druid,stam,sham,bronze end
+local function ScanAura(unit) if not unit or not UnitExists(unit) then return end; auraStatuses[unit]={AuraStatus(unit)} end
+local function GetAuraStatus(unit) local a=auraStatuses[unit]; if not a then ScanAura(unit); a=auraStatuses[unit] end; return a or {false,false,false,false,false,false,false,false,false,false} end
+local function OK(v)return v and "|cff33ff66OK|r" or "|cffff4444KO|r" end; local function Ready(v) if v==true or v=="ready" then return "|cff33ff66OK|r" elseif v==false or v=="notready" then return "|cffff4444KO|r" end return "|cffff9900WAIT|r" end
+local function BuffIcon(row,x,spell) local t=row:CreateTexture(nil,"ARTWORK"); t:SetSize(16,16); t:SetPoint("CENTER",row,"LEFT",x+19,0); local icon=C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spell) or (GetSpellTexture and GetSpellTexture(spell)); t:SetTexture(icon or 134400); t:SetTexCoord(.1,.9,.1,.9); return t end
+local function NewRow(parent,i) local r=CreateFrame("Frame",nil,parent); r:SetSize(615,ROW_H); r:SetPoint("TOPLEFT",0,-(i-1)*ROW_H); local function T(x,w,j)local f=r:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); f:SetPoint("LEFT",x,0); f:SetWidth(w); f:SetJustifyH(j or "CENTER"); return f end; r.nameText=T(4,125,"LEFT"); r.readyText=T(130,48); r.foodText=T(179,48); r.flaskText=T(228,48); r.runeText=T(277,48); r.vantusText=T(326,52); r.intIcon=BuffIcon(r,380,1459); r.apIcon=BuffIcon(r,419,6673); r.druidIcon=BuffIcon(r,458,1126); r.stamIcon=BuffIcon(r,497,21562); r.shamIcon=BuffIcon(r,536,462854); r.bronzeIcon=BuffIcon(r,575,364342); return r end
+local function SetIcon(t,on)t:SetDesaturated(not on); t:SetAlpha(on and 1 or .4); if on then t:SetVertexColor(1,1,1) else t:SetVertexColor(.65,.65,.65) end end
+local function StopTicker() if auraRefreshTimer then auraRefreshTimer:Cancel(); auraRefreshTimer=nil end; if frame and frame.ticker then frame.ticker:Cancel(); frame.ticker=nil end end
+local function HideScrollBar() if not frame or not frame.scrollFrame then return end; local scroll=frame.scrollFrame; if scroll.ScrollBar then scroll.ScrollBar:Hide(); scroll.ScrollBar:EnableMouse(false) end; if scroll.ScrollUpButton then scroll.ScrollUpButton:Hide(); scroll.ScrollUpButton:EnableMouse(false) end; if scroll.ScrollDownButton then scroll.ScrollDownButton:Hide(); scroll.ScrollDownButton:EnableMouse(false) end; if scroll.scrollBar then scroll.scrollBar:Hide(); scroll.scrollBar:EnableMouse(false) end end
+local function EnsureTimer() if timerBar or not frame then return end; timerBar=CreateFrame("StatusBar",nil,frame); timerBar:SetHeight(TIMER_H); timerBar:SetMinMaxValues(0,DURATION); timerBar:SetValue(DURATION); timerBar:SetPoint("BOTTOMLEFT",frame,"BOTTOMLEFT",12,10); timerBar:SetPoint("BOTTOMRIGHT",frame,"BOTTOMRIGHT",-12,10); timerBar:SetStatusBarTexture(TIMER_TEXTURE); timerBar:SetStatusBarColor(1,1,1,1); timerBar.bg=timerBar:CreateTexture(nil,"BACKGROUND"); timerBar.bg:SetAllPoints(); timerBar.bg:SetColorTexture(.08,.08,.10,.8); timerText=timerBar:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); timerText:SetPoint("CENTER"); timerText:SetText("Fermeture dans 30s") end
+local function GetGroupUnits()
+ local units={}
+ if IsInRaid() then
+  local count=GetNumGroupMembers() or 0
+  for i=1,math.min(count,MAX_ROWS) do units[#units+1]="raid"..i end
+ elseif IsInGroup() then
+  units[#units+1]="player"
+  for i=1,4 do if UnitExists("party"..i) then units[#units+1]="party"..i end end
+ end
+ return units
+end
+local function IsGroupMode() return IsInGroup() and not IsInRaid() end
+local function GetUnits()
+ return GetGroupUnits()
+end
+local function GetColumns(units)
+ local cols={intel=false,ap=false,druid=false,stam=false,sham=false,bronze=false}
+ for _,u in ipairs(units or {}) do
+  if UnitExists(u) then
+   local _,class=UnitClass(u)
+   if class=="MAGE" then cols.intel=true
+   elseif class=="WARRIOR" then cols.ap=true
+   elseif class=="DRUID" then cols.druid=true
+   elseif class=="PRIEST" then cols.stam=true
+   elseif class=="SHAMAN" then cols.sham=true
+   elseif class=="EVOKER" then cols.bronze=true
+   end
+  end
+ end
+ return cols
+end
+local function GetBuffColumns(units)
+ local c={intel=false,ap=false,druid=false,stam=false,sham=false,bronze=false}
+ for _,u in ipairs(units) do
+  local _,class=UnitClass(u)
+  if class=="MAGE" then c.intel=true elseif class=="WARRIOR" then c.ap=true elseif class=="DRUID" then c.druid=true elseif class=="PRIEST" then c.stam=true elseif class=="SHAMAN" then c.sham=true elseif class=="EVOKER" then c.bronze=true end
+ end
+ return c
+end
+local function ResizeFrameWidth(group,cols)
+ if not frame then return end
+ local width
+ if group then
+  local content=326
+  if cols.intel then content=content+42 end
+  if cols.ap then content=content+42 end
+  if cols.druid then content=content+48 end
+  if cols.stam then content=content+48 end
+  if cols.sham then content=content+48 end
+  if cols.bronze then content=content+52 end
+  width=math.max(480,content+36)
+ else
+  -- Raid: fixed legacy columns, with enough room for the new Bronze column.
+  width=680
+ end
+ frame:SetWidth(width)
+ if frame.scrollFrame then frame.scrollFrame:SetWidth(width-45) end
+ if frame.child then frame.child:SetWidth(width-50) end
+end
+
+local function ResizeFrame()
+ if not frame or not frame:IsShown() then return end
+ local count=math.min(#GetGroupUnits(),MAX_ROWS)
+ if count==lastCount then HideScrollBar(); return end
+ lastCount=count
+ local rowsHeight=math.max(ROW_H,count*ROW_H)
+ local frameHeight=HEADER_H+rowsHeight+TIMER_H+EXTRA_H
+ frame:SetHeight(frameHeight)
+ if frame.scrollFrame then frame.scrollFrame:SetHeight(rowsHeight); frame.scrollFrame:SetVerticalScroll(0) end
+ if frame.child then frame.child:SetHeight(rowsHeight) end
+ HideScrollBar()
 end
 local function UpdateTimerDisplay() if not finishAt or not frame then return end; EnsureTimer(); local remaining=math.max(0,finishAt-GetTime()); timerBar:SetMinMaxValues(0,DURATION); timerBar:SetValue(remaining); timerText:SetText(string.format("Fermeture dans %ds",math.ceil(remaining))); if remaining<=0 then finishAt=nil; timerBar:SetValue(0); timerText:SetText(""); if frame:IsShown() then frame:Hide() end end end
 local function StartCountdown() finishAt=GetTime()+DURATION; if frame then EnsureTimer(); UpdateTimerDisplay() end end
@@ -7,3 +106,101 @@ local function LayoutHeaders(group,cols)
  local h=frame.header
  for _,v in pairs(h) do v:Hide() end
  h.name:Show(); h.ready:Show(); h.food:Show(); h.flask:Show(); h.rune:Show()
+ local x=326
+ local function S(k,label,w)
+  local f=h[k]; f:ClearAllPoints(); f:SetPoint("LEFT",x,0); f:SetWidth(w); f:SetText(label); f:Show(); x=x+w
+ end
+ if group then
+  if cols.intel then S("intel","Intel",42) end
+  if cols.ap then S("ap","PA",42) end
+  if cols.druid then S("druid","Druid",48) end
+  if cols.stam then S("stam","Endu",48) end
+  if cols.sham then S("sham","Sham",48) end
+  if cols.bronze then S("bronze","Bronze",52) end
+ else
+  S("vantus","Vantus",52); S("intel","Intel",38); S("ap","PA",38); S("druid","Druid",38); S("stam","Endu",38); S("sham","Sham",38); S("bronze","Bronze",52)
+ end
+end
+local function LayoutRow(r,group,cols)
+ -- In raid, Vantus occupies the 326-378 column, so the first buff icon
+ -- must start at the same 380 position as the raid header. In group mode
+ -- Vantus is removed and the dynamic buff columns start at 326.
+ local x=group and 326 or 380
+ local function P(icon,show,w)
+  icon:ClearAllPoints()
+  icon:SetPoint("CENTER",r,"LEFT",x+19,0)
+  icon:SetShown(show)
+  if show then x=x+w end
+ end
+ r.vantusText:SetShown(not group)
+ if group then
+  P(r.intIcon,cols.intel,42); P(r.apIcon,cols.ap,42); P(r.druidIcon,cols.druid,48); P(r.stamIcon,cols.stam,48); P(r.shamIcon,cols.sham,48); P(r.bronzeIcon,cols.bronze,52)
+ else
+  P(r.intIcon,true,38); P(r.apIcon,true,38); P(r.druidIcon,true,38); P(r.stamIcon,true,38); P(r.shamIcon,true,38); P(r.bronzeIcon,true,52)
+ end
+end
+local function Refresh()
+ if not frame or not frame:IsShown() then return end
+ local units=GetGroupUnits()
+ local count=math.min(#units,MAX_ROWS)
+ local group=IsGroupMode()
+ local cols=GetBuffColumns(units)
+ LayoutHeaders(group,cols)
+ ResizeFrame()
+ local ready=0
+ for i=1,count do
+  local unit=units[i]
+  local name=UnitName(unit) or "?"
+  local _,class=UnitClass(unit)
+  local r=rows[i] or NewRow(frame.child,i); rows[i]=r
+  local col=class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+  if col then r.nameText:SetTextColor(col.r,col.g,col.b) else r.nameText:SetTextColor(1,1,1) end
+  r.nameText:SetText(C.StripRealm(name))
+  local st=statuses[unit] or statuses[name] or statuses[C.StripRealm(name)]
+  local api=GetReadyCheckStatus and GetReadyCheckStatus(unit)
+  if api=="ready" or api=="notready" then st=api; statuses[unit]=api end
+  r.readyText:SetText(Ready(st))
+  if st=="ready" then ready=ready+1 end
+  local aura=GetAuraStatus(unit)
+  r.foodText:SetText(OK(aura[1])); r.flaskText:SetText(OK(aura[2])); r.runeText:SetText(OK(aura[3]))
+  r.vantusText:SetText(group and "" or OK(aura[4]))
+  SetIcon(r.intIcon,group and cols.intel and aura[5] or (not group and aura[5]))
+  SetIcon(r.apIcon,group and cols.ap and aura[6] or (not group and aura[6]))
+  SetIcon(r.druidIcon,group and cols.druid and aura[7] or (not group and aura[7]))
+  SetIcon(r.stamIcon,group and cols.stam and aura[8] or (not group and aura[8]))
+  SetIcon(r.shamIcon,group and cols.sham and aura[9] or (not group and aura[9]))
+  SetIcon(r.bronzeIcon,group and cols.bronze and aura[10] or (not group and aura[10]))
+  LayoutRow(r,group,cols)
+  r:Show()
+ end
+ for i=count+1,#rows do rows[i]:Hide() end
+ if frame._ccrtCountText then frame._ccrtCountText:SetText("|cff66ff66"..ready.."|r|cff7381FF/"..count.."|r") end
+ if count>0 and ready>=count then
+  finishAt=nil
+  if timerBar then timerBar:SetValue(0); timerText:SetText("Tout le monde est prêt !") end
+  if hideTimer then hideTimer:Cancel(); hideTimer=nil end
+  hideTimer=C_Timer.NewTimer(2,function() if frame and frame:IsShown() then frame:Hide() end end)
+ end
+end
+local function ScheduleRefresh(delay) if not frame or not frame:IsShown() then return end; local group=IsGroupMode(); local units=GetUnits(); local cols=GetColumns(units); ResizeFrameWidth(group,cols); if auraRefreshTimer then return end; auraRefreshTimer=C_Timer.NewTimer(delay or .15,function() auraRefreshTimer=nil; Refresh() end) end
+local function Show(starter,force) C.InitDB(); if not force and (not AutoPromoteDB.raidCheckEnabled or not (IsInRaid() or IsInGroup())) then return end; if force and not (IsInRaid() or IsInGroup()) then print("|cffff6666[CC RaidTools]|r Le Ready Check nécessite d'être dans un groupe ou un raid."); return end; wipe(statuses); wipe(auraStatuses); if starter then statuses[starter]="ready"; local n=UnitExists(starter) and UnitName(starter) or starter; if n then statuses[n]="ready"; statuses[C.StripRealm(n)]="ready" end end; BuildFrame(); if hideTimer then hideTimer:Cancel(); hideTimer=nil end; frame:Show(); ResizeFrame(); Refresh(); StartCountdown(); StopTicker(); C_Timer.After(.15,Refresh); C_Timer.After(1.5,Refresh); frame.ticker=C_Timer.NewTicker(1,function() if frame and frame:IsShown() then Refresh(); UpdateTimerDisplay() end end) end
+C.ShowReadyCheck=Show
+local function Finish()
+ for _,u in ipairs(GetGroupUnits()) do
+  if UnitExists(u) then
+   local n=UnitName(u)
+   local s=statuses[u] or (n and statuses[n]) or (n and statuses[C.StripRealm(n)])
+   if s~="ready" and s~="notready" then statuses[u]="notready"; if n then statuses[n]="notready"; statuses[C.StripRealm(n)]="notready" end end
+  end
+ end
+ Refresh(); StopTicker(); if hideTimer then hideTimer:Cancel() end
+ if not (frame and frame:IsShown()) or not finishAt then return end
+ hideTimer=C_Timer.NewTimer(30,function()if frame then frame:Hide() end end)
+end
+local function Update(unit,response) if not unit then return end; local s=response==true and "ready" or response==false and "notready" or nil; if not s then return end; statuses[unit]=s; local n=UnitExists(unit) and UnitName(unit) or unit; if n then statuses[n]=s; statuses[C.StripRealm(n)]=s end; ScheduleRefresh(.15) end
+local chk
+local function BuildUI(f) local label=f:CreateFontString(nil,"OVERLAY","GameFontNormal"); label:SetPoint("TOPLEFT",f,"TOPLEFT",10,-30); label:SetText("Ready Check :"); label:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B); chk=CreateFrame("CheckButton",nil,f,"BackdropTemplate"); chk:SetSize(48,24); C.SkinCheckBox(chk); chk:SetPoint("TOPLEFT",f,"TOPLEFT",10,-50); local t=chk:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); t:SetPoint("LEFT",chk,"RIGHT",7,0); t:SetText("Check Buffs /appel"); chk:SetScript("OnClick",function(self)AutoPromoteDB.raidCheckEnabled=self:GetChecked() and true or false; if self._ccrtRefresh then self:_ccrtRefresh() end; if not AutoPromoteDB.raidCheckEnabled and frame then frame:Hide() end end); f.raidCheckChk=chk; local test=CreateFrame("Button",nil,f,"UIPanelButtonTemplate"); test:SetSize(54,22); test:SetPoint("LEFT",chk,"RIGHT",280,0); test:SetText("Test"); C.SkinButton(test); test:SetScript("OnClick",function() C.ShowReadyCheck(nil,true) end); f.raidCheckTestButton=test end
+local function RefreshUI() C.InitDB(); if chk then chk:SetChecked(AutoPromoteDB.raidCheckEnabled and true or false); if chk._ccrtRefresh then chk:_ccrtRefresh() end end end
+C.RegisterModule("ReadyCheck",BuildUI,RefreshUI)
+local e=CreateFrame("Frame"); for _,ev in ipairs({"READY_CHECK","READY_CHECK_CONFIRM","READY_CHECK_FINISHED","UNIT_AURA","GROUP_ROSTER_UPDATE"}) do e:RegisterEvent(ev) end
+e:SetScript("OnEvent",function(_,ev,a,b) if ev=="READY_CHECK" then Show(a) elseif ev=="READY_CHECK_CONFIRM" then Update(a,b) elseif ev=="READY_CHECK_FINISHED" then Finish() elseif ev=="UNIT_AURA" and frame and frame:IsShown() then if type(a)=="string" and (a=="player" or a:match("^party%d+$") or a:match("^raid%d+$")) then ScanAura(a); ScheduleRefresh(.15) end elseif ev=="GROUP_ROSTER_UPDATE" and frame and frame:IsShown() then wipe(auraStatuses); ScheduleRefresh(.15) end end)
