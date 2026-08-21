@@ -14,6 +14,8 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - En groupe 5 joueurs, affichage dynamique uniquement des buffs correspondant aux classes présentes et suppression du check Vantus.
 - Compteur dynamique des joueurs prêts dans l'en-tête du Ready Check (ex. 3/20).
 - Fenêtre Ready Check redimensionnée automatiquement selon le nombre de joueurs, jusqu'à 40 joueurs sans ascenseur visible.
+- Largeur du Ready Check ajustée dynamiquement au contenu en groupe et compacte en raid.
+- Mise à jour immédiate de la largeur lors des changements de composition du groupe.
 - Barre de fermeture avec compte à rebours et texture personnalisée Atrocity.
 - Fermeture automatique rapide lorsque tout le monde est prêt.
 - Marks Bar avec marques de raid et marqueurs au sol.
@@ -29,7 +31,16 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.1.9**
+**1.1.10**
+
+### v1.1.10 — Ready Check : largeur dynamique
+
+- Optimisation du redimensionnement horizontal du Ready Check en groupe.
+- Largeur calculée selon les buffs réellement disponibles dans le groupe.
+- Mise à jour immédiate de la largeur lors d'un changement de composition.
+- Réduction de la largeur fixe du mode raid à 640 px.
+- Conservation du mode groupe sans Vantus et des buffs dynamiques par classe.
+- Conservation du timer `atrocity.tga` et de la fermeture automatique.
 
 ### v1.1.9 — Ready Check Groupe & Buffs dynamiques
 
