@@ -208,15 +208,46 @@ Keep README and in-game behavior synchronized with this rule.
 
 Version is stored in `CC_RaidTools.toc`.
 
-When the user asks to prepare, bump, finalize, or release a new version, synchronize the version everywhere it is visibly or explicitly stored. At minimum:
+### Branch workflow
 
-1. Update `## Version:` in `CC_RaidTools.toc`.
-2. Update the in-game loading message in `CC_RaidTools.lua` (for example `v1.1.10 chargé`).
-3. `ReadyCheck.lua` uses the static title `CC RaidTools - Ready Check`; **do not add or remove a version number from this title during releases**.
-4. Update the displayed version in `README.md` and its release/version section if present.
-5. Add/update the corresponding entry in `CHANGELOG.md`.
-6. Search the entire repository for the previous version string and update any remaining user-visible release/version references.
-7. Before declaring the release ready, verify that the versioned files contain the same target version and that the Ready Check title remains static.
+The repository uses two primary branches:
+
+- **`main`** = stable/released version. Do not use `main` for experimental or unvalidated changes.
+- **`beta`** = development and testing branch. New features, bug fixes and test builds are developed and tested here first.
+
+When the user asks to **test, modify, fix or develop** something without explicitly asking to prepare a release:
+1. Start from the **current `beta` branch**.
+2. Read the files from `beta` before modifying them; never reuse an old local/test copy when a current repository version exists.
+3. Commit/push changes to `beta` only.
+4. Do not modify `main` during the test phase.
+5. Tell the user which branch contains the test build when relevant.
+
+When the user says **"prepare the release"**, **"prepare version X.Y.Z"**, **"finalize the release"**, or equivalent:
+1. Treat the current **`beta` branch as the source of truth** for the functional code.
+2. Verify the beta build is the version the user has tested/validated.
+3. Apply the release version changes on the release path:
+   - update `CC_RaidTools.toc`;
+   - update the in-game loading message in `CC_RaidTools.lua`;
+   - keep `ReadyCheck.lua` title exactly `CC RaidTools - Ready Check` with **no version number**;
+   - update `README.md` and its version/release section;
+   - add/update the corresponding `CHANGELOG.md` entry;
+   - search the repository for the previous version and synchronize remaining user-visible release/version references;
+   - update any other explicitly versioned release metadata required by the project.
+4. Review the final release tree to ensure the functional code comes from the tested `beta` branch and only the intended release/version changes were added.
+5. Merge/copy the finalized release changes from **`beta` into `main`** so `main` becomes the exact release candidate.
+6. Do **not** create the GitHub Release or tag unless the user explicitly asks for it. The user will publish the GitHub Release after the release preparation is complete.
+7. After the release is published, `main` is the stable base and the next development cycle continues on `beta`.
+
+Important: when preparing a release, never rebuild a file from an older local/test copy. Always fetch the current `beta` version first. If `beta` and `main` differ, the tested `beta` code wins for the release unless the user explicitly says otherwise.
+
+At minimum, synchronize the following visible/versioned files:
+
+1. `CC_RaidTools.toc` → target release version.
+2. `CC_RaidTools.lua` → loading message with target release version.
+3. `ReadyCheck.lua` → static title only; **never put the version in the title**.
+4. `README.md` → target release version and release notes.
+5. `CHANGELOG.md` → target release entry.
+6. Search the entire repository for the previous version string and update remaining release/version references as appropriate.
 
 When only a bug fix is requested and no version bump is requested, do not silently increment the release version.
 
@@ -269,7 +300,7 @@ For AutoLog specifically:
 
 When a Lua error is reported:
 1. Identify the exact failing file and line.
-2. Inspect the current repository version before changing code.
+2. Inspect the **current `beta` version** when working on a test/fix, or the current `main` version when investigating stable behavior.
 3. Fix the root cause rather than masking the error.
 4. Avoid creating another module solely to patch a previous module unless necessary.
 5. Check for combat-lockdown/taint implications.
