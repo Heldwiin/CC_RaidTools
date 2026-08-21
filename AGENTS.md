@@ -211,16 +211,16 @@ Version is stored in `CC_RaidTools.toc`.
 When the user asks to prepare, bump, finalize, or release a new version, synchronize the version everywhere it is visibly or explicitly stored. At minimum:
 
 1. Update `## Version:` in `CC_RaidTools.toc`.
-2. Update the in-game loading message in `CC_RaidTools.lua` (for example `v1.1.9 chargé`).
-3. **Update the Ready Check window title in `ReadyCheck.lua`** (for example `CC RaidTools - Ready Check v1.1.9`). This is mandatory for every release.
+2. Update the in-game loading message in `CC_RaidTools.lua` (for example `v1.1.10 chargé`).
+3. `ReadyCheck.lua` uses the static title `CC RaidTools - Ready Check`; **do not add or remove a version number from this title during releases**.
 4. Update the displayed version in `README.md` and its release/version section if present.
 5. Add/update the corresponding entry in `CHANGELOG.md`.
 6. Search the entire repository for the previous version string and update any remaining user-visible release/version references.
-7. Before declaring the release ready, verify that all of the above files contain the same target version.
+7. Before declaring the release ready, verify that the versioned files contain the same target version and that the Ready Check title remains static.
 
 When only a bug fix is requested and no version bump is requested, do not silently increment the release version.
 
-When preparing a release, do not change already-tested functional code merely to synchronize version strings. In particular, if `ReadyCheck.lua` is already validated, only change its version/title string unless a functional change was explicitly requested.
+When preparing a release, do not change already-tested functional code merely to synchronize version strings. In particular, do not alter the Ready Check title for versioning; only change Ready Check code when a functional change is explicitly requested.
 
 Do not create a GitHub Release unless explicitly requested.
 
@@ -244,6 +244,9 @@ For Ready Check specifically:
 - start a real Ready Check;
 - verify the custom window appears;
 - verify the counter updates;
+- test both raid and 5-player group modes;
+- verify group columns appear only for classes present;
+- verify the window width adapts immediately after group composition changes;
 - close it manually;
 - verify no refresh ticker continues running;
 - start another Ready Check.
