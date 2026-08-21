@@ -31,7 +31,16 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.1.11**
+**1.1.13**
+
+### v1.1.13 — Release Ready Check stabilisée
+
+- Versionnement synchronisé pour la release 1.1.13.
+- Consolidation de la version Ready Check validée en groupe et en raid.
+- Timer basé sur la durée réelle fournie par Blizzard au lancement du Ready Check.
+- Barre de compte à rebours fluide.
+- Fermeture fiable environ 2 secondes après la fin du Ready Check lorsque tout le monde est prêt.
+- Conservation du mode groupe dynamique et du buff Évocateur / Bronze.
 
 ### v1.1.11 — Ready Check : timer réel et fermeture fiable
 
@@ -45,7 +54,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 - Optimisation du redimensionnement horizontal du Ready Check en groupe.
 - Largeur calculée selon les buffs réellement disponibles dans le groupe.
-- Mise à jour immédiate de la largeur lors d'un changement de composition.
+- Mise à jour immédiate de la largeur lors des changements de composition.
 - Réduction de la largeur fixe du mode raid à 640 px.
 - Conservation du mode groupe sans Vantus et des buffs dynamiques par classe.
 - Conservation du timer `atrocity.tga` et de la fermeture automatique.

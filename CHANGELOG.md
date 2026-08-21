@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.13
+
+Release Ready Check stabilisée.
+
+- Versionnement synchronisé pour la release 1.1.13.
+- Consolidation de la version Ready Check validée en groupe et en raid.
+- Timer basé sur la durée réelle fournie par Blizzard au lancement du Ready Check.
+- Barre de compte à rebours fluide.
+- Fermeture fiable environ 2 secondes après la fin du Ready Check lorsque tout le monde est prêt.
+- Conservation du mode groupe dynamique et du buff **Évocateur / Bronze**.
+
 ## 1.1.11
 
 Ready Check : timer réel et fermeture fiable.
