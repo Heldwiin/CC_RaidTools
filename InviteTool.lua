@@ -1,7 +1,6 @@
 -- CC RaidTools - Invite Tool
 local C=CCRT
 local enabled,keyword
-local pendingInvite
 
 local function InitDB()
     C.InitDB(); AutoPromoteDB.inviteTool=AutoPromoteDB.inviteTool or {}
@@ -30,13 +29,6 @@ end
 local function Refresh() InitDB(); if enabled then enabled:SetChecked(AutoPromoteDB.inviteTool.enabled and true or false); if enabled._ccrtRefresh then enabled:_ccrtRefresh() end end; if keyword then keyword:SetText(AutoPromoteDB.inviteTool.keyword or "inv") end end
 C.RegisterModule("InviteTool",BuildUI,Refresh)
 
-local function DoInvite(sender)
-    if not sender or sender=="" then return end
-    if not AutoPromoteDB.inviteTool.enabled then return end
-    if IsInGroup() and not UnitIsGroupLeader("player") and not UnitIsGroupAssistant("player") then return end
-    if C_PartyInfo and C_PartyInfo.InviteUnit then C_PartyInfo.InviteUnit(sender) elseif InviteUnit then InviteUnit(sender) end
-end
-
 local function Invite(message,sender)
     InitDB(); if not AutoPromoteDB.inviteTool.enabled then return end
 
@@ -49,26 +41,15 @@ local function Invite(message,sender)
 
     if IsInGroup() and not UnitIsGroupLeader("player") and not UnitIsGroupAssistant("player") then return end
 
-    -- Invites are protected during combat. Queue the request and perform it as soon
-    -- as combat ends instead of sending a misleading whisper back to the player.
-    if InCombatLockdown() then
-        pendingInvite=sender
-        return
-    end
-
-    DoInvite(sender)
+    -- Match Method Raid Tools: do not add our own combat-delay queue or whisper.
+    -- Call the Blizzard invite API immediately and let WoW handle the protected call.
+    if C_PartyInfo and C_PartyInfo.InviteUnit then C_PartyInfo.InviteUnit(sender) elseif InviteUnit then InviteUnit(sender) end
 end
 
-local e=CreateFrame("Frame"); e:RegisterEvent("PLAYER_LOGIN"); e:RegisterEvent("CHAT_MSG_WHISPER"); e:RegisterEvent("PLAYER_REGEN_ENABLED")
+local e=CreateFrame("Frame"); e:RegisterEvent("PLAYER_LOGIN"); e:RegisterEvent("CHAT_MSG_WHISPER")
 e:SetScript("OnEvent",function(_,ev,...)
     if ev=="PLAYER_LOGIN" then
         InitDB()
-    elseif ev=="PLAYER_REGEN_ENABLED" then
-        if pendingInvite then
-            local sender=pendingInvite
-            pendingInvite=nil
-            DoInvite(sender)
-        end
     else
         local msg,sender=...
         Invite(msg,sender)
