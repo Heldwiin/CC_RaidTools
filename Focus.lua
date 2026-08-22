@@ -77,26 +77,27 @@ local enabledCheck
 local function BuildUI(f)
     local label=f:CreateFontString(nil,"OVERLAY","GameFontNormal"); label:SetPoint("TOPLEFT",f,"TOPLEFT",12,-30); label:SetText("Focus :"); label:SetTextColor(C.BRAND_R,C.BRAND_G,C.BRAND_B)
 
-    enabledCheck=CreateFrame("CheckButton",nil,f,"UICheckButtonTemplate")
-    enabledCheck:SetSize(24,24)
-    enabledCheck:SetPoint("TOPLEFT",label,"BOTTOMLEFT",-3,-4)
+    enabledCheck=CreateFrame("CheckButton",nil,f,"BackdropTemplate")
+    enabledCheck:SetSize(48,24)
+    C.SkinCheckBox(enabledCheck)
+    enabledCheck:SetPoint("TOPLEFT",label,"BOTTOMLEFT",0,-8)
     enabledCheck:SetScript("OnClick",function(self)
         enabled=self:GetChecked() and true or false
         SaveFocusSettings()
         ApplyFocusBinding()
     end)
-    local enabledLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
-    enabledLabel:SetPoint("LEFT",enabledCheck,"RIGHT",4,0)
+    local enabledLabel=enabledCheck:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
+    enabledLabel:SetPoint("LEFT",enabledCheck,"RIGHT",7,0)
     enabledLabel:SetText("Activer le Focus")
 
-    local modifierLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); modifierLabel:SetPoint("TOPLEFT",label,"BOTTOMLEFT",0,-36); modifierLabel:SetText("Touche")
+    local modifierLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); modifierLabel:SetPoint("TOPLEFT",enabledCheck,"BOTTOMLEFT",0,-10); modifierLabel:SetText("Touche")
     modifierDrop=CreateSwitchMenu(f,modifierValues,modifier,function(value) modifier=value; SaveFocusSettings(); ApplyFocusBinding() end); modifierDrop:SetPoint("TOPLEFT",modifierLabel,"BOTTOMLEFT",0,-4)
     local mouseLabel=f:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall"); mouseLabel:SetPoint("TOPLEFT",modifierLabel,"TOPLEFT",158,0); mouseLabel:SetText("Clic souris")
     mouseDrop=CreateSwitchMenu(f,mouseValues,mouseButton,function(value) mouseButton=value; SaveFocusSettings(); ApplyFocusBinding() end); mouseDrop:SetPoint("TOPLEFT",modifierDrop,"TOPLEFT",158,0)
 end
 
 local function RefreshUI()
-    if enabledCheck and focusDB then enabledCheck:SetChecked(enabled) end
+    if enabledCheck and focusDB then enabledCheck:SetChecked(enabled); if enabledCheck._ccrtRefresh then enabledCheck:_ccrtRefresh() end end
     if modifierDrop and focusDB then modifierDrop:SetValue(focusDB.modifier) end
     if mouseDrop and focusDB then mouseDrop:SetValue(focusDB.mouseButton) end
 end
