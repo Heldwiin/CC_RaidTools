@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.14
+
+Focus activable/désactivable.
+
+- Ajout d'une option **Activer le Focus** dans le module Focus.
+- Le Focus est activé par défaut afin de conserver le comportement existant.
+- Désactivation du Focus : suppression du binding sécurisé associé.
+- Réactivation du Focus : restauration automatique du binding choisi.
+- Conservation du choix de modificateur et de bouton souris.
+- Case d'activation harmonisée visuellement avec les autres cases à cocher de CC RaidTools.
+
 ## 1.1.13
 
 Release Ready Check stabilisée.
