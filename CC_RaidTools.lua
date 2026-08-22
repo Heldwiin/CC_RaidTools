@@ -4,6 +4,7 @@ local C=CCRT or {}; CCRT=C; C.modules=C.modules or {}; C.BRAND_R=0.451; C.BRAND_
 local GUI_TEXTURES="Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\"
 function C.InitDB()
     AutoPromoteDB=AutoPromoteDB or {}; AutoPromoteDB.names=AutoPromoteDB.names or {}; AutoPromoteDB.ranks=AutoPromoteDB.ranks or {}; AutoPromoteDB.rankNames=AutoPromoteDB.rankNames or {}; AutoPromoteDB.windowPos=AutoPromoteDB.windowPos or {}; AutoPromoteDB.focus=AutoPromoteDB.focus or {}; AutoPromoteDB.marksBar=AutoPromoteDB.marksBar or {}; AutoPromoteDB.logging=AutoPromoteDB.logging or {}
+    if AutoPromoteDB.focus.enabled==nil then AutoPromoteDB.focus.enabled=true end
     local logging=AutoPromoteDB.logging; if logging.lfr==nil then logging.lfr=false end; if logging.normal==nil then logging.normal=false end; if logging.heroic==nil then logging.heroic=false end; if logging.mythic==nil then logging.mythic=false end; if logging.dungeonMythic==nil then logging.dungeonMythic=false end; if logging.dungeonMythicPlus==nil then logging.dungeonMythicPlus=false end
     if AutoPromoteDB.loggingStartedByAddon==nil then AutoPromoteDB.loggingStartedByAddon=false end
 end
@@ -34,4 +35,4 @@ end
 function C.ToggleUI() local f=C.BuildMainFrame(); if f:IsShown() then f:Hide() else f:Show() end end
 local function HandleSlash(msg) C.InitDB(); C.ToggleUI() end
 SLASH_CCRAIDTOOLS1="/ccrt"; SlashCmdList["CCRAIDTOOLS"]=HandleSlash
-local coreEvents=CreateFrame("Frame"); coreEvents:RegisterEvent("ADDON_LOADED"); coreEvents:SetScript("OnEvent",function(_,event,arg1) if event=="ADDON_LOADED" and arg1==ADDON_NAME then C.InitDB(); print("|cff33ff99[CC RaidTools]|r v1.1.13 chargé") end end)
+local coreEvents=CreateFrame("Frame"); coreEvents:RegisterEvent("ADDON_LOADED"); coreEvents:SetScript("OnEvent",function(_,event,arg1) if event=="ADDON_LOADED" and arg1==ADDON_NAME then C.InitDB(); print("|cff33ff99[CC RaidTools]|r v1.1.14 chargé") end end)
