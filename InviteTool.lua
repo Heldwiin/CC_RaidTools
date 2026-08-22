@@ -30,7 +30,14 @@ local function Refresh() InitDB(); if enabled then enabled:SetChecked(AutoPromot
 C.RegisterModule("InviteTool",BuildUI,Refresh)
 
 local function Invite(message,sender)
-    InitDB(); if not AutoPromoteDB.inviteTool.enabled or not sender or sender=="" then return end
+    InitDB(); if not AutoPromoteDB.inviteTool.enabled then return end
+
+    -- Midnight 12.0+ can expose whisper message/sender as secret strings in restricted
+    -- contexts. Tainted addon code cannot compare or manipulate those values.
+    -- Skip the automation rather than throwing a Lua error; normal whispers remain unchanged.
+    if issecretvalue and (issecretvalue(message) or issecretvalue(sender)) then return end
+
+    if not sender or sender=="" then return end
     if not IsInviteKeyword(message) then return end
     if InCombatLockdown() then SendChatMessage("Invitation impossible pendant le combat.","WHISPER",nil,sender); return end
     if IsInGroup() and not UnitIsGroupLeader("player") and not UnitIsGroupAssistant("player") then return end
