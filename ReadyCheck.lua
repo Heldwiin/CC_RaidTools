@@ -156,8 +156,9 @@ local function Update(unit,response)
  local s=response==true and "ready" or response==false and "notready" or nil
  if not s then return end
  statuses[unit]=s
+ responded[unit]=true
  local n=UnitExists(unit) and UnitName(unit) or unit
- if n then statuses[n]=s; statuses[C.StripRealm(n)]=s end
+ if n then statuses[n]=s; statuses[C.StripRealm(n)]=s; responded[n]=true; responded[C.StripRealm(n)]=true end
  Refresh()
 end
 local chk
