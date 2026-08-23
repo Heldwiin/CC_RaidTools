@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.15
+
+AutoLog et Ready Check.
+
+- Correction de la migration du réglage unifié **Donjons (M0 / M+)** : la migration des anciens réglages est effectuée dès le chargement de l'addon et ne dépend plus de l'ouverture de l'onglet AutoLog.
+- Consolidation de la logique Ready Check : les réponses individuelles sont maintenant enregistrées dans le suivi interne dès `READY_CHECK_CONFIRM`.
+- Conservation de la fermeture automatique rapide lorsque tout le monde a répondu, en groupe comme en raid.
+- Conservation du fallback `READY_CHECK_FINISHED` pour la fin normale du Ready Check ou l'expiration du timer.
+- Validation des APIs concernées avec la source UI Blizzard de WoW et maintien de la gestion des Secret Values pour les auras et les messages de chat.
+
 ## 1.1.14
 
 Focus activable/désactivable.
@@ -19,7 +29,7 @@ Release Ready Check stabilisée.
 - Consolidation de la version Ready Check validée en groupe et en raid.
 - Timer basé sur la durée réelle fournie par Blizzard au lancement du Ready Check.
 - Barre de compte à rebours fluide.
-- Fermeture fiable environ 2 secondes après la fin du Ready Check lorsque tout le monde est prêt.
+- Fermeture fiable environ 2 secondes après que tout le monde est prêt.
 - Conservation du mode groupe dynamique et du buff **Évocateur / Bronze**.
 
 ## 1.1.11

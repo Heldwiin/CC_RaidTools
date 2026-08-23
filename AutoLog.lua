@@ -87,12 +87,18 @@ local function BuildUI(f)
         checks[info[2]]=chk; previous=chk
     end
 end
-local function Refresh()
-    C.InitDB()
-    -- Migrate the previous two dungeon settings into the unified setting.
+-- Migrate the previous two dungeon settings into the unified setting.
+-- Must run as soon as the DB is available (ADDON_LOADED), not only when the
+-- AutoLog config panel is opened, so upgraded settings survive a plain /reload.
+local function MigrateDungeonSetting()
     if AutoPromoteDB.logging.dungeons==nil then
         AutoPromoteDB.logging.dungeons=AutoPromoteDB.logging.dungeonMythic or AutoPromoteDB.logging.dungeonMythicPlus or false
     end
+end
+
+local function Refresh()
+    C.InitDB()
+    MigrateDungeonSetting()
     for k,chk in pairs(checks) do chk:SetChecked(AutoPromoteDB.logging[k] and true or false); if chk._ccrtRefresh then chk:_ccrtRefresh() end end
 end
 C.RegisterModule("AutoLog",BuildUI,Refresh)
@@ -102,6 +108,7 @@ for _,ev in ipairs({"ADDON_LOADED","PLAYER_ENTERING_WORLD","ZONE_CHANGED_NEW_ARE
 e:SetScript("OnEvent",function(_,event,arg1)
     if event=="ADDON_LOADED" and arg1=="CC_RaidTools" then
         C.InitDB()
+        MigrateDungeonSetting()
         startedByAddon=AutoPromoteDB.loggingStartedByAddon and true or false
         C_Timer.After(2,CheckAutoLog)
     elseif event=="CHALLENGE_MODE_START" then
