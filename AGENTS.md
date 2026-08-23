@@ -80,6 +80,53 @@ Never reposition, resize, show/hide, or otherwise modify secure action buttons d
 
 Avoid introducing taint into Blizzard frames.
 
+## Blizzard API reference — mandatory
+
+For WoW API, events, widget behavior, secure/protected APIs, Secret Values, Ready Check behavior, combat logging, and other Blizzard implementation details, use the official Blizzard UI source repository as the primary technical reference:
+
+`https://github.com/Gethe/wow-ui-source`
+
+When working on a WoW API or behavior that may have changed between client versions:
+1. Check the relevant implementation/documentation in `wow-ui-source` before coding.
+2. Prefer the API/event names and usage patterns used by the current Blizzard source.
+3. Do not rely solely on remembered API behavior when the current Blizzard source can verify it.
+4. If the relevant behavior differs between `live`, `ptr`, or `beta`, use the branch matching the target client and explicitly note the difference.
+
+## Release validation — mandatory
+
+Before declaring a release ready, perform both of these checks:
+
+### 1. Lua syntax validation with `luac`
+
+Run `luac` against **every Lua file included in the addon**, not only the file that was modified.
+
+The release must have:
+- no Lua syntax errors;
+- no truncated files;
+- no missing `end` / malformed blocks;
+- no accidental corruption of a Lua file.
+
+If `luac` is unavailable in the execution environment, state that clearly and do not claim that the syntax check was performed.
+
+### 2. Blizzard API review
+
+Review the release's changed WoW API usage against `Gethe/wow-ui-source`.
+
+At minimum, review:
+- newly added or changed API calls;
+- newly added or changed events;
+- protected/secure API usage;
+- Secret Value / `issecretvalue` / `canaccessvalue` handling;
+- Ready Check APIs/events when Ready Check code changes;
+- combat logging APIs/events when AutoLog changes;
+- secure click/focus/marker APIs when those modules change.
+
+The review should verify that the addon uses APIs and event behavior appropriate for the target WoW client.
+
+Do not invent or assume API signatures when the Blizzard source can be checked.
+
+Record any important API compatibility caveat in the release notes/changelog when it materially affects users.
+
 ## Marks Bar
 
 The Marks Bar contains two rows:
@@ -217,6 +264,8 @@ When the user asks to prepare, bump, finalize, or release a new version, synchro
 5. Add/update the corresponding entry in `CHANGELOG.md`.
 6. Search the entire repository for the previous version string and update any remaining user-visible release/version references.
 7. Before declaring the release ready, verify that the versioned files contain the same target version and that the Ready Check title remains static.
+8. Run the mandatory `luac` syntax validation described above.
+9. Perform the mandatory `wow-ui-source` API review described above for relevant changed code.
 
 When only a bug fix is requested and no version bump is requested, do not silently increment the release version.
 
@@ -264,6 +313,13 @@ For AutoLog specifically:
 - verify the chat message when logging starts/stops;
 - verify manually started logging is never stopped by the addon;
 - test `/reload` while logging is active.
+
+For Invite Tool specifically:
+- test configured whisper keywords;
+- test while the player is in combat;
+- verify no unnecessary reply whisper is sent;
+- verify Secret Value handling does not produce Lua errors;
+- compare changed invite API behavior with `wow-ui-source` and the relevant Blizzard implementation.
 
 ## Debugging principles
 
