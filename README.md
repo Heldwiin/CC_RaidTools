@@ -17,7 +17,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - Largeur du Ready Check ajustée dynamiquement au contenu en groupe et compacte en raid.
 - Mise à jour immédiate de la largeur lors des changements de composition du groupe.
 - Barre de fermeture avec compte à rebours et texture personnalisée Atrocity.
-- Fermeture automatique rapide lorsque tout le monde est prêt.
+- Fermeture automatique **2 secondes après la fin du Ready Check**, que tout le monde soit prêt ou que le timer arrive à expiration.
 - Marks Bar avec marques de raid et marqueurs au sol.
 - Barre configurable en horizontal ou vertical, avec position sauvegardée et affichage au mouseover.
 - Focus configurable avec modificateur et bouton de souris, avec possibilité d'activer ou désactiver la fonction.
@@ -31,7 +31,17 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.1.15**
+**1.1.16**
+
+### v1.1.16 — Ready Check : fermeture fiable après 2 secondes
+
+- Correction de la fermeture automatique du Ready Check : un seul délai de fermeture peut maintenant être programmé par Ready Check.
+- Suppression du problème où le ticker de rafraîchissement reprogrammait continuellement le délai de 2 secondes.
+- Lorsque tout le monde a répondu, la fenêtre se ferme **2 secondes plus tard**.
+- Lorsque le timer arrive à zéro sans que tout le monde soit prêt, la fenêtre se ferme également **2 secondes plus tard**.
+- Le chemin de fin naturelle du Ready Check passe lui aussi par le délai de 2 secondes.
+- Réinitialisation propre de l'état de fermeture à chaque nouveau Ready Check et lors de la fermeture de la fenêtre.
+- Conservation du timer fluide et de la durée réelle fournie par Blizzard.
 
 ### v1.1.15 — AutoLog et Ready Check
 
