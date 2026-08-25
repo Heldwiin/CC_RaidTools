@@ -39,4 +39,4 @@ end
 function C.ToggleUI() local f=C.BuildMainFrame(); if f:IsShown() then f:Hide() else f:Show() end end
 local function HandleSlash(msg) C.InitDB(); C.ToggleUI() end
 SLASH_CCRAIDTOOLS1="/ccrt"; SlashCmdList["CCRAIDTOOLS"]=HandleSlash
-local coreEvents=CreateFrame("Frame"); coreEvents:RegisterEvent("ADDON_LOADED"); coreEvents:SetScript("OnEvent",function(_,event,arg1) if event=="ADDON_LOADED" and arg1==ADDON_NAME then C.InitDB(); print(C.L.addonLoaded:format("1.2.0")) end end)
+local coreEvents=CreateFrame("Frame"); coreEvents:RegisterEvent("ADDON_LOADED"); coreEvents:SetScript("OnEvent",function(_,event,arg1) if event=="ADDON_LOADED" and arg1==ADDON_NAME then C.InitDB(); print(C.L.addonLoaded:format("1.3.9")) end end)
