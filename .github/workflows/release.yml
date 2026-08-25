@@ -93,9 +93,11 @@ jobs:
           test -f "$zip"
 
           declare -A roots=()
+          toc_found=false
           while IFS= read -r entry; do
             root="${entry%%/*}"
             [[ -n "$root" ]] && roots["$root"]=1
+            [[ "$entry" == "CC_RaidTools/CC_RaidTools.toc" ]] && toc_found=true
             case "$entry" in
               CC_RaidTools/README.md|CC_RaidTools/CHANGELOG.md|CC_RaidTools/AGENTS.md)
                 echo "Forbidden documentation file in release ZIP: $entry"
@@ -110,7 +112,7 @@ jobs:
 
           [[ "${#roots[@]}" -eq 1 ]]
           [[ -n "${roots[CC_RaidTools]+yes}" ]]
-          unzip -Z1 "$zip" | grep -Fqx 'CC_RaidTools/CC_RaidTools.toc'
+          [[ "$toc_found" == true ]]
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
