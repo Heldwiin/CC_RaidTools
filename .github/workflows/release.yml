@@ -73,6 +73,8 @@ jobs:
           rm -rf package
           mkdir -p package/CC_RaidTools
 
+          cp -p CC_RaidTools.toc package/CC_RaidTools/CC_RaidTools.toc
+
           while IFS= read -r file; do
             mkdir -p "package/CC_RaidTools/$(dirname "$file")"
             cp -p "$file" "package/CC_RaidTools/$file"
@@ -85,7 +87,7 @@ jobs:
 
           (cd package && zip -qr "../CC_RaidTools-${VERSION}.zip" CC_RaidTools)
 
-      - name: Validate ZIP structure for WowUp
+      - name: Validate WowUp ZIP
         shell: bash
         run: |
           set -euo pipefail
@@ -113,10 +115,7 @@ jobs:
           if found_forbidden:
               raise SystemExit(f"Forbidden documentation files in release ZIP: {found_forbidden}")
 
-          wrappers = sorted(
-              name for name in names
-              if name.startswith("CC_RaidTools-")
-          )
+          wrappers = sorted(name for name in names if name.startswith("CC_RaidTools-"))
           if wrappers:
               raise SystemExit(f"Release wrapper folder/files found in ZIP: {wrappers}")
 
