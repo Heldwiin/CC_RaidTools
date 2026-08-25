@@ -32,36 +32,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.3.9**
-
-### v1.3.9 — Correctif faux positif main secondaire (casters/tanks/heals)
-
-- Les enchants de main secondaire ne concernent que les vraies armes (double maniement melee) — pas les orbes/tomes tenus en main secondaire par les casters, tanks et heals, qui ne sont pas enchantables. Vérification du `classID` (`Enum.ItemClass.Weapon`) ajoutée avant de compter cet emplacement.
-
-### v1.3.8 — Icône de menu simplifiée + tooltip de diagnostic par emplacement
-
-- Icône de menu recadrée plus serrée (silhouette seule) avec contraste/saturation accentués, nettement plus lisible à 30px.
-- Survoler "manquant(s)" dans les colonnes Enchants/Gemmes affiche désormais un tooltip listant précisément quel(s) emplacement(s) sont en cause (ex. "Anneau 2"), pour vérifier directement en jeu plutôt que de deviner.
-
-### v1.3.7 — Icône de menu Raid Inspect optimisée
-
-- L'icône Raid Inspect devenait illisible à la taille du menu de gauche (30px) à cause de sa composition riche en détails, alors qu'elle restait nette à 72px (en-tête de module). Ajout d'un recadrage dédié, plus serré sur la loupe seule, utilisé uniquement pour l'icône de menu.
-
-### v1.3.6 — Fusion des correctifs + ajustements layout/plancher fenêtre Raid Inspect
-
-- Fusion de la passe de compatibilité Midnight (valeurs secrètes, `TooltipUtil.SurfaceArgs`, garde-fous file d'inspection, `CanInspect(unit, true)`) avec les correctifs de redimensionnement dynamique qui manquaient dans ce zip : `C.RequestResize()` (son absence empêchait la fenêtre de grandir après le chargement initial, d'où le bouton qui dépassait), plancher de fenêtre à 300px, watermark atténué (0.07) sur Raid Inspect.
-- Colonnes resserrées et ascenseur repoussé de 26px vers la droite.
-- Icône `RaidInspect.png` et message de chargement en chat restaurés (absents/obsolètes dans ce zip).
-
-### v1.3.4 — Correctifs Raid Inspect / Midnight
-
-- Correction des emplacements d'enchantement pour Midnight : casque, épaules, anneaux, torse, pieds et armes.
-- Lecture des tooltips via `C_TooltipInfo.GetInventoryItem` avec `TooltipUtil.SurfaceArgs` avant inspection des lignes.
-- Protection contre les valeurs secrètes lors de la lecture des textes de tooltip et de l'ilvl inspecté.
-- Protection de la file contre les `INSPECT_READY` tardifs après un timeout afin qu'une ancienne réponse ne fasse pas avancer la mauvaise inspection.
-- Localisation FR/EN du nouveau module Raid Inspect.
-- Icône Raid Inspect intégrée au menu et aux en-têtes de module.
-- Watermark de guilde atténué sur l'onglet Raid Inspect pour conserver la lisibilité du tableau.
+**1.2.0**
 
 ### v1.2.0 — Raid Inspect
 
@@ -73,8 +44,11 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - Gestion des joueurs hors de portée et des inspections sans réponse avec timeout.
 - File d'inspection temporisée afin de limiter les appels simultanés et les résultats incohérents.
 - Utilisation de `C_TooltipInfo` avec `TooltipUtil.SurfaceArgs` avant lecture des données structurées des tooltips.
+- Protection contre les valeurs secrètes lors de la lecture des données d'inspection.
 - Protection contre les `INSPECT_READY` tardifs après un timeout afin d'éviter de perturber la file d'inspection.
-- Ajout de l'icône et de l'entrée **Raid Inspect** dans le menu principal.
+- Vérification de `CanInspect` avant chaque inspection.
+- Correctifs de redimensionnement et de présentation du module Raid Inspect.
+- Ajout des icônes Raid Inspect au menu et à l'en-tête du module.
 
 ### v1.1.16 — Ready Check : fermeture fiable après 2 secondes
 
@@ -91,7 +65,6 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - Correction de la migration du réglage unifié **Donjons (M0 / M+)** dès le chargement de l'addon.
 - Consolidation du suivi des réponses `READY_CHECK_CONFIRM`.
 - Conservation de la fermeture automatique rapide en groupe comme en raid.
-- Conservation du fallback `READY_CHECK_FINISHED`.
 - Validation des APIs concernées avec la source UI Blizzard de WoW.
 
 ### v1.1.14 — Focus activable/désactivable
