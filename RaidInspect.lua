@@ -8,8 +8,11 @@
 local C = CCRT
 
 local panelRef, rows = nil, {}
-local ROW_H = 20
-local MAX_VISIBLE_ROWS = 14 -- beyond this, the list scrolls instead of growing the window further
+local ROW_H = 18
+-- Hard cap at 20 rows visible without scrolling; beyond that the list
+-- scrolls. Kept well under the ~557px theoretical budget (main window's
+-- 705px cap minus overhead) for extra safety margin.
+local MAX_SCROLL_HEIGHT = 20 * ROW_H
 local inspecting = false
 local queue = {}
 local queueIndex = 0
@@ -24,28 +27,54 @@ local inspectButton, statusText, scrollFrame, rowsChild
 -- per Method's own consumables guide: Head, Shoulder, Rings, Boots, Chest and
 -- Weapons. Cloak/Back and Bracer/Wrist enchants were removed this expansion;
 -- Head and Shoulder enchants came back. Revisit this list each expansion.
-local ENCHANT_SLOTS = { INVSLOT_HEAD, INVSLOT_SHOULDER, INVSLOT_FINGER1, INVSLOT_FINGER2, INVSLOT_CHEST, INVSLOT_FEET, INVSLOT_MAINHAND, INVSLOT_OFFHAND }
+local ENCHANT_SLOTS = {
+    INVSLOT_HEAD,
+    INVSLOT_SHOULDER,
+    INVSLOT_FINGER1,
+    INVSLOT_FINGER2,
+    INVSLOT_CHEST,
+    INVSLOT_FEET,
+    INVSLOT_MAINHAND,
+    INVSLOT_OFFHAND,
+}
 -- Localized name per slot, used for the "which slot exactly" diagnostic tooltip.
 -- Covers every slot that can plausibly carry a gem, not just the enchantable ones.
 local SLOT_NAME_KEYS = {
-    [INVSLOT_HEAD] = "riSlotHead", [INVSLOT_SHOULDER] = "riSlotShoulder",
-    [INVSLOT_FINGER1] = "riSlotFinger1", [INVSLOT_FINGER2] = "riSlotFinger2",
-    [INVSLOT_CHEST] = "riSlotChest", [INVSLOT_FEET] = "riSlotFeet",
-    [INVSLOT_MAINHAND] = "riSlotMainHand", [INVSLOT_OFFHAND] = "riSlotOffHand",
-    [INVSLOT_NECK] = "riSlotNeck", [INVSLOT_WAIST] = "riSlotWaist",
-    [INVSLOT_WRIST] = "riSlotWrist", [INVSLOT_HAND] = "riSlotHands",
-    [INVSLOT_LEGS] = "riSlotLegs", [INVSLOT_BACK] = "riSlotBack",
-    [INVSLOT_TRINKET1] = "riSlotTrinket1", [INVSLOT_TRINKET2] = "riSlotTrinket2",
+    [INVSLOT_HEAD] = "riSlotHead",
+    [INVSLOT_SHOULDER] = "riSlotShoulder",
+    [INVSLOT_FINGER1] = "riSlotFinger1",
+    [INVSLOT_FINGER2] = "riSlotFinger2",
+    [INVSLOT_CHEST] = "riSlotChest",
+    [INVSLOT_FEET] = "riSlotFeet",
+    [INVSLOT_MAINHAND] = "riSlotMainHand",
+    [INVSLOT_OFFHAND] = "riSlotOffHand",
+    [INVSLOT_NECK] = "riSlotNeck",
+    [INVSLOT_WAIST] = "riSlotWaist",
+    [INVSLOT_WRIST] = "riSlotWrist",
+    [INVSLOT_HAND] = "riSlotHands",
+    [INVSLOT_LEGS] = "riSlotLegs",
+    [INVSLOT_BACK] = "riSlotBack",
+    [INVSLOT_TRINKET1] = "riSlotTrinket1",
+    [INVSLOT_TRINKET2] = "riSlotTrinket2",
 }
-local function SlotName(slot) local key = SLOT_NAME_KEYS[slot]; return key and C.L[key] or ("#"..tostring(slot)) end
+
+local function SlotName(slot)
+    local key = SLOT_NAME_KEYS[slot]
+    return key and C.L[key] or ("#" .. tostring(slot))
+end
 -- All gear slots are checked for empty gem sockets.
 local ALL_SLOTS = {}
-for i = 1, 19 do ALL_SLOTS[#ALL_SLOTS+1] = i end
+for i = 1, 19 do
+    ALL_SLOTS[#ALL_SLOTS + 1] = i
+end
 
 -- Build (once) a set of localized empty-socket strings from the client.
 local emptySocketTexts
+
 local function GetEmptySocketTexts()
-    if emptySocketTexts then return emptySocketTexts end
+    if emptySocketTexts then
+        return emptySocketTexts
+    end
     emptySocketTexts = {}
     for k, v in pairs(_G) do
         if type(k) == "string" and type(v) == "string" and v ~= "" and k:match("^EMPTY_SOCKET_") then
@@ -58,7 +87,9 @@ end
 -- C_TooltipInfo returns structured tooltip data. SurfaceArgs makes the
 -- structured fields (such as leftText/type) available before inspection.
 local function SurfaceTooltipData(data)
-    if not data or not TooltipUtil or not TooltipUtil.SurfaceArgs then return end
+    if not data or not TooltipUtil or not TooltipUtil.SurfaceArgs then
+        return
+    end
     pcall(TooltipUtil.SurfaceArgs, data)
     if data.lines then
         for _, line in ipairs(data.lines) do
@@ -68,16 +99,26 @@ local function SurfaceTooltipData(data)
 end
 
 local function SafeText(value)
-    if value == nil then return nil end
-    if issecretvalue and issecretvalue(value) then return nil end
-    if canaccessvalue and not canaccessvalue(value) then return nil end
+    if value == nil then
+        return nil
+    end
+    if issecretvalue and issecretvalue(value) then
+        return nil
+    end
+    if canaccessvalue and not canaccessvalue(value) then
+        return nil
+    end
     return value
 end
 
 local function HasInventoryItem(unit, slot)
-    if not GetInventoryItemLink then return false end
+    if not GetInventoryItemLink then
+        return false
+    end
     local ok, link = pcall(GetInventoryItemLink, unit, slot)
-    if not ok then return false end
+    if not ok then
+        return false
+    end
     return link and true or false
 end
 
@@ -87,22 +128,32 @@ end
 -- enchant, it's just not an enchantable item, so don't flag it at all.
 local function IsOffhandWeapon(unit, slot)
     local ok, link = pcall(GetInventoryItemLink, unit, slot)
-    if not ok or not link then return false end
+    if not ok or not link then
+        return false
+    end
     local ok2, _, _, _, _, _, classID = pcall(C_Item.GetItemInfoInstant, link)
-    if not ok2 then return false end
+    if not ok2 then
+        return false
+    end
     return classID == Enum.ItemClass.Weapon
 end
 
 local function CountEmptySocketsOnSlot(unit, slot)
-    if not C_TooltipInfo or not C_TooltipInfo.GetInventoryItem then return 0 end
+    if not C_TooltipInfo or not C_TooltipInfo.GetInventoryItem then
+        return 0
+    end
     local ok, data = pcall(C_TooltipInfo.GetInventoryItem, unit, slot)
-    if not ok or not data or not data.lines then return 0 end
+    if not ok or not data or not data.lines then
+        return 0
+    end
     SurfaceTooltipData(data)
     local texts = GetEmptySocketTexts()
     local n = 0
     for _, line in ipairs(data.lines) do
         local leftText = SafeText(line.leftText)
-        if leftText and texts[leftText] then n = n + 1 end
+        if leftText and texts[leftText] then
+            n = n + 1
+        end
     end
     return n
 end
@@ -110,12 +161,15 @@ end
 -- Build (once) a Lua pattern matching the client's own "Enchanted: %s" tooltip
 -- line prefix (ENCHANTED_TOOLTIP_LINE), so the check works in any locale.
 local enchantLinePattern
+
 local function GetEnchantLinePattern()
-    if enchantLinePattern ~= nil then return enchantLinePattern end
+    if enchantLinePattern ~= nil then
+        return enchantLinePattern
+    end
     local fmt = _G.ENCHANTED_TOOLTIP_LINE
     local prefix = fmt and fmt:match("^(.-)%%s")
     if prefix and prefix ~= "" then
-        enchantLinePattern = "^"..prefix:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+        enchantLinePattern = "^" .. prefix:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
     else
         enchantLinePattern = false
     end
@@ -123,15 +177,23 @@ local function GetEnchantLinePattern()
 end
 
 local function HasEnchantOnSlot(unit, slot)
-    if not C_TooltipInfo or not C_TooltipInfo.GetInventoryItem then return nil end
+    if not C_TooltipInfo or not C_TooltipInfo.GetInventoryItem then
+        return nil
+    end
     local pattern = GetEnchantLinePattern()
-    if not pattern then return nil end
+    if not pattern then
+        return nil
+    end
     local ok, data = pcall(C_TooltipInfo.GetInventoryItem, unit, slot)
-    if not ok or not data or not data.lines then return nil end
+    if not ok or not data or not data.lines then
+        return nil
+    end
     SurfaceTooltipData(data)
     for _, line in ipairs(data.lines) do
         local leftText = SafeText(line.leftText)
-        if leftText and leftText:find(pattern) then return true end
+        if leftText and leftText:find(pattern) then
+            return true
+        end
     end
     return false
 end
@@ -152,7 +214,7 @@ local function CollectUnitData(unit)
             local has = HasEnchantOnSlot(unit, slot)
             if has == false then
                 data.missingEnchants = data.missingEnchants + 1
-                data.missingEnchantSlots[#data.missingEnchantSlots+1] = SlotName(slot)
+                data.missingEnchantSlots[#data.missingEnchantSlots + 1] = SlotName(slot)
             end
         end
     end
@@ -162,7 +224,7 @@ local function CollectUnitData(unit)
             local n = CountEmptySocketsOnSlot(unit, slot)
             if n > 0 then
                 data.missingGems = data.missingGems + n
-                data.missingGemSlots[#data.missingGemSlots+1] = SlotName(slot)
+                data.missingGemSlots[#data.missingGemSlots + 1] = SlotName(slot)
             end
         end
     end
@@ -173,10 +235,16 @@ end
 local function GetGroupUnits()
     local units = {}
     if IsInRaid() then
-        for i = 1, GetNumGroupMembers() or 0 do units[#units+1] = "raid"..i end
+        for i = 1, GetNumGroupMembers() or 0 do
+            units[#units + 1] = "raid" .. i
+        end
     elseif IsInGroup() then
-        units[#units+1] = "player"
-        for i = 1, 4 do if UnitExists("party"..i) then units[#units+1] = "party"..i end end
+        units[#units + 1] = "player"
+        for i = 1, 4 do
+            if UnitExists("party" .. i) then
+                units[#units + 1] = "party" .. i
+            end
+        end
     end
     return units
 end
@@ -184,10 +252,17 @@ end
 local function NewRow(parent, i)
     local r = CreateFrame("Frame", nil, parent)
     r:SetSize(420, ROW_H)
-    r:SetPoint("TOPLEFT", 0, -(i-1)*ROW_H)
+    r:SetPoint("TOPLEFT", 0, -(i - 1) * ROW_H)
     local function T(x, w, j)
         local f = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        f:SetPoint("LEFT", x, 0); f:SetWidth(w); f:SetJustifyH(j or "CENTER")
+        f:SetPoint("LEFT", x, 0)
+        f:SetWidth(w)
+        f:SetJustifyH(j or "CENTER")
+        f:SetWordWrap(false) -- never let long status text ("En attente"/"Waiting") wrap
+        -- to a 2nd line: that inflates the row's real rendered height past the
+        -- fixed ROW_H we budget for, which is exactly what pushed rows below
+        -- the window edge. Truncating on one line is fine here (there's a
+        -- hover tooltip for detail on the enchant/gem columns already).
         return f
     end
     r.nameText = T(4, 150, "LEFT")
@@ -200,31 +275,46 @@ local function NewRow(parent, i)
     -- so nobody has to take our word for a bare count.
     local function HoverZone(anchorText, getLines)
         local z = CreateFrame("Frame", nil, r)
-        z:SetPoint("LEFT", anchorText); z:SetSize(95, ROW_H)
+        z:SetPoint("LEFT", anchorText)
+        z:SetSize(95, ROW_H)
         z:EnableMouse(true)
         z:SetScript("OnEnter", function(self)
             local lines = getLines()
-            if not lines or #lines == 0 then return end
+            if not lines or #lines == 0 then
+                return
+            end
             GameTooltip:SetOwner(self, "ANCHOR_TOP")
             GameTooltip:AddLine(lines.header)
-            for _, s in ipairs(lines) do GameTooltip:AddLine("- "..s, 1, 1, 1) end
+            for _, s in ipairs(lines) do
+                GameTooltip:AddLine("- " .. s, 1, 1, 1)
+            end
             GameTooltip:Show()
         end)
-        z:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        z:SetScript("OnLeave", function()
+            GameTooltip:Hide()
+        end)
         return z
     end
     r.enchantsHover = HoverZone(r.enchantsText, function()
         local data = results[r._ccrtUnit]
-        if not data or not data.missingEnchantSlots or #data.missingEnchantSlots == 0 then return nil end
+        if not data or not data.missingEnchantSlots or #data.missingEnchantSlots == 0 then
+            return nil
+        end
         local t = { header = C.L.riMissingEnchantTooltip }
-        for _, s in ipairs(data.missingEnchantSlots) do t[#t+1] = s end
+        for _, s in ipairs(data.missingEnchantSlots) do
+            t[#t + 1] = s
+        end
         return t
     end)
     r.gemsHover = HoverZone(r.gemsText, function()
         local data = results[r._ccrtUnit]
-        if not data or not data.missingGemSlots or #data.missingGemSlots == 0 then return nil end
+        if not data or not data.missingGemSlots or #data.missingGemSlots == 0 then
+            return nil
+        end
         local t = { header = C.L.riMissingGemTooltip }
-        for _, s in ipairs(data.missingGemSlots) do t[#t+1] = s end
+        for _, s in ipairs(data.missingGemSlots) do
+            t[#t + 1] = s
+        end
         return t
     end)
     return r
@@ -236,60 +326,81 @@ local function RefreshRow(i, unit, name)
     r._ccrtUnit = unit
     local _, class = UnitClass(unit)
     local col = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-    if col then r.nameText:SetTextColor(col.r, col.g, col.b) else r.nameText:SetTextColor(1,1,1) end
+    if col then
+        r.nameText:SetTextColor(col.r, col.g, col.b)
+    else
+        r.nameText:SetTextColor(1, 1, 1)
+    end
     r.nameText:SetText(C.StripRealm(name))
 
     local data = results[unit]
     if not data then
-        r.ilvlText:SetText("|cffff9900"..C.L.riStatusWaiting.."|r")
+        r.ilvlText:SetText("|cffff9900" .. C.L.riStatusWaiting .. "|r")
         r.enchantsText:SetText("")
         r.gemsText:SetText("")
     elseif data.status == "outofrange" then
-        r.ilvlText:SetText("|cffff4444"..C.L.riStatusOutOfRange.."|r")
-        r.enchantsText:SetText(""); r.gemsText:SetText("")
+        r.ilvlText:SetText("|cffff4444" .. C.L.riStatusOutOfRange .. "|r")
+        r.enchantsText:SetText("")
+        r.gemsText:SetText("")
     elseif data.status == "timeout" then
-        r.ilvlText:SetText("|cffff4444"..C.L.riStatusTimeout.."|r")
-        r.enchantsText:SetText(""); r.gemsText:SetText("")
+        r.ilvlText:SetText("|cffff4444" .. C.L.riStatusTimeout .. "|r")
+        r.enchantsText:SetText("")
+        r.gemsText:SetText("")
     else
         r.ilvlText:SetText(tostring(data.ilvl or "?"))
         if (data.missingEnchants or 0) > 0 then
-            r.enchantsText:SetText("|cffff4444"..C.L.riMissingCount:format(data.missingEnchants).."|r")
+            r.enchantsText:SetText("|cffff4444" .. C.L.riMissingCount:format(data.missingEnchants) .. "|r")
         else
-            r.enchantsText:SetText("|cff33ff66"..C.L.riStatusOK.."|r")
+            r.enchantsText:SetText("|cff33ff66" .. C.L.riStatusOK .. "|r")
         end
         if (data.missingGems or 0) > 0 then
-            r.gemsText:SetText("|cffff4444"..C.L.riMissingCount:format(data.missingGems).."|r")
+            r.gemsText:SetText("|cffff4444" .. C.L.riMissingCount:format(data.missingGems) .. "|r")
         else
-            r.gemsText:SetText("|cff33ff66"..C.L.riStatusOK.."|r")
+            r.gemsText:SetText("|cff33ff66" .. C.L.riStatusOK .. "|r")
         end
     end
     r:Show()
 end
 
 local function RefreshList()
-    if not rowsChild then return end
+    if not rowsChild then
+        return
+    end
     local units = GetGroupUnits()
     for i, unit in ipairs(units) do
         local name = UnitName(unit) or "?"
         RefreshRow(i, unit, name)
     end
-    for i = #units+1, #rows do rows[i]:Hide() end
+    for i = #units + 1, #rows do
+        rows[i]:Hide()
+    end
 
     local count = #units
-    local childHeight = math.max(ROW_H, count*ROW_H)
+    local childHeight = math.max(ROW_H, count * ROW_H)
     rowsChild:SetHeight(childHeight)
     if scrollFrame then
-        local visibleRows = math.min(count, MAX_VISIBLE_ROWS)
-        scrollFrame:SetHeight(math.max(ROW_H, visibleRows*ROW_H))
+        local visibleHeight = math.min(count * ROW_H, MAX_SCROLL_HEIGHT)
+        scrollFrame:SetHeight(math.max(ROW_H, visibleHeight))
     end
-    if C.RequestResize then C.RequestResize() end
+    if C.RequestResize then
+        C.RequestResize()
+    end
 end
 
 local function StopInspectQueue()
     inspecting = false
-    if pendingTimeout then pendingTimeout:Cancel(); pendingTimeout = nil end
-    if inventorySettleTimer then inventorySettleTimer:Cancel(); inventorySettleTimer = nil end
-    if inventoryCapTimer then inventoryCapTimer:Cancel(); inventoryCapTimer = nil end
+    if pendingTimeout then
+        pendingTimeout:Cancel()
+        pendingTimeout = nil
+    end
+    if inventorySettleTimer then
+        inventorySettleTimer:Cancel()
+        inventorySettleTimer = nil
+    end
+    if inventoryCapTimer then
+        inventoryCapTimer:Cancel()
+        inventoryCapTimer = nil
+    end
     pendingGUID = nil
     pendingQueueIndex = 0
     if inspectButton then
@@ -305,8 +416,14 @@ local function InspectNext()
     if not unit then
         StopInspectQueue()
         local inspected, total = 0, #queue
-        for _, u in ipairs(queue) do if results[u] and not results[u].status then inspected = inspected + 1 end end
-        if statusText then statusText:SetText(C.L.riDone:format(inspected, total)) end
+        for _, u in ipairs(queue) do
+            if results[u] and not results[u].status then
+                inspected = inspected + 1
+            end
+        end
+        if statusText then
+            statusText:SetText(C.L.riDone:format(inspected, total))
+        end
         return
     end
 
@@ -323,10 +440,14 @@ local function InspectNext()
     local requestQueueIndex = queueIndex
     NotifyInspect(unit)
 
-    if pendingTimeout then pendingTimeout:Cancel() end
+    if pendingTimeout then
+        pendingTimeout:Cancel()
+    end
     pendingTimeout = C_Timer.NewTimer(5, function()
         pendingTimeout = nil
-        if not inspecting or pendingGUID ~= requestGUID or queueIndex ~= requestQueueIndex then return end
+        if not inspecting or pendingGUID ~= requestGUID or queueIndex ~= requestQueueIndex then
+            return
+        end
         pendingGUID = nil
         pendingQueueIndex = 0
         ClearInspectPlayer()
@@ -337,9 +458,17 @@ local function InspectNext()
 end
 
 local function FinalizeInspect(unit, guid)
-    if not inspecting or pendingGUID ~= guid or queue[queueIndex] ~= unit or pendingQueueIndex ~= queueIndex then return end
-    if inventorySettleTimer then inventorySettleTimer:Cancel(); inventorySettleTimer = nil end
-    if inventoryCapTimer then inventoryCapTimer:Cancel(); inventoryCapTimer = nil end
+    if not inspecting or pendingGUID ~= guid or queue[queueIndex] ~= unit or pendingQueueIndex ~= queueIndex then
+        return
+    end
+    if inventorySettleTimer then
+        inventorySettleTimer:Cancel()
+        inventorySettleTimer = nil
+    end
+    if inventoryCapTimer then
+        inventoryCapTimer:Cancel()
+        inventoryCapTimer = nil
+    end
     pendingGUID = nil
     pendingQueueIndex = 0
     if unit and UnitExists(unit) and UnitGUID(unit) == guid then
@@ -351,12 +480,21 @@ local function FinalizeInspect(unit, guid)
 end
 
 local function OnInspectReady(guid)
-    if not inspecting or guid ~= pendingGUID or queue[queueIndex] == nil or pendingQueueIndex ~= queueIndex then return end
-    if pendingTimeout then pendingTimeout:Cancel(); pendingTimeout = nil end
+    if not inspecting or guid ~= pendingGUID or queue[queueIndex] == nil or pendingQueueIndex ~= queueIndex then
+        return
+    end
+    if pendingTimeout then
+        pendingTimeout:Cancel()
+        pendingTimeout = nil
+    end
     local unit = queue[queueIndex]
 
-    if inventorySettleTimer then inventorySettleTimer:Cancel() end
-    if inventoryCapTimer then inventoryCapTimer:Cancel() end
+    if inventorySettleTimer then
+        inventorySettleTimer:Cancel()
+    end
+    if inventoryCapTimer then
+        inventoryCapTimer:Cancel()
+    end
     inventorySettleTimer = C_Timer.NewTimer(0.3, function()
         inventorySettleTimer = nil
         FinalizeInspect(unit, guid)
@@ -368,9 +506,13 @@ local function OnInspectReady(guid)
 end
 
 local function OnUnitInventoryChanged(unit)
-    if not inspecting or not pendingGUID then return end
+    if not inspecting or not pendingGUID then
+        return
+    end
     local expected = queue[queueIndex]
-    if unit ~= expected then return end
+    if unit ~= expected then
+        return
+    end
     if inventorySettleTimer then
         local guid = pendingGUID
         inventorySettleTimer:Cancel()
@@ -382,9 +524,11 @@ local function OnUnitInventoryChanged(unit)
 end
 
 local function StartInspectQueue()
-    if inspecting then return end
+    if inspecting then
+        return
+    end
     if not (IsInRaid() or IsInGroup()) then
-        print("|cffff6666[CC RaidTools]|r "..C.L.riNeedGroup)
+        print("|cffff6666[CC RaidTools]|r " .. C.L.riNeedGroup)
         return
     end
     queue = GetGroupUnits()
@@ -397,7 +541,9 @@ local function StartInspectQueue()
         inspectButton:SetText(C.L.riInspectingButton)
         inspectButton:Disable()
     end
-    if statusText then statusText:SetText("") end
+    if statusText then
+        statusText:SetText("")
+    end
     RefreshList()
     InspectNext()
 end
@@ -405,22 +551,30 @@ end
 local function BuildUI(f)
     panelRef = f
     local label = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    label:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -30); label:SetText(C.L.riLabel); label:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    label:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -30)
+    label:SetText(C.L.riLabel)
+    label:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
 
     inspectButton = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    inspectButton:SetSize(150, 24); inspectButton:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -10)
-    inspectButton:SetText(C.L.riInspectButton); C.SkinButton(inspectButton)
+    inspectButton:SetSize(150, 24)
+    inspectButton:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -10)
+    inspectButton:SetText(C.L.riInspectButton)
+    C.SkinButton(inspectButton)
     inspectButton:SetScript("OnClick", StartInspectQueue)
 
     statusText = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     statusText:SetPoint("LEFT", inspectButton, "RIGHT", 10, 0)
 
     local h = CreateFrame("Frame", nil, f)
-    h:SetPoint("TOPLEFT", inspectButton, "BOTTOMLEFT", -6, -14); h:SetSize(390, 18)
+    h:SetPoint("TOPLEFT", inspectButton, "BOTTOMLEFT", -6, -14)
+    h:SetSize(390, 18)
     local function H(txt, x, w, j)
         local hf = h:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        hf:SetPoint("LEFT", x, 0); hf:SetWidth(w); hf:SetJustifyH(j or "CENTER")
-        hf:SetText(txt); hf:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+        hf:SetPoint("LEFT", x, 0)
+        hf:SetWidth(w)
+        hf:SetJustifyH(j or "CENTER")
+        hf:SetText(txt)
+        hf:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
         return hf
     end
     H(C.L.riColName, 4, 150, "LEFT")
@@ -443,12 +597,19 @@ local function BuildUI(f)
     rowsChild:SetSize(414, ROW_H)
     scrollFrame:SetScrollChild(rowsChild)
 end
-C.RegisterModule("RaidInspect", BuildUI, function() if C.RequestResize then C.RequestResize() end end)
+C.RegisterModule("RaidInspect", BuildUI, function()
+    if C.RequestResize then
+        C.RequestResize()
+    end
+end)
 
 local e = CreateFrame("Frame")
 e:RegisterEvent("INSPECT_READY")
 e:RegisterEvent("UNIT_INVENTORY_CHANGED")
 e:SetScript("OnEvent", function(_, ev, arg1)
-    if ev == "INSPECT_READY" then OnInspectReady(arg1)
-    elseif ev == "UNIT_INVENTORY_CHANGED" then OnUnitInventoryChanged(arg1) end
+    if ev == "INSPECT_READY" then
+        OnInspectReady(arg1)
+    elseif ev == "UNIT_INVENTORY_CHANGED" then
+        OnUnitInventoryChanged(arg1)
+    end
 end)

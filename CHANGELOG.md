@@ -2,50 +2,65 @@
 
 ## 1.2.0
 
-Raid Inspect.
+### Raid Inspect
 
 - Ajout du module **Raid Inspect**.
 - Inspection séquentielle des membres du groupe ou du raid via les APIs Blizzard d'inspection.
-- Affichage de l'ilvl inspecté, des enchants manquants et des sockets de gemmes vides.
+- Affichage de l'ilvl inspecté pour chaque joueur.
+- Détection des enchants manquants sur les emplacements enchantables de Midnight.
+- Détection des sockets de gemmes vides.
 - Gestion des joueurs hors de portée et des inspections sans réponse avec timeout.
-- Compatibilité Midnight : slots d'enchantement adaptés au client 12.x.
-- Lecture des tooltips via `C_TooltipInfo.GetInventoryItem` et `TooltipUtil.SurfaceArgs`.
-- Protection des valeurs secrètes lors de la lecture des textes de tooltip et de l'ilvl inspecté.
-- Protection de la file contre les réponses `INSPECT_READY` tardives après timeout.
-- Nettoyage explicite de l'inspection Blizzard en cas de timeout.
-- Vérification de `CanInspect(unit, true)` alignée sur l'usage Blizzard.
-- Ajout du redimensionnement dynamique via `C.RequestResize()` et ajustements de l'interface Raid Inspect.
-- Ajout de la localisation FR/EN et de l'icône Raid Inspect.
+- File d'inspection temporisée afin de limiter les appels simultanés et les résultats incohérents.
+- Utilisation de `C_TooltipInfo` avec `TooltipUtil.SurfaceArgs` avant lecture des données structurées des tooltips.
+- Protection contre les valeurs secrètes lors de la lecture des données d'inspection.
+- Protection contre les `INSPECT_READY` tardifs après un timeout afin d'éviter de perturber la file d'inspection.
+- Vérification de `CanInspect` avant chaque inspection.
+- Correctifs de redimensionnement et de présentation du module Raid Inspect.
+- Ajout des icônes Raid Inspect au menu et à l'en-tête du module.
+- Correction de la détection de l'enchant de main gauche : les objets tenus en main secondaire qui ne sont pas des armes ne sont plus signalés à tort.
+- Ajout d'un tooltip indiquant les emplacements exacts concernés par les enchants ou gemmes manquants.
+- Icône de menu Raid Inspect optimisée pour rester lisible à petite taille.
 
-## 1.1.16
+### v1.1.16 — Ready Check
 
-Ready Check : fermeture fiable après 2 secondes.
+- Fermeture fiable 2 secondes après que tout le monde a répondu.
+- Fermeture 2 secondes après l'expiration du timer.
+- Un seul délai de fermeture peut être programmé par Ready Check, empêchant le ticker de repousser continuellement la fermeture.
+- Réinitialisation propre de l'état de fermeture à chaque nouveau Ready Check.
 
-- Correction de la fermeture automatique du Ready Check : un seul délai de fermeture peut maintenant être programmé par Ready Check.
-- Suppression du problème où le ticker de rafraîchissement reprogrammait continuellement le délai de 2 secondes.
-- Lorsque tout le monde a répondu, la fenêtre se ferme **2 secondes plus tard**.
-- Lorsque le timer arrive à zéro sans que tout le monde soit prêt, la fenêtre se ferme également **2 secondes plus tard**.
-- Le chemin de fin naturelle du Ready Check passe lui aussi par le délai de 2 secondes.
-- Réinitialisation propre de l'état de fermeture à chaque nouveau Ready Check et lors de la fermeture de la fenêtre.
-- Conservation du timer fluide et de la durée réelle fournie par Blizzard.
+### v1.1.15 — AutoLog et Ready Check
 
-## 1.1.15
+- Migration du réglage unifié Donjons (M0 / M+) dès le chargement de l'addon.
+- Consolidation du suivi des réponses `READY_CHECK_CONFIRM`.
+- Conservation de la fermeture automatique rapide en groupe comme en raid.
+- Validation des APIs concernées avec la source UI Blizzard de WoW.
 
-AutoLog et Ready Check.
+### v1.1.14 — Focus activable/désactivable
 
-- Correction de la migration du réglage unifié **Donjons (M0 / M+)** : la migration des anciens réglages est effectuée dès le chargement de l'addon et ne dépend plus de l'ouverture de l'onglet AutoLog.
-- Consolidation de la logique Ready Check : les réponses individuelles sont maintenant enregistrées dans le suivi interne dès `READY_CHECK_CONFIRM`.
-- Conservation de la fermeture automatique rapide lorsque tout le monde a répondu, en groupe comme en raid.
-- Conservation du fallback `READY_CHECK_FINISHED` pour la fin normale du Ready Check ou l'expiration du timer.
-- Validation des APIs concernées avec la source UI Blizzard de WoW et maintien de la gestion des Secret Values pour les auras et les messages de chat.
+- Ajout de l'option **Activer le Focus**.
+- Désactivation et réactivation propre du binding sécurisé associé.
 
-## 1.1.14
+### v1.1.13 — Ready Check stabilisée
 
-Focus activable/désactivable.
+- Timer basé sur la durée réelle fournie par Blizzard.
+- Barre de compte à rebours fluide.
+- Fermeture fiable environ 2 secondes après que tout le monde est prêt.
 
-- Ajout d'une option **Activer le Focus** dans le module Focus.
-- Le Focus est activé par défaut afin de conserver le comportement existant.
-- Désactivation du Focus : suppression du binding sécurisé associé.
-- Réactivation du Focus : restauration automatique du binding choisi.
-- Conservation du choix de modificateur et de bouton souris.
-- Case d'activation harmonisée visuellement avec les autres cases à cocher de CC RaidTools.
+### v1.1.11 — Ready Check
+
+- Correction de la fermeture automatique en groupe et en raid via la fin réelle du Ready Check Blizzard.
+- Utilisation de la durée réelle fournie au lancement du Ready Check.
+- Barre de compte à rebours rendue plus fluide.
+
+### v1.1.10 — Ready Check : largeur dynamique
+
+- Largeur calculée selon les buffs réellement disponibles en groupe.
+- Mise à jour immédiate lors des changements de composition.
+- Réduction de la largeur du mode raid à 640 px.
+
+### v1.1.9 — Ready Check Groupe & Buffs dynamiques
+
+- Ajout du mode groupe 5 joueurs.
+- Suppression du check Vantus en groupe.
+- Affichage dynamique des buffs selon les classes présentes.
+- Ajout du buff Évocateur / Bronze.

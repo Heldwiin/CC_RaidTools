@@ -108,9 +108,9 @@ local frFR = {
     riColEnchants = "Enchants",
     riColGems = "Gemmes",
     riColSpec = "Spé",
-    riStatusWaiting = "En attente",
-    riStatusOutOfRange = "Hors de portée",
-    riStatusTimeout = "Pas de réponse",
+    riStatusWaiting = "...",
+    riStatusOutOfRange = "N/A",
+    riStatusTimeout = "Timeout",
     riStatusOK = "OK",
     riMissingCount = "%d manquant(s)",
     riNeedGroup = "Le Raid Inspect nécessite d'être dans un groupe ou un raid.",
@@ -225,9 +225,9 @@ local enUS = {
     riColEnchants = "Enchants",
     riColGems = "Gems",
     riColSpec = "Spec",
-    riStatusWaiting = "Waiting",
-    riStatusOutOfRange = "Out of range",
-    riStatusTimeout = "No response",
+    riStatusWaiting = "...",
+    riStatusOutOfRange = "N/A",
+    riStatusTimeout = "Timeout",
     riStatusOK = "OK",
     riMissingCount = "%d missing",
     riNeedGroup = "Raid Inspect requires being in a party or raid.",
@@ -252,9 +252,13 @@ local enUS = {
     riMissingGemTooltip = "Empty socket(s) on:",
 }
 
-for k, v in pairs(frFR) do L[k] = v end
+for k, v in pairs(frFR) do
+    L[k] = v
+end
 
 local locale = GetLocale()
 if locale == "enUS" or locale == "enGB" then
-    for k, v in pairs(enUS) do L[k] = v end
+    for k, v in pairs(enUS) do
+        L[k] = v
+    end
 end
