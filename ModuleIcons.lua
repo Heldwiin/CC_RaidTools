@@ -12,6 +12,15 @@ local MODULE_ICONS = {
     RaidInspect = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\RaidInspect.png",
 }
 
+-- The 30px left-menu icon is much smaller than the 72px module header icon.
+-- RaidInspect's artwork has a lot of fine detail (checklist, background
+-- figures) that turns to mush at 30px, so it gets a tighter, simpler crop
+-- (just the magnifying glass) specifically for the menu button. Other
+-- modules' icons are already simple/high-contrast enough to reuse as-is.
+local MENU_ICON_OVERRIDES = {
+    RaidInspect = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\RaidInspectMenu.png",
+}
+
 local function StyleModuleButton(button)
     if not button or button._ccrtModuleStyled then return end
     button._ccrtModuleStyled = true
@@ -50,14 +59,15 @@ local function ApplyModuleIcons()
     if frame.menuButtons then
         for moduleName, button in pairs(frame.menuButtons) do
             local texturePath = MODULE_ICONS[moduleName]
+            local menuTexturePath = MENU_ICON_OVERRIDES[moduleName] or texturePath
             if texturePath then
                 StyleModuleButton(button)
                 if not button._ccrtModuleIconBg then
                     local iconBg = button:CreateTexture(nil, "ARTWORK"); iconBg:SetSize(31, 31); iconBg:SetPoint("LEFT", button, "LEFT", 1, 0); iconBg:SetColorTexture(0.008, 0.008, 0.012, 0.90); button._ccrtModuleIconBg = iconBg
                 end
                 if not button._ccrtModuleIcon then
-                    local icon = button:CreateTexture(nil, "OVERLAY"); icon:SetSize(30, 30); icon:SetPoint("CENTER", button._ccrtModuleIconBg, "CENTER"); icon:SetTexture(texturePath); icon:SetTexCoord(0, 1, 0, 1); button._ccrtModuleIcon = icon
-                else button._ccrtModuleIcon:SetTexture(texturePath); button._ccrtModuleIcon:SetSize(30, 30) end
+                    local icon = button:CreateTexture(nil, "OVERLAY"); icon:SetSize(30, 30); icon:SetPoint("CENTER", button._ccrtModuleIconBg, "CENTER"); icon:SetTexture(menuTexturePath); icon:SetTexCoord(0, 1, 0, 1); button._ccrtModuleIcon = icon
+                else button._ccrtModuleIcon:SetTexture(menuTexturePath); button._ccrtModuleIcon:SetSize(30, 30) end
                 if button.text then
                     button.text:ClearAllPoints(); button.text:SetPoint("LEFT", button._ccrtModuleIconBg, "RIGHT", 8, 0); button.text:SetTextColor(0.96, 0.96, 0.96); button.text:SetShadowOffset(1, -1); button.text:SetShadowColor(0, 0, 0, 1); local font, _, flags = button.text:GetFont(); if font then button.text:SetFont(font, 12, flags or "OUTLINE") end
                 end

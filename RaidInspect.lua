@@ -25,6 +25,19 @@ local inspectButton, statusText, scrollFrame, rowsChild
 -- Weapons. Cloak/Back and Bracer/Wrist enchants were removed this expansion;
 -- Head and Shoulder enchants came back. Revisit this list each expansion.
 local ENCHANT_SLOTS = { INVSLOT_HEAD, INVSLOT_SHOULDER, INVSLOT_FINGER1, INVSLOT_FINGER2, INVSLOT_CHEST, INVSLOT_FEET, INVSLOT_MAINHAND, INVSLOT_OFFHAND }
+-- Localized name per slot, used for the "which slot exactly" diagnostic tooltip.
+-- Covers every slot that can plausibly carry a gem, not just the enchantable ones.
+local SLOT_NAME_KEYS = {
+    [INVSLOT_HEAD] = "riSlotHead", [INVSLOT_SHOULDER] = "riSlotShoulder",
+    [INVSLOT_FINGER1] = "riSlotFinger1", [INVSLOT_FINGER2] = "riSlotFinger2",
+    [INVSLOT_CHEST] = "riSlotChest", [INVSLOT_FEET] = "riSlotFeet",
+    [INVSLOT_MAINHAND] = "riSlotMainHand", [INVSLOT_OFFHAND] = "riSlotOffHand",
+    [INVSLOT_NECK] = "riSlotNeck", [INVSLOT_WAIST] = "riSlotWaist",
+    [INVSLOT_WRIST] = "riSlotWrist", [INVSLOT_HAND] = "riSlotHands",
+    [INVSLOT_LEGS] = "riSlotLegs", [INVSLOT_BACK] = "riSlotBack",
+    [INVSLOT_TRINKET1] = "riSlotTrinket1", [INVSLOT_TRINKET2] = "riSlotTrinket2",
+}
+local function SlotName(slot) local key = SLOT_NAME_KEYS[slot]; return key and C.L[key] or ("#"..tostring(slot)) end
 -- All gear slots are checked for empty gem sockets.
 local ALL_SLOTS = {}
 for i = 1, 19 do ALL_SLOTS[#ALL_SLOTS+1] = i end
@@ -66,6 +79,18 @@ local function HasInventoryItem(unit, slot)
     local ok, link = pcall(GetInventoryItemLink, unit, slot)
     if not ok then return false end
     return link and true or false
+end
+
+-- Off-hand enchants only apply to an actual off-hand *weapon* (melee
+-- dual-wielders). Casters/tanks/healers holding an orb, tome, or other
+-- "Held In Off-hand" item there can never enchant it — that's not a missing
+-- enchant, it's just not an enchantable item, so don't flag it at all.
+local function IsOffhandWeapon(unit, slot)
+    local ok, link = pcall(GetInventoryItemLink, unit, slot)
+    if not ok or not link then return false end
+    local ok2, _, _, _, _, _, classID = pcall(C_Item.GetItemInfoInstant, link)
+    if not ok2 then return false end
+    return classID == Enum.ItemClass.Weapon
 end
 
 local function CountEmptySocketsOnSlot(unit, slot)
@@ -112,7 +137,7 @@ local function HasEnchantOnSlot(unit, slot)
 end
 
 local function CollectUnitData(unit)
-    local data = { missingEnchants = 0, missingGems = 0, ilvl = 0 }
+    local data = { missingEnchants = 0, missingGems = 0, ilvl = 0, missingEnchantSlots = {}, missingGemSlots = {} }
 
     if C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
         local ok, ilvl = pcall(C_PaperDollInfo.GetInspectItemLevel, unit)
@@ -122,15 +147,23 @@ local function CollectUnitData(unit)
     end
 
     for _, slot in ipairs(ENCHANT_SLOTS) do
-        if HasInventoryItem(unit, slot) then
+        local isOffhandSlot = (slot == INVSLOT_OFFHAND)
+        if HasInventoryItem(unit, slot) and (not isOffhandSlot or IsOffhandWeapon(unit, slot)) then
             local has = HasEnchantOnSlot(unit, slot)
-            if has == false then data.missingEnchants = data.missingEnchants + 1 end
+            if has == false then
+                data.missingEnchants = data.missingEnchants + 1
+                data.missingEnchantSlots[#data.missingEnchantSlots+1] = SlotName(slot)
+            end
         end
     end
 
     for _, slot in ipairs(ALL_SLOTS) do
         if HasInventoryItem(unit, slot) then
-            data.missingGems = data.missingGems + CountEmptySocketsOnSlot(unit, slot)
+            local n = CountEmptySocketsOnSlot(unit, slot)
+            if n > 0 then
+                data.missingGems = data.missingGems + n
+                data.missingGemSlots[#data.missingGemSlots+1] = SlotName(slot)
+            end
         end
     end
 
@@ -161,12 +194,46 @@ local function NewRow(parent, i)
     r.ilvlText = T(160, 55)
     r.enchantsText = T(222, 95)
     r.gemsText = T(324, 95)
+
+    -- FontStrings can't catch mouse events directly: invisible hover frames
+    -- on top of the enchant/gem columns show which exact slot(s) are flagged,
+    -- so nobody has to take our word for a bare count.
+    local function HoverZone(anchorText, getLines)
+        local z = CreateFrame("Frame", nil, r)
+        z:SetPoint("LEFT", anchorText); z:SetSize(95, ROW_H)
+        z:EnableMouse(true)
+        z:SetScript("OnEnter", function(self)
+            local lines = getLines()
+            if not lines or #lines == 0 then return end
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:AddLine(lines.header)
+            for _, s in ipairs(lines) do GameTooltip:AddLine("- "..s, 1, 1, 1) end
+            GameTooltip:Show()
+        end)
+        z:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        return z
+    end
+    r.enchantsHover = HoverZone(r.enchantsText, function()
+        local data = results[r._ccrtUnit]
+        if not data or not data.missingEnchantSlots or #data.missingEnchantSlots == 0 then return nil end
+        local t = { header = C.L.riMissingEnchantTooltip }
+        for _, s in ipairs(data.missingEnchantSlots) do t[#t+1] = s end
+        return t
+    end)
+    r.gemsHover = HoverZone(r.gemsText, function()
+        local data = results[r._ccrtUnit]
+        if not data or not data.missingGemSlots or #data.missingGemSlots == 0 then return nil end
+        local t = { header = C.L.riMissingGemTooltip }
+        for _, s in ipairs(data.missingGemSlots) do t[#t+1] = s end
+        return t
+    end)
     return r
 end
 
 local function RefreshRow(i, unit, name)
     local r = rows[i] or NewRow(rowsChild, i)
     rows[i] = r
+    r._ccrtUnit = unit
     local _, class = UnitClass(unit)
     local col = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
     if col then r.nameText:SetTextColor(col.r, col.g, col.b) else r.nameText:SetTextColor(1,1,1) end
