@@ -21,21 +21,15 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.3.6**
-
-### v1.3.6 — Raid Inspect : compatibilité Midnight et ajustements UI
-
-- Fusion des correctifs de compatibilité Midnight : valeurs secrètes, `TooltipUtil.SurfaceArgs`, garde-fous de file d'inspection et `CanInspect(unit, true)`.
-- Protection contre les réponses `INSPECT_READY` tardives après timeout.
-- Nettoyage explicite de l'inspection Blizzard après timeout.
-- Redimensionnement dynamique via `C.RequestResize()` et plancher de fenêtre à 300 px.
-- Colonnes Raid Inspect resserrées et ascenseur repoussé dans la marge libre.
-- Watermark de guilde atténué sur Raid Inspect.
-- Ajout de la localisation FR/EN et de l'icône Raid Inspect.
+**1.2.0**
 
 ### v1.2.0 — Raid Inspect
 
-- Ajout du module Raid Inspect.
+- Ajout du module **Raid Inspect**.
 - Inspection séquentielle des membres du groupe ou du raid via les APIs Blizzard d'inspection.
 - Affichage de l'ilvl inspecté, des enchants manquants et des sockets de gemmes vides.
 - Gestion des joueurs hors de portée et des inspections sans réponse avec timeout.
+- Compatibilité Midnight : slots d'enchantement adaptés, lecture des tooltips via `C_TooltipInfo` et `TooltipUtil.SurfaceArgs`, protection des valeurs secrètes et des réponses `INSPECT_READY` tardives.
+- Nettoyage explicite de l'inspection Blizzard après timeout.
+- Redimensionnement dynamique de la fenêtre et ajustements de l'interface Raid Inspect.
+- Localisation FR/EN et icône dédiée Raid Inspect.
