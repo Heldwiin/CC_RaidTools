@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*.*.*"
+    branches:
+      - "release/**"
   create:
 
 permissions:
@@ -23,8 +25,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${GITHUB_EVENT_NAME}" == "create" ]]; then
+          if [[ "${GITHUB_REF_NAME}" == release/* ]]; then
             version="${GITHUB_REF_NAME#release/}"
+            version="${version#v}"
           else
             version="${GITHUB_REF_NAME#v}"
           fi
@@ -107,7 +110,7 @@ jobs:
           fail_on_unmatched_files: true
 
       - name: Remove temporary release branch
-        if: github.event_name == 'create'
+        if: startsWith(github.ref_name, 'release/')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
