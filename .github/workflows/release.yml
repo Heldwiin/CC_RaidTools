@@ -89,30 +89,40 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          zip="CC_RaidTools-${VERSION}.zip"
-          test -f "$zip"
+          python3 - "$PWD/CC_RaidTools-${VERSION}.zip" <<'PY'
+          import sys
+          import zipfile
 
-          declare -A roots=()
-          toc_found=false
-          while IFS= read -r entry; do
-            root="${entry%%/*}"
-            [[ -n "$root" ]] && roots["$root"]=1
-            [[ "$entry" == "CC_RaidTools/CC_RaidTools.toc" ]] && toc_found=true
-            case "$entry" in
-              CC_RaidTools/README.md|CC_RaidTools/CHANGELOG.md|CC_RaidTools/AGENTS.md)
-                echo "Forbidden documentation file in release ZIP: $entry"
-                exit 1
-                ;;
-              CC_RaidTools-*/*)
-                echo "Release wrapper folder found in ZIP: $entry"
-                exit 1
-                ;;
-            esac
-          done < <(unzip -Z1 "$zip")
+          path = sys.argv[1]
+          with zipfile.ZipFile(path) as z:
+              names = [name for name in z.namelist() if name]
 
-          [[ "${#roots[@]}" -eq 1 ]]
-          [[ -n "${roots[CC_RaidTools]+yes}" ]]
-          [[ "$toc_found" == true ]]
+          roots = {name.split('/', 1)[0] for name in names}
+          if roots != {"CC_RaidTools"}:
+              raise SystemExit(f"Invalid ZIP root folders: {sorted(roots)}")
+
+          if "CC_RaidTools/CC_RaidTools.toc" not in names:
+              raise SystemExit("CC_RaidTools.toc is missing from the ZIP")
+
+          forbidden = {
+              "CC_RaidTools/AGENTS.md",
+              "CC_RaidTools/README.md",
+              "CC_RaidTools/CHANGELOG.md",
+          }
+          found_forbidden = sorted(forbidden.intersection(names))
+          if found_forbidden:
+              raise SystemExit(f"Forbidden documentation files in release ZIP: {found_forbidden}")
+
+          wrappers = sorted(
+              name for name in names
+              if name.startswith("CC_RaidTools-")
+          )
+          if wrappers:
+              raise SystemExit(f"Release wrapper folder/files found in ZIP: {wrappers}")
+
+          print(f"WowUp ZIP validation OK: {path}")
+          print(f"Entries: {len(names)}")
+          PY
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
