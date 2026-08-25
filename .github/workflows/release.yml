@@ -76,7 +76,7 @@ jobs:
           while IFS= read -r file; do
             mkdir -p "package/CC_RaidTools/$(dirname "$file")"
             cp -p "$file" "package/CC_RaidTools/$file"
-          done < <(awk 'NF && $1 !~ /^##/ && $1 !~ /^#/ {print $1}' CC_RaidTools.toc)
+          done < /tmp/toc-files.txt
 
           find TexturesGUI -type f -print0 | while IFS= read -r -d '' file; do
             mkdir -p "package/CC_RaidTools/$(dirname "$file")"
@@ -90,14 +90,27 @@ jobs:
         run: |
           set -euo pipefail
           zip="CC_RaidTools-${VERSION}.zip"
-
           test -f "$zip"
-          mapfile -t roots < <(unzip -Z1 "$zip" | awk -F/ 'NF {print $1}' | sort -u)
-          test "${#roots[@]}" -eq 1
-          test "${roots[0]}" = "CC_RaidTools"
-          unzip -l "$zip" | grep -Fq 'CC_RaidTools/CC_RaidTools.toc'
-          ! unzip -Z1 "$zip" | grep -E '/(AGENTS\.md|README\.md|CHANGELOG\.md)$'
-          ! unzip -Z1 "$zip" | grep -E '^CC_RaidTools-[^/]*/'
+
+          declare -A roots=()
+          while IFS= read -r entry; do
+            root="${entry%%/*}"
+            [[ -n "$root" ]] && roots["$root"]=1
+            case "$entry" in
+              CC_RaidTools/README.md|CC_RaidTools/CHANGELOG.md|CC_RaidTools/AGENTS.md)
+                echo "Forbidden documentation file in release ZIP: $entry"
+                exit 1
+                ;;
+              CC_RaidTools-*/*)
+                echo "Release wrapper folder found in ZIP: $entry"
+                exit 1
+                ;;
+            esac
+          done < <(unzip -Z1 "$zip")
+
+          [[ "${#roots[@]}" -eq 1 ]]
+          [[ -n "${roots[CC_RaidTools]+yes}" ]]
+          unzip -Z1 "$zip" | grep -Fqx 'CC_RaidTools/CC_RaidTools.toc'
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
