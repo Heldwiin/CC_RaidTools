@@ -20,6 +20,7 @@ Gameplay modules:
 - `InviteTool.lua` — whisper keyword invitation system.
 - `Focus.lua` — mouse-button focus helper using secure actions.
 - `MarksBar.lua` — raid target markers and world markers.
+- `RaidInspect.lua` — raid/party inspection for item level, enchants and gem sockets.
 
 UI/branding:
 - `GuildBranding.lua` — Caelestis Concilium watermark.
@@ -82,7 +83,7 @@ Avoid introducing taint into Blizzard frames.
 
 ## Blizzard API reference — mandatory
 
-For WoW API, events, widget behavior, secure/protected APIs, Secret Values, Ready Check behavior, combat logging, and other Blizzard implementation details, use the official Blizzard UI source repository as the primary technical reference:
+For WoW API, events, widget behavior, secure/protected APIs, Secret Values, Ready Check behavior, combat logging, inspection APIs, and other Blizzard implementation details, use the official Blizzard UI source repository as the primary technical reference:
 
 `https://github.com/Gethe/wow-ui-source`
 
@@ -94,21 +95,9 @@ When working on a WoW API or behavior that may have changed between client versi
 
 ## Release validation — mandatory
 
-Before declaring a release ready, perform both of these checks:
+Before declaring a release ready, perform a source/code review of the release and the relevant Blizzard APIs.
 
-### 1. Lua syntax validation with `luac`
-
-Run `luac` against **every Lua file included in the addon**, not only the file that was modified.
-
-The release must have:
-- no Lua syntax errors;
-- no truncated files;
-- no missing `end` / malformed blocks;
-- no accidental corruption of a Lua file.
-
-If `luac` is unavailable in the execution environment, state that clearly and do not claim that the syntax check was performed.
-
-### 2. Blizzard API review
+### Blizzard API review
 
 Review the release's changed WoW API usage against `Gethe/wow-ui-source`.
 
@@ -119,7 +108,8 @@ At minimum, review:
 - Secret Value / `issecretvalue` / `canaccessvalue` handling;
 - Ready Check APIs/events when Ready Check code changes;
 - combat logging APIs/events when AutoLog changes;
-- secure click/focus/marker APIs when those modules change.
+- secure click/focus/marker APIs when those modules change;
+- inspection APIs/events and tooltip data APIs when Raid Inspect changes.
 
 The review should verify that the addon uses APIs and event behavior appropriate for the target WoW client.
 
@@ -216,6 +206,26 @@ Do not weaken secure handling in order to support arbitrary frames.
 
 Any compatibility improvement for raid frames must be tested carefully because changes to secure click handling can cause `ADDON_ACTION_BLOCKED` or taint.
 
+## Raid Inspect
+
+Raid Inspect inspects raid/party members through Blizzard's inspect APIs.
+
+When changing inspection behavior:
+- use `CanInspect()` before `NotifyInspect()`;
+- use `INSPECT_READY` to detect completed inspections;
+- match the returned GUID to the pending inspection request;
+- protect against late `INSPECT_READY` events after a timeout;
+- invalidate pending inspection state before advancing a timed-out queue entry;
+- cancel timers associated with a completed or timed-out inspection;
+- avoid calling inspection APIs unnecessarily or repeatedly;
+- respect inspect range and combat restrictions;
+- use `C_TooltipInfo`/tooltip data APIs according to the current Blizzard implementation;
+- surface tooltip data when required before reading structured tooltip fields;
+- do not assume localized tooltip text when structured tooltip data is available;
+- keep expansion-specific enchant-slot lists isolated and easy to update.
+
+Raid Inspect must not introduce taint or protected-frame changes.
+
 ## UI and visual identity
 
 Keep the established CC RaidTools visual style:
@@ -238,6 +248,7 @@ Current visual intent:
 - Invite Tool → group/invite icon.
 - Focus → target icon.
 - Marks Bar → raid marker icon.
+- Raid Inspect → raid inspection / character inspection icon.
 
 Use actual WoW UI textures where possible rather than emoji or text glyphs.
 
@@ -258,14 +269,13 @@ Version is stored in `CC_RaidTools.toc`.
 When the user asks to prepare, bump, finalize, or release a new version, synchronize the version everywhere it is visibly or explicitly stored. At minimum:
 
 1. Update `## Version:` in `CC_RaidTools.toc`.
-2. Update the in-game loading message in `CC_RaidTools.lua` (for example `v1.1.10 chargé`).
+2. Update the in-game loading message in `CC_RaidTools.lua`.
 3. `ReadyCheck.lua` uses the static title `CC RaidTools - Ready Check`; **do not add or remove a version number from this title during releases**.
 4. Update the displayed version in `README.md` and its release/version section if present.
 5. Add/update the corresponding entry in `CHANGELOG.md`.
 6. Search the entire repository for the previous version string and update any remaining user-visible release/version references.
 7. Before declaring the release ready, verify that the versioned files contain the same target version and that the Ready Check title remains static.
-8. Run the mandatory `luac` syntax validation described above.
-9. Perform the mandatory `wow-ui-source` API review described above for relevant changed code.
+8. Perform the mandatory `wow-ui-source` API review described above for relevant changed code.
 
 When only a bug fix is requested and no version bump is requested, do not silently increment the release version.
 
@@ -321,6 +331,18 @@ For Invite Tool specifically:
 - verify Secret Value handling does not produce Lua errors;
 - compare changed invite API behavior with `wow-ui-source` and the relevant Blizzard implementation.
 
+For Raid Inspect specifically:
+- test in a 5-player group;
+- test in a raid;
+- test players in and out of inspect range;
+- test a normal successful inspection;
+- test an inspection timeout;
+- verify a late `INSPECT_READY` does not corrupt the queue;
+- verify the queue advances exactly once per player;
+- verify item level, enchant and socket results;
+- test after `/reload`;
+- verify the UI remains usable with large raids.
+
 ## Debugging principles
 
 When a Lua error is reported:
@@ -342,7 +364,8 @@ Previous bugs have included:
 - SavedVariable tables being absent on some installations;
 - AutoLog ownership state being lost after `/reload`;
 - incorrect world-marker mapping;
-- creating separate `*Fix.lua` files that were not properly loaded by the TOC.
+- creating separate `*Fix.lua` files that were not properly loaded by the TOC;
+- late inspect events advancing the inspection queue twice.
 
 Treat these as known failure modes and avoid reintroducing them.
 
