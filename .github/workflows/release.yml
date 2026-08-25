@@ -4,16 +4,33 @@ on:
   push:
     tags:
       - "v*.*.*"
+  create:
 
 permissions:
   contents: write
 
 jobs:
   validate-package-release:
+    if: github.event_name == 'push' || (github.event_name == 'create' && github.ref_type == 'branch' && startsWith(github.ref_name, 'release/'))
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout tagged commit
+      - name: Checkout release commit
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Resolve release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == "create" ]]; then
+            version="${GITHUB_REF_NAME#release/}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v$version" >> "$GITHUB_ENV"
 
       - name: Install Lua 5.1 compiler
         run: |
@@ -36,10 +53,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
           toc="CC_RaidTools.toc"
 
-          grep -Fxq "## Version: ${version}" "$toc"
+          grep -Fxq "## Version: ${VERSION}" "$toc"
           grep -Fxq '## Interface: 120100' "$toc"
 
           awk 'NF && $1 !~ /^##/ && $1 !~ /^#/ {print $1}' "$toc" > /tmp/toc-files.txt
@@ -51,28 +67,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
           rm -rf package
           mkdir -p package/CC_RaidTools
 
           while IFS= read -r file; do
             mkdir -p "package/CC_RaidTools/$(dirname "$file")"
             cp -p "$file" "package/CC_RaidTools/$file"
-          done < <(printf '%s\n' CC_RaidTools.toc $(awk 'NF && $1 !~ /^##/ && $1 !~ /^#/ {print $1}' CC_RaidTools.toc))
+          done < <(awk 'NF && $1 !~ /^##/ && $1 !~ /^#/ {print $1}' CC_RaidTools.toc)
 
           find TexturesGUI -type f -print0 | while IFS= read -r -d '' file; do
             mkdir -p "package/CC_RaidTools/$(dirname "$file")"
             cp -p "$file" "package/CC_RaidTools/$file"
           done
 
-          (cd package && zip -qr "../CC_RaidTools-${version}.zip" CC_RaidTools)
+          (cd package && zip -qr "../CC_RaidTools-${VERSION}.zip" CC_RaidTools)
 
       - name: Validate ZIP structure for WowUp
         shell: bash
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
-          zip="CC_RaidTools-${version}.zip"
+          zip="CC_RaidTools-${VERSION}.zip"
 
           test -f "$zip"
           mapfile -t roots < <(unzip -Z1 "$zip" | awk -F/ 'NF {print $1}' | sort -u)
@@ -80,13 +94,23 @@ jobs:
           test "${roots[0]}" = "CC_RaidTools"
           unzip -l "$zip" | grep -Fq 'CC_RaidTools/CC_RaidTools.toc'
           ! unzip -Z1 "$zip" | grep -E '/(AGENTS\.md|README\.md|CHANGELOG\.md)$'
-          ! unzip -Z1 "$zip" | grep -E '^CC_RaidTools-[^/]+/'
+          ! unzip -Z1 "$zip" | grep -E '^CC_RaidTools-[^/]*/'
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: CC RaidTools ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: CC RaidTools ${{ env.RELEASE_TAG }}
           body_path: CHANGELOG.md
-          files: CC_RaidTools-${{ github.ref_name }}.zip
+          files: CC_RaidTools-${{ env.VERSION }}.zip
           fail_on_unmatched_files: true
+
+      - name: Remove temporary release branch
+        if: github.event_name == 'create'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method DELETE \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${GITHUB_REPOSITORY}/git/refs/heads/${GITHUB_REF_NAME}"
