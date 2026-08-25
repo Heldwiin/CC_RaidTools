@@ -1,0 +1,92 @@
+name: Release CC RaidTools
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  validate-package-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tagged commit
+        uses: actions/checkout@v4
+
+      - name: Install Lua 5.1 compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.1
+
+      - name: Validate Lua syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=( *.lua )
+          test ${#files[@]} -gt 0
+          for file in "${files[@]}"; do
+            echo "Checking $file"
+            luac5.1 -p "$file"
+          done
+
+      - name: Validate TOC and package file list
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          toc="CC_RaidTools.toc"
+
+          grep -Fxq "## Version: ${version}" "$toc"
+          grep -Fxq '## Interface: 120100' "$toc"
+
+          awk 'NF && $1 !~ /^##/ && $1 !~ /^#/ {print $1}' "$toc" > /tmp/toc-files.txt
+          while IFS= read -r file; do
+            test -f "$file" || { echo "Missing TOC file: $file"; exit 1; }
+          done < /tmp/toc-files.txt
+
+      - name: Build WowUp-compatible ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          rm -rf package
+          mkdir -p package/CC_RaidTools
+
+          while IFS= read -r file; do
+            mkdir -p "package/CC_RaidTools/$(dirname "$file")"
+            cp -p "$file" "package/CC_RaidTools/$file"
+          done < <(printf '%s\n' CC_RaidTools.toc $(awk 'NF && $1 !~ /^##/ && $1 !~ /^#/ {print $1}' CC_RaidTools.toc))
+
+          find TexturesGUI -type f -print0 | while IFS= read -r -d '' file; do
+            mkdir -p "package/CC_RaidTools/$(dirname "$file")"
+            cp -p "$file" "package/CC_RaidTools/$file"
+          done
+
+          (cd package && zip -qr "../CC_RaidTools-${version}.zip" CC_RaidTools)
+
+      - name: Validate ZIP structure for WowUp
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          zip="CC_RaidTools-${version}.zip"
+
+          test -f "$zip"
+          mapfile -t roots < <(unzip -Z1 "$zip" | awk -F/ 'NF {print $1}' | sort -u)
+          test "${#roots[@]}" -eq 1
+          test "${roots[0]}" = "CC_RaidTools"
+          unzip -l "$zip" | grep -Fq 'CC_RaidTools/CC_RaidTools.toc'
+          ! unzip -Z1 "$zip" | grep -E '/(AGENTS\.md|README\.md|CHANGELOG\.md)$'
+          ! unzip -Z1 "$zip" | grep -E '^CC_RaidTools-[^/]+/'
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: CC RaidTools ${{ github.ref_name }}
+          body_path: CHANGELOG.md
+          files: CC_RaidTools-${{ github.ref_name }}.zip
+          fail_on_unmatched_files: true
