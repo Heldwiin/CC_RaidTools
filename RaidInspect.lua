@@ -158,43 +158,49 @@ local function CountEmptySocketsOnSlot(unit, slot)
     return n
 end
 
--- Build (once) a Lua pattern matching the client's own "Enchanted: %s" tooltip
--- line prefix (ENCHANTED_TOOLTIP_LINE), so the check works in any locale.
-local enchantLinePattern
-
-local function GetEnchantLinePattern()
-    if enchantLinePattern ~= nil then
-        return enchantLinePattern
-    end
-    local fmt = _G.ENCHANTED_TOOLTIP_LINE
-    local prefix = fmt and fmt:match("^(.-)%%s")
-    if prefix and prefix ~= "" then
-        enchantLinePattern = "^" .. prefix:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
-    else
-        enchantLinePattern = false
-    end
-    return enchantLinePattern
-end
-
+-- Prefer Blizzard's structured tooltip line type over localized tooltip text.
+-- The text-based check was occasionally reporting a missing enchant even when
+-- the item was enchanted, because tooltip wording/availability can vary while
+-- the inspect data is still settling. ItemEnchantmentPermanent is the native
+-- signal for a permanent item enchant and is therefore much more reliable.
 local function HasEnchantOnSlot(unit, slot)
     if not C_TooltipInfo or not C_TooltipInfo.GetInventoryItem then
         return nil
     end
-    local pattern = GetEnchantLinePattern()
-    if not pattern then
-        return nil
-    end
+
     local ok, data = pcall(C_TooltipInfo.GetInventoryItem, unit, slot)
     if not ok or not data or not data.lines then
         return nil
     end
+
     SurfaceTooltipData(data)
-    for _, line in ipairs(data.lines) do
-        local leftText = SafeText(line.leftText)
-        if leftText and leftText:find(pattern) then
-            return true
+
+    local lineTypes = Enum and Enum.TooltipDataLineType
+    local permanentEnchantType = lineTypes and lineTypes.ItemEnchantmentPermanent
+
+    if permanentEnchantType then
+        for _, line in ipairs(data.lines) do
+            if line.type == permanentEnchantType then
+                return true
+            end
         end
     end
+
+    -- Fallback for clients/API states where the structured line type is not
+    -- exposed. This is intentionally secondary: localized tooltip text should
+    -- never override the native structured result.
+    local fmt = _G.ENCHANTED_TOOLTIP_LINE
+    local prefix = fmt and fmt:match("^(.-)%%s")
+    if prefix and prefix ~= "" then
+        local pattern = "^" .. prefix:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+        for _, line in ipairs(data.lines) do
+            local leftText = SafeText(line.leftText)
+            if leftText and leftText:find(pattern) then
+                return true
+            end
+        end
+    end
+
     return false
 end
 
@@ -597,6 +603,7 @@ local function BuildUI(f)
     rowsChild:SetSize(414, ROW_H)
     scrollFrame:SetScrollChild(rowsChild)
 end
+
 C.RegisterModule("RaidInspect", BuildUI, function()
     if C.RequestResize then
         C.RequestResize()
