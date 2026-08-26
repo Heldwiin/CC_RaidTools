@@ -426,6 +426,6 @@ coreEvents:RegisterEvent("ADDON_LOADED")
 coreEvents:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
         C.InitDB()
-        print(C.L.addonLoaded:format("1.2.0"))
+        print(C.L.addonLoaded:format("1.2.1"))
     end
 end)

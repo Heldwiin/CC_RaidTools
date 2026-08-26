@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.1
+
+### Raid Inspect
+
+- Correction de la détection des enchantements sur les équipements inspectés.
+- Détection native des enchantements permanents via les données structurées des tooltips Blizzard, avec fallback textuel pour les états/API où le type structuré n'est pas disponible.
+- Correction des faux positifs où un joueur correctement enchanté pouvait être signalé comme non enchanté.
+- Conservation de la file d'inspection temporisée et des protections contre les inspections sans réponse et les événements `INSPECT_READY` tardifs.
+
 ## 1.2.0
 
 ### Raid Inspect
