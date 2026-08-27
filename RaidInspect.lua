@@ -158,12 +158,56 @@ local function CountEmptySocketsOnSlot(unit, slot)
     return n
 end
 
--- Prefer Blizzard's structured tooltip line type over localized tooltip text.
--- The text-based check was occasionally reporting a missing enchant even when
--- the item was enchanted, because tooltip wording/availability can vary while
--- the inspect data is still settling. ItemEnchantmentPermanent is the native
--- signal for a permanent item enchant and is therefore much more reliable.
+-- The item link contains the permanent enchant ID directly after the item ID.
+-- This is more reliable than tooltip text or tooltip line availability: the
+-- tooltip can still be sparse/uncached on one client while the inspected item
+-- link already contains its authoritative enchant field.
+--
+-- Returns:
+--   true  = an enchant ID is present
+--   false = the item link explicitly says there is no permanent enchant
+--   nil   = the link could not be parsed; caller may use the tooltip fallback
+local function HasEnchantFromItemLink(unit, slot)
+    if not GetInventoryItemLink then
+        return nil
+    end
+
+    local ok, link = pcall(GetInventoryItemLink, unit, slot)
+    link = ok and SafeText(link) or nil
+    if not link then
+        return nil
+    end
+
+    -- Item links use the form item:itemID:enchantID:gemID1:...
+    -- Blank enchant fields are equivalent to zero.
+    local itemID, enchantField = link:match("|Hitem:(%d+):([^:]*)")
+    if not itemID then
+        itemID, enchantField = link:match("item:(%d+):([^:]*)")
+    end
+    if not itemID then
+        return nil
+    end
+
+    local enchantID = tonumber(enchantField)
+    if enchantID and enchantID > 0 then
+        return true
+    end
+    if enchantField == "" or enchantID == 0 then
+        return false
+    end
+
+    return nil
+end
+
+-- Prefer the item link's enchant field. The structured tooltip type remains a
+-- fallback for unusual links/API states where the inspected item link cannot
+-- be parsed. Localized tooltip text is the final fallback only.
 local function HasEnchantOnSlot(unit, slot)
+    local fromLink = HasEnchantFromItemLink(unit, slot)
+    if fromLink ~= nil then
+        return fromLink
+    end
+
     if not C_TooltipInfo or not C_TooltipInfo.GetInventoryItem then
         return nil
     end
@@ -187,8 +231,8 @@ local function HasEnchantOnSlot(unit, slot)
     end
 
     -- Fallback for clients/API states where the structured line type is not
-    -- exposed. This is intentionally secondary: localized tooltip text should
-    -- never override the native structured result.
+    -- exposed. This is intentionally last: tooltip text is the least reliable
+    -- source because it can differ while inspect data is still settling.
     local fmt = _G.ENCHANTED_TOOLTIP_LINE
     local prefix = fmt and fmt:match("^(.-)%%s")
     if prefix and prefix ~= "" then
