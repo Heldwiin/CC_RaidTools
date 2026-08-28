@@ -20,7 +20,8 @@
 ### Marks Bar
 
 - Throttle de la vérification mouseover à 30 ms afin d'éviter un `IsMouseOver()` à chaque frame.
-- Le throttle est appliqué dès le chargement de l'addon et ne dépend plus de l'ouverture de `/ccrt`.
+- Le throttle est appliqué directement dans `MarksBar.lua` dès la création de la barre.
+- Suppression du fichier `MarksBarPerformance.lua`, devenu inutile après intégration du correctif dans le module principal.
 
 ### Architecture / maintenance
 
@@ -59,7 +60,7 @@
 ### Focus
 
 - Correction du Focus avec Shift + clic sur les unit frames sécurisées, notamment la Target et les Boss Frames.
-- Support des boutons configurés sur les unit frames sans casser leurs actions sécurisées existantes.
+- Support des boutons configurés sur les unit frames sans casser leurs actions sécurisées.
 - Restauration des attributs d'origine lors de la désactivation ou du changement de configuration.
 
 ### Invite Tool
