@@ -12,6 +12,7 @@ local buttons = {}
 local worldButtons = {}
 local configRefresh
 local layoutPending = false
+local hoverElapsed = 0
 
 local function SavePosition()
     if not bar or not db or InCombatLockdown() then
@@ -207,10 +208,15 @@ local function CreateBar()
             SavePosition()
         end
     end)
-    bar:SetScript("OnUpdate", function(self)
+    bar:SetScript("OnUpdate", function(self, elapsed)
         if not db or not db.enabled or not db.mouseoverDisplay then
             return
         end
+        hoverElapsed = hoverElapsed + elapsed
+        if hoverElapsed < 0.03 then
+            return
+        end
+        hoverElapsed = 0
         local wanted = self:IsMouseOver() and (db.alpha or 1) or 0
         if self:GetAlpha() ~= wanted then
             self:SetAlpha(wanted)

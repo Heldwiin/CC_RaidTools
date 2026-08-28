@@ -12,6 +12,7 @@ The addon is intentionally lightweight and modular, with no external library dep
 
 Core:
 - `CC_RaidTools.lua` — addon core, SavedVariables, `/ccrt`, main configuration window and shared UI helpers.
+- `DBMigration.lua` — one-release compatibility migration from the legacy `AutoPromoteDB` SavedVariable to `CCRaidToolsDB`.
 
 Gameplay modules:
 - `AutoPromote.lua` — automatic raid-assistant promotion.
@@ -20,6 +21,7 @@ Gameplay modules:
 - `InviteTool.lua` — whisper keyword invitation system.
 - `Focus.lua` — mouse-button focus helper using secure actions.
 - `MarksBar.lua` — raid target markers and world markers.
+- `MarksBarPerformance.lua` — lightweight mouseover update throttle for the Marks Bar, applied on addon load.
 - `RaidInspect.lua` — raid/party inspection for item level, enchants and gem sockets.
 
 UI/branding:
@@ -41,9 +43,17 @@ Do not create duplicate `*Fix.lua` or compatibility modules unless there is a cl
 
 ## SavedVariables
 
-The addon uses one main SavedVariable:
+The canonical SavedVariable is:
+
+`CCRaidToolsDB`
+
+Existing installations may still provide the legacy:
 
 `AutoPromoteDB`
+
+During the 1.2.3 migration period, `CC_RaidTools.toc` declares both names so WoW loads the legacy data before `DBMigration.lua` runs. `DBMigration.lua` copies the legacy table to `CCRaidToolsDB` when needed and then aliases `AutoPromoteDB` to the canonical table so existing modules can continue using their current references without a risky rewrite.
+
+**Migration TODO:** after 1.2.3 has been deployed and compatibility is confirmed, remove `AutoPromoteDB` from the `.toc` and remove the compatibility migration/alias. Do not do this before the migration window is intentionally closed.
 
 Existing settings include, among others:
 - `names`
@@ -142,6 +152,8 @@ The bar supports:
 - horizontal/vertical orientation
 - mouseover display
 - saved position
+
+The mouseover display check is throttled by `MarksBarPerformance.lua` and must be applied during `ADDON_LOADED`; it must not depend on opening `/ccrt`.
 
 Any layout change affecting secure buttons must be deferred outside combat.
 
@@ -264,18 +276,22 @@ Keep README and in-game behavior synchronized with this rule.
 
 ## Versioning and releases
 
-Version is stored in `CC_RaidTools.toc`.
+Version is stored in `CC_RaidTools.toc` and is the **single source of truth for the in-game displayed version**.
 
-When the user asks to prepare, bump, finalize, or release a new version, synchronize the version everywhere it is visibly or explicitly stored. At minimum:
+The `/ccrt` main window displays the version automatically from the `.toc` metadata. **Do not hard-code a release number in Lua.** The addon no longer prints a version/welcome message to chat on load.
+
+When the user asks to prepare, bump, finalize, or release a new version, follow this procedure:
 
 1. Update `## Version:` in `CC_RaidTools.toc`.
-2. Update the in-game loading message in `CC_RaidTools.lua`.
+2. Verify that `CC_RaidTools.lua` still reads the version from `.toc` metadata and displays it in the `/ccrt` window. Do not add a hard-coded version or restore the chat welcome message.
 3. `ReadyCheck.lua` uses the static title `CC RaidTools - Ready Check`; **do not add or remove a version number from this title during releases**.
 4. Update the displayed version in `README.md` and its release/version section if present.
-5. Add/update the corresponding entry in `CHANGELOG.md`.
-6. Search the entire repository for the previous version string and update any remaining user-visible release/version references.
-7. Before declaring the release ready, verify that the versioned files contain the same target version and that the Ready Check title remains static.
-8. Perform the mandatory `wow-ui-source` API review described above for relevant changed code.
+5. Add/update the corresponding entry in `CHANGELOG.md` with the user-visible changes from the release.
+6. Search the entire repository for the previous version string and update any remaining user-visible release/version references, but do not blindly replace historical changelog entries or unrelated version references.
+7. Review the release diff for dead code, obsolete compatibility workarounds, duplicated logic, temporary debug code, stale comments, and unused files. Remove anything that no longer serves a purpose, provided it is not required for compatibility.
+8. Before declaring the release ready, verify that the `.toc`, `/ccrt` displayed version, README and changelog all correspond to the target release, and that the Ready Check title remains static.
+9. Perform the mandatory `wow-ui-source` API review described above for relevant changed code.
+10. Perform the relevant testing checklist before declaring the release ready.
 
 When only a bug fix is requested and no version bump is requested, do not silently increment the release version.
 
@@ -298,6 +314,7 @@ After significant changes, test the affected module and, when relevant:
 7. behavior after leaving combat
 8. protected-action behavior
 9. fresh installation/upgrade behavior
+10. verify the `/ccrt` title shows the version from the `.toc` and no load message is printed to chat
 
 For Ready Check specifically:
 - start a real Ready Check;
@@ -316,6 +333,7 @@ For Marks Bar specifically:
 - test orientation changes;
 - test locked position;
 - test mouseover mode;
+- verify mouseover throttling is active immediately after login without opening `/ccrt`;
 - test configuration changes during combat.
 
 For AutoLog specifically:
@@ -365,7 +383,8 @@ Previous bugs have included:
 - AutoLog ownership state being lost after `/reload`;
 - incorrect world-marker mapping;
 - creating separate `*Fix.lua` files that were not properly loaded by the TOC;
-- late inspect events advancing the inspection queue twice.
+- late inspect events advancing the inspection queue twice;
+- Marks Bar mouseover throttling being incorrectly tied to opening `/ccrt`.
 
 Treat these as known failure modes and avoid reintroducing them.
 

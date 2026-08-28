@@ -1,8 +1,10 @@
 -- CC RaidTools - Core
 local ADDON_NAME = "CC_RaidTools"
+local ADDON_VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version")) or "?"
 local C = CCRT or {}
 CCRT = C
 C.modules = C.modules or {}
+C.uiHooks = C.uiHooks or {}
 C.BRAND_R = 0.451
 C.BRAND_G = 0.506
 C.BRAND_B = 1
@@ -21,27 +23,15 @@ function C.InitDB()
         AutoPromoteDB.focus.enabled = true
     end
     local logging = AutoPromoteDB.logging
-    if logging.lfr == nil then
-        logging.lfr = false
+    if logging.lfr == nil then logging.lfr = false end
+    if logging.normal == nil then logging.normal = false end
+    if logging.heroic == nil then logging.heroic = false end
+    if logging.mythic == nil then logging.mythic = false end
+    if logging.dungeons == nil then
+        logging.dungeons = logging.dungeonMythic or logging.dungeonMythicPlus or false
     end
-    if logging.normal == nil then
-        logging.normal = false
-    end
-    if logging.heroic == nil then
-        logging.heroic = false
-    end
-    if logging.mythic == nil then
-        logging.mythic = false
-    end
-    if logging.dungeonMythic == nil then
-        logging.dungeonMythic = false
-    end
-    if logging.dungeonMythicPlus == nil then
-        logging.dungeonMythicPlus = false
-    end
-    if AutoPromoteDB.loggingStartedByAddon == nil then
-        AutoPromoteDB.loggingStartedByAddon = false
-    end
+    -- Legacy keys are intentionally retained for migration compatibility.
+    -- Combat-log ownership is session-only and must never live in SavedVariables.
 end
 
 function C.StripRealm(name)
@@ -49,29 +39,21 @@ function C.StripRealm(name)
 end
 
 function C.NormalizeName(name)
-    if not name then
-        return nil
-    end
+    if not name then return nil end
     name = name:gsub("^%s+", ""):gsub("%s+$", "")
-    if name == "" then
-        return nil
-    end
+    if name == "" then return nil end
     return name
 end
 
 function C.ApplyPanelSkin(frame)
-    if not frame then
-        return
-    end
+    if not frame then return end
     frame:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
     frame:SetBackdropColor(0.018, 0.018, 0.024, 0.78)
     frame:SetBackdropBorderColor(0, 0, 0, 1)
 end
 
 function C.SkinButton(button)
-    if not button or button._ccrtSkin then
-        return
-    end
+    if not button or button._ccrtSkin then return end
     button._ccrtSkin = true
     local bg = button:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
@@ -80,19 +62,13 @@ function C.SkinButton(button)
     border:SetAllPoints()
     border:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
     border:SetBackdropBorderColor(0, 0, 0, 1)
-    button:HookScript("OnEnter", function(self)
-        self._ccrtBg:SetColorTexture(0.10, 0.10, 0.13, 0.96)
-    end)
-    button:HookScript("OnLeave", function(self)
-        self._ccrtBg:SetColorTexture(0.045, 0.045, 0.055, 0.94)
-    end)
+    button:HookScript("OnEnter", function(self) self._ccrtBg:SetColorTexture(0.10, 0.10, 0.13, 0.96) end)
+    button:HookScript("OnLeave", function(self) self._ccrtBg:SetColorTexture(0.045, 0.045, 0.055, 0.94) end)
     bg:SetColorTexture(0.045, 0.045, 0.055, 0.94)
 end
 
 function C.SkinCheckBox(box)
-    if not box or box._ccrtSkin then
-        return
-    end
+    if not box or box._ccrtSkin then return end
     box._ccrtSkin = true
     box:SetSize(48, 24)
     box:EnableMouse(true)
@@ -103,55 +79,31 @@ function C.SkinCheckBox(box)
     box:SetBackdropColor(0.01, 0.01, 0.012, 1)
     box:SetBackdropBorderColor(0.01, 0.01, 0.012, 1)
     local left = box:CreateTexture(nil, "ARTWORK")
-    left:SetPoint("TOPLEFT", 1, -1)
-    left:SetSize(23, 22)
+    left:SetPoint("TOPLEFT", 1, -1); left:SetSize(23, 22)
     local right = box:CreateTexture(nil, "ARTWORK")
-    right:SetPoint("TOPRIGHT", -1, -1)
-    right:SetSize(23, 22)
+    right:SetPoint("TOPRIGHT", -1, -1); right:SetSize(23, 22)
     local divider = box:CreateTexture(nil, "OVERLAY")
-    divider:SetPoint("TOP", box, "TOP", 0, -1)
-    divider:SetPoint("BOTTOM", box, "BOTTOM", 0, 1)
-    divider:SetWidth(1)
+    divider:SetPoint("TOP", box, "TOP", 0, -1); divider:SetPoint("BOTTOM", box, "BOTTOM", 0, 1); divider:SetWidth(1)
     divider:SetColorTexture(0.01, 0.01, 0.012, 1)
     local checkmark = box:CreateTexture(nil, "OVERLAY")
-    checkmark:SetSize(22, 22)
-    checkmark:SetPoint("CENTER", box, "CENTER", 12, 0)
-    checkmark:SetTexture(CHECK_TEXTURE)
-    checkmark:SetVertexColor(0, 0, 0, 1)
+    checkmark:SetSize(22, 22); checkmark:SetPoint("CENTER", box, "CENTER", 12, 0); checkmark:SetTexture(CHECK_TEXTURE); checkmark:SetVertexColor(0, 0, 0, 1)
     local crossmark = box:CreateTexture(nil, "OVERLAY")
-    crossmark:SetSize(22, 22)
-    crossmark:SetPoint("CENTER", box, "CENTER", -12, 0)
-    crossmark:SetTexture(CROSS_TEXTURE)
-    crossmark:SetVertexColor(0.10, 0.10, 0.10, 1)
+    crossmark:SetSize(22, 22); crossmark:SetPoint("CENTER", box, "CENTER", -12, 0); crossmark:SetTexture(CROSS_TEXTURE); crossmark:SetVertexColor(0.10, 0.10, 0.10, 1)
     local click = CreateFrame("Button", nil, box)
-    click:SetAllPoints(box)
-    click:RegisterForClicks("LeftButtonUp")
+    click:SetAllPoints(box); click:RegisterForClicks("LeftButtonUp")
     click:SetScript("OnClick", function()
         box:SetChecked(not box:GetChecked())
-        if box._ccrtRefresh then
-            box:_ccrtRefresh()
-        end
+        if box._ccrtRefresh then box:_ccrtRefresh() end
         local handler = box:GetScript("OnClick")
-        if handler then
-            handler(box)
-        end
+        if handler then handler(box) end
     end)
     local hover = box:CreateTexture(nil, "HIGHLIGHT")
-    hover:SetAllPoints(box)
-    hover:SetTexture("Interface\\Buttons\\WHITE8X8")
-    hover:SetVertexColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 0.08)
-    hover:SetAlpha(0.08)
+    hover:SetAllPoints(box); hover:SetTexture("Interface\\Buttons\\WHITE8X8"); hover:SetVertexColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 0.08); hover:SetAlpha(0.08)
     local function refresh(self)
         if self:GetChecked() then
-            left:SetColorTexture(0.30, 0.31, 0.59, 1)
-            right:SetColorTexture(0.38, 0.40, 0.76, 1)
-            checkmark:Show()
-            crossmark:Hide()
+            left:SetColorTexture(0.30, 0.31, 0.59, 1); right:SetColorTexture(0.38, 0.40, 0.76, 1); checkmark:Show(); crossmark:Hide()
         else
-            left:SetColorTexture(0.30, 0.30, 0.30, 1)
-            right:SetColorTexture(0.09, 0.09, 0.09, 1)
-            crossmark:Show()
-            checkmark:Hide()
+            left:SetColorTexture(0.30, 0.30, 0.30, 1); right:SetColorTexture(0.09, 0.09, 0.09, 1); crossmark:Show(); checkmark:Hide()
         end
     end
     box._ccrtRefresh = refresh
@@ -161,31 +113,39 @@ end
 
 function C.SkinScrollBar(scroll)
     local bar = scroll and scroll.ScrollBar
-    if not bar or bar._ccrtSkin then
-        return
-    end
+    if not bar or bar._ccrtSkin then return end
     bar._ccrtSkin = true
     for _, k in ipairs({ "Background", "Track", "Back", "Forward" }) do
-        if bar[k] then
-            bar[k]:Hide()
-        end
+        if bar[k] then bar[k]:Hide() end
     end
 end
 
 function C.RegisterModule(name, build, refresh)
     C.modules[name] = { build = build, refresh = refresh, built = false }
 end
-local mainFrame
 
-function C.GetMainFrame()
-    return mainFrame
+function C.RegisterUIHook(callback)
+    if type(callback) ~= "function" then return end
+    C.uiHooks[#C.uiHooks + 1] = callback
+    if C.GetMainFrame then
+        local frame = C.GetMainFrame()
+        if frame then callback(frame) end
+    end
 end
+
+function C.RunUIHooks(frame)
+    if not frame then return end
+    for _, callback in ipairs(C.uiHooks) do
+        pcall(callback, frame)
+    end
+end
+
+local mainFrame
+function C.GetMainFrame() return mainFrame end
 local currentModuleName
 
 local function SaveMainFramePosition()
-    if not mainFrame or not AutoPromoteDB then
-        return
-    end
+    if not mainFrame or not AutoPromoteDB then return end
     local point, _, relativePoint, x, y = mainFrame:GetPoint(1)
     if point then
         AutoPromoteDB.windowPos.point = point
@@ -196,16 +156,11 @@ local function SaveMainFramePosition()
 end
 
 local function RestoreMainFramePosition()
-    if not mainFrame then
-        return
-    end
+    if not mainFrame then return end
     mainFrame:ClearAllPoints()
     local p = AutoPromoteDB and AutoPromoteDB.windowPos
-    if p and p.point then
-        mainFrame:SetPoint(p.point, UIParent, p.relativePoint or p.point, p.x or 0, p.y or 0)
-    else
-        mainFrame:SetPoint("CENTER", UIParent, "CENTER", 260, 0)
-    end
+    if p and p.point then mainFrame:SetPoint(p.point, UIParent, p.relativePoint or p.point, p.x or 0, p.y or 0)
+    else mainFrame:SetPoint("CENTER", UIParent, "CENTER", 260, 0) end
 end
 
 local function SetMenuButtonSkin(button, selected)
@@ -220,212 +175,102 @@ local function SetMenuButtonSkin(button, selected)
 end
 
 local function GetModuleHeight(panel)
-    if not panel then
-        return 0
-    end
+    if not panel then return 0 end
     local top = panel:GetTop()
-    if not top then
-        return 0
-    end
+    if not top then return 0 end
     local lowest = top
     for _, child in ipairs({ panel:GetChildren() }) do
         if child:IsShown() then
             local bottom = child:GetBottom()
-            if bottom and bottom < lowest then
-                lowest = bottom
-            end
+            if bottom and bottom < lowest then lowest = bottom end
         end
     end
     local height = top - lowest + 34
-    if height < 120 then
-        height = 120
-    end
+    if height < 120 then height = 120 end
     return height
 end
 
 local function ResizeMainFrame(name)
-    if not mainFrame or not mainFrame.modulePanels then
-        return
-    end
+    if not mainFrame or not mainFrame.modulePanels then return end
     local panel = mainFrame.modulePanels[name]
-    if not panel then
-        return
-    end
+    if not panel then return end
     local height = GetModuleHeight(panel)
     local minimums = { AutoPromote = 690, MarksBar = 350, RaidInspect = 520 }
-    if minimums[name] and height < minimums[name] then
-        height = minimums[name]
-    end
-    if height < 300 then
-        height = 300
-    end
-    if height > 705 then
-        height = 705
-    end
+    if minimums[name] and height < minimums[name] then height = minimums[name] end
+    if height < 300 then height = 300 end
+    if height > 705 then height = 705 end
     mainFrame:SetHeight(height)
     mainFrame._ccrtLastHeight = height
 end
--- Lets a module re-trigger the dynamic resize on its own (e.g. after its
--- content grows/shrinks asynchronously, outside of the initial tab Select).
+
 function C.RequestResize()
-    if not mainFrame or not mainFrame:IsShown() or not currentModuleName then
-        return
-    end
+    if not mainFrame or not mainFrame:IsShown() or not currentModuleName then return end
     ResizeMainFrame(currentModuleName)
 end
 
 function C.BuildMainFrame()
-    if mainFrame then
-        return mainFrame
-    end
+    if mainFrame then return mainFrame end
     C.InitDB()
     mainFrame = CreateFrame("Frame", "CCRaidToolsFrame", UIParent, "BackdropTemplate")
     mainFrame:SetSize(640, 705)
-    mainFrame:SetMovable(true)
-    mainFrame:EnableMouse(true)
-    mainFrame:RegisterForDrag("LeftButton")
+    mainFrame:SetMovable(true); mainFrame:EnableMouse(true); mainFrame:RegisterForDrag("LeftButton")
     mainFrame:SetScript("OnDragStart", mainFrame.StartMoving)
-    mainFrame:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-        SaveMainFramePosition()
-    end)
-    C.ApplyPanelSkin(mainFrame)
-    RestoreMainFramePosition()
+    mainFrame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); SaveMainFramePosition() end)
+    C.ApplyPanelSkin(mainFrame); RestoreMainFramePosition()
     local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOP", 0, -7)
-    title:SetText("CC RaidTools")
-    title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
-    local close = CreateFrame("Button", nil, mainFrame)
-    close:SetSize(22, 22)
-    close:SetPoint("TOPRIGHT", -4, -4)
-    local closeTex = close:CreateTexture(nil, "ARTWORK")
-    closeTex:SetPoint("CENTER")
-    closeTex:SetSize(13, 13)
-    closeTex:SetTexture(GUI_TEXTURES .. "Close.png")
-    closeTex:SetVertexColor(0.851, 0.851, 0.851, 1)
-    close:SetScript("OnEnter", function()
-        closeTex:SetVertexColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 1)
-    end)
-    close:SetScript("OnLeave", function()
-        closeTex:SetVertexColor(0.851, 0.851, 0.851, 1)
-    end)
-    close:SetScript("OnClick", function()
-        mainFrame:Hide()
-    end)
-    local divider = mainFrame:CreateTexture(nil, "BORDER")
-    divider:SetPoint("TOPLEFT", 132, -29)
-    divider:SetPoint("BOTTOMLEFT", 132, 8)
-    divider:SetWidth(1)
-    divider:SetColorTexture(0, 0, 0, 0.9)
-    local menuTitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    menuTitle:SetPoint("TOPLEFT", 8, -37)
-    menuTitle:SetText("Modules")
-    menuTitle:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
-    local content = CreateFrame("Frame", nil, mainFrame)
-    content:SetPoint("TOPLEFT", 133, -31)
-    content:SetPoint("BOTTOMRIGHT", -5, 7)
-    mainFrame.content = content
+    title:SetPoint("TOP", 0, -7); title:SetText("CC RaidTools v" .. ADDON_VERSION); title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    local close = CreateFrame("Button", nil, mainFrame); close:SetSize(22, 22); close:SetPoint("TOPRIGHT", -4, -4)
+    local closeTex = close:CreateTexture(nil, "ARTWORK"); closeTex:SetPoint("CENTER"); closeTex:SetSize(13, 13); closeTex:SetTexture(GUI_TEXTURES .. "Close.png"); closeTex:SetVertexColor(0.851, 0.851, 0.851, 1)
+    close:SetScript("OnEnter", function() closeTex:SetVertexColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 1) end)
+    close:SetScript("OnLeave", function() closeTex:SetVertexColor(0.851, 0.851, 0.851, 1) end)
+    close:SetScript("OnClick", function() mainFrame:Hide() end)
+    local divider = mainFrame:CreateTexture(nil, "BORDER"); divider:SetPoint("TOPLEFT", 132, -29); divider:SetPoint("BOTTOMLEFT", 132, 8); divider:SetWidth(1); divider:SetColorTexture(0, 0, 0, 0.9)
+    local menuTitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"); menuTitle:SetPoint("TOPLEFT", 8, -37); menuTitle:SetText("Modules"); menuTitle:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    local content = CreateFrame("Frame", nil, mainFrame); content:SetPoint("TOPLEFT", 133, -31); content:SetPoint("BOTTOMRIGHT", -5, 7); mainFrame.content = content
     local order = { "AutoPromote", "AutoLog", "ReadyCheck", "InviteTool", "Focus", "MarksBar", "RaidInspect" }
-    local labels = {
-        AutoPromote = "Auto Promote",
-        AutoLog = "AutoLog",
-        ReadyCheck = "Ready Check",
-        InviteTool = "Invite Tool",
-        Focus = "Focus",
-        MarksBar = "Marks Bar",
-        RaidInspect = "Raid Inspect",
-    }
-    local buttons = {}
-    local panels = {}
+    local labels = { AutoPromote="Auto Promote", AutoLog="AutoLog", ReadyCheck="Ready Check", InviteTool="Invite Tool", Focus="Focus", MarksBar="Marks Bar", RaidInspect="Raid Inspect" }
+    local buttons, panels = {}, {}
     local function Select(name)
         currentModuleName = name
-        for n, p in pairs(panels) do
-            p:SetShown(n == name)
-        end
-        for n, b in pairs(buttons) do
-            SetMenuButtonSkin(b, n == name)
-        end
-        if mainFrame._ccrtWatermark then
-            mainFrame._ccrtWatermark:SetAlpha(name == "RaidInspect" and 0.07 or 1)
-        end
+        for n, p in pairs(panels) do p:SetShown(n == name) end
+        for n, b in pairs(buttons) do SetMenuButtonSkin(b, n == name) end
+        if mainFrame._ccrtWatermark then mainFrame._ccrtWatermark:SetAlpha(name == "RaidInspect" and 0.07 or 1) end
         local m = C.modules[name]
-        if m and m.refresh then
-            m.refresh(panels[name])
-        end
-        if C_Timer and C_Timer.After then
-            C_Timer.After(0, function()
-                if mainFrame and mainFrame:IsShown() then
-                    ResizeMainFrame(name)
-                end
-            end)
-        else
-            ResizeMainFrame(name)
-        end
+        if m and m.refresh then m.refresh(panels[name]) end
+        if C_Timer and C_Timer.After then C_Timer.After(0, function() if mainFrame and mainFrame:IsShown() then ResizeMainFrame(name) end end) else ResizeMainFrame(name) end
     end
     for i, name in ipairs(order) do
-        local b = CreateFrame("Button", nil, mainFrame)
-        b:SetSize(116, 28)
-        b:SetPoint("TOPLEFT", 8, -62 - (i - 1) * 32)
-        local bg = b:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        b.bg = bg
-        local t = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        t:SetPoint("LEFT", 8, 0)
-        t:SetText(labels[name])
-        b.text = t
-        b:SetScript("OnEnter", function(self)
-            if not self.selected then
-                self.bg:SetColorTexture(0.09, 0.09, 0.12, 0.96)
-            end
-        end)
-        b:SetScript("OnLeave", function(self)
-            if not self.selected then
-                self.bg:SetColorTexture(0.045, 0.045, 0.055, 0.94)
-            end
-        end)
-        b:SetScript("OnClick", function()
-            Select(name)
-        end)
+        local b = CreateFrame("Button", nil, mainFrame); b:SetSize(116, 28); b:SetPoint("TOPLEFT", 8, -62 - (i - 1) * 32)
+        local bg = b:CreateTexture(nil, "BACKGROUND"); bg:SetAllPoints(); b.bg = bg
+        local t = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); t:SetPoint("LEFT", 8, 0); t:SetText(labels[name]); b.text = t
+        b:SetScript("OnEnter", function(self) if not self.selected then self.bg:SetColorTexture(0.09,0.09,0.12,0.96) end end)
+        b:SetScript("OnLeave", function(self) if not self.selected then self.bg:SetColorTexture(0.045,0.045,0.055,0.94) end end)
+        b:SetScript("OnClick", function() Select(name) end)
         buttons[name] = b
     end
     for _, name in ipairs(order) do
-        local p = CreateFrame("Frame", nil, content)
-        p:SetAllPoints()
-        p:Hide()
-        panels[name] = p
+        local p = CreateFrame("Frame", nil, content); p:SetAllPoints(); p:Hide(); panels[name] = p
         local m = C.modules[name]
-        if m and m.build and not m.built then
-            m.build(p)
-            m.built = true
-        end
+        if m and m.build and not m.built then m.build(p); m.built = true end
     end
     mainFrame.modulePanels = panels
     mainFrame.menuButtons = buttons
     mainFrame:Hide()
+    C.RunUIHooks(mainFrame)
     Select("AutoPromote")
     return mainFrame
 end
 
 function C.ToggleUI()
     local f = C.BuildMainFrame()
-    if f:IsShown() then
-        f:Hide()
-    else
-        f:Show()
-    end
+    if f:IsShown() then f:Hide() else f:Show() end
 end
 
-local function HandleSlash(msg)
-    C.InitDB()
-    C.ToggleUI()
-end
+local function HandleSlash(msg) C.InitDB(); C.ToggleUI() end
 SLASH_CCRAIDTOOLS1 = "/ccrt"
 SlashCmdList["CCRAIDTOOLS"] = HandleSlash
 local coreEvents = CreateFrame("Frame")
 coreEvents:RegisterEvent("ADDON_LOADED")
 coreEvents:SetScript("OnEvent", function(_, event, arg1)
-    if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
-        C.InitDB()
-        print(C.L.addonLoaded:format("1.2.1"))
-    end
+    if event == "ADDON_LOADED" and arg1 == ADDON_NAME then C.InitDB() end
 end)
