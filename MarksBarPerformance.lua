@@ -1,16 +1,16 @@
--- CC RaidTools - MarksBar performance helper
--- Keep the mouseover check lightweight without running it every rendered frame.
-local C = CCRT
+-- CC RaidTools - Marks Bar performance helper
+-- Apply the mouseover throttle as soon as the Marks Bar is created.
+-- This must not depend on opening /ccrt: the bar is created independently
+-- from the configuration window during ADDON_LOADED.
+local elapsedSinceCheck = 0
 
-C.RegisterUIHook(function()
+local function ApplyMouseoverThrottle()
     local bar = _G.CCRaidToolsMarksBar
     if not bar or bar._ccrtMouseoverThrottle then
         return
     end
 
     bar._ccrtMouseoverThrottle = true
-    local elapsedSinceCheck = 0
-
     bar:SetScript("OnUpdate", function(self, elapsed)
         if not AutoPromoteDB or not AutoPromoteDB.marksBar
             or not AutoPromoteDB.marksBar.enabled
@@ -30,4 +30,12 @@ C.RegisterUIHook(function()
             self:SetAlpha(wanted)
         end
     end)
+end
+
+local events = CreateFrame("Frame")
+events:RegisterEvent("ADDON_LOADED")
+events:SetScript("OnEvent", function(_, _, addonName)
+    if addonName == "CC_RaidTools" then
+        ApplyMouseoverThrottle()
+    end
 end)
