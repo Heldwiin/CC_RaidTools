@@ -11,18 +11,21 @@ C.BRAND_B = 1
 local GUI_TEXTURES = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\"
 
 function C.InitDB()
-    AutoPromoteDB = AutoPromoteDB or {}
-    AutoPromoteDB.names = AutoPromoteDB.names or {}
-    AutoPromoteDB.ranks = AutoPromoteDB.ranks or {}
-    AutoPromoteDB.rankNames = AutoPromoteDB.rankNames or {}
-    AutoPromoteDB.windowPos = AutoPromoteDB.windowPos or {}
-    AutoPromoteDB.focus = AutoPromoteDB.focus or {}
-    AutoPromoteDB.marksBar = AutoPromoteDB.marksBar or {}
-    AutoPromoteDB.logging = AutoPromoteDB.logging or {}
-    if AutoPromoteDB.focus.enabled == nil then
-        AutoPromoteDB.focus.enabled = true
+    CCRaidToolsDB = CCRaidToolsDB or {}
+    -- Runtime alias kept temporarily while gameplay modules are migrated to the
+    -- canonical SavedVariable name. AutoPromoteDB is no longer a SavedVariable.
+    AutoPromoteDB = CCRaidToolsDB
+    CCRaidToolsDB.names = CCRaidToolsDB.names or {}
+    CCRaidToolsDB.ranks = CCRaidToolsDB.ranks or {}
+    CCRaidToolsDB.rankNames = CCRaidToolsDB.rankNames or {}
+    CCRaidToolsDB.windowPos = CCRaidToolsDB.windowPos or {}
+    CCRaidToolsDB.focus = CCRaidToolsDB.focus or {}
+    CCRaidToolsDB.marksBar = CCRaidToolsDB.marksBar or {}
+    CCRaidToolsDB.logging = CCRaidToolsDB.logging or {}
+    if CCRaidToolsDB.focus.enabled == nil then
+        CCRaidToolsDB.focus.enabled = true
     end
-    local logging = AutoPromoteDB.logging
+    local logging = CCRaidToolsDB.logging
     if logging.lfr == nil then logging.lfr = false end
     if logging.normal == nil then logging.normal = false end
     if logging.heroic == nil then logging.heroic = false end
@@ -30,7 +33,6 @@ function C.InitDB()
     if logging.dungeons == nil then
         logging.dungeons = logging.dungeonMythic or logging.dungeonMythicPlus or false
     end
-    -- Legacy keys are intentionally retained for migration compatibility.
     -- Combat-log ownership is session-only and must never live in SavedVariables.
 end
 
@@ -145,20 +147,20 @@ function C.GetMainFrame() return mainFrame end
 local currentModuleName
 
 local function SaveMainFramePosition()
-    if not mainFrame or not AutoPromoteDB then return end
+    if not mainFrame or not CCRaidToolsDB then return end
     local point, _, relativePoint, x, y = mainFrame:GetPoint(1)
     if point then
-        AutoPromoteDB.windowPos.point = point
-        AutoPromoteDB.windowPos.relativePoint = relativePoint or point
-        AutoPromoteDB.windowPos.x = x or 0
-        AutoPromoteDB.windowPos.y = y or 0
+        CCRaidToolsDB.windowPos.point = point
+        CCRaidToolsDB.windowPos.relativePoint = relativePoint or point
+        CCRaidToolsDB.windowPos.x = x or 0
+        CCRaidToolsDB.windowPos.y = y or 0
     end
 end
 
 local function RestoreMainFramePosition()
     if not mainFrame then return end
     mainFrame:ClearAllPoints()
-    local p = AutoPromoteDB and AutoPromoteDB.windowPos
+    local p = CCRaidToolsDB and CCRaidToolsDB.windowPos
     if p and p.point then mainFrame:SetPoint(p.point, UIParent, p.relativePoint or p.point, p.x or 0, p.y or 0)
     else mainFrame:SetPoint("CENTER", UIParent, "CENTER", 260, 0) end
 end
