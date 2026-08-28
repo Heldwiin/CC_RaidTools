@@ -206,19 +206,17 @@ local function Invite(message, sender)
     if IsInGroup() and not UnitIsGroupLeader("player") and not UnitIsGroupAssistant("player") then
         local leaderName = GetGroupLeaderName()
         if leaderName then
-            -- Route the request through the group/raid addon channel. The previous
-            -- implementation used a WHISPER addon message, but the leader's
-            -- CHAT_MSG_ADDON handler cannot reliably receive that path in all
-            -- Midnight contexts. The regular whisper remains a fallback when the
-            -- addon message is unavailable (for example, the leader has no addon).
-            local sent = false
+            -- Always send a normal whisper to the leader. This is the reliable fallback
+            -- when the leader does not have CC RaidTools, or when addon communication is
+            -- unavailable (for example, inside Midnight instanced content).
+            WhisperLeader(leaderName, sender)
+
+            -- If the leader also has CC RaidTools, the addon message gives them a proper
+            -- in-game confirmation popup. PARTY/RAID addon communication is attempted in
+            -- addition to the whisper, never instead of it.
             if C_ChatInfo and C_ChatInfo.SendAddonMessage then
                 local channel = IsInRaid() and "RAID" or "PARTY"
-                local result = C_ChatInfo.SendAddonMessage(ADDON_PREFIX, INVITE_REQUEST, channel)
-                sent = (result == nil or result == 0)
-            end
-            if not sent then
-                WhisperLeader(leaderName, sender)
+                C_ChatInfo.SendAddonMessage(ADDON_PREFIX, INVITE_REQUEST, channel)
             end
         end
         return
