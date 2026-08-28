@@ -2,6 +2,11 @@
 local C = CCRT
 local enabled, keyword
 
+local ADDON_PREFIX = "CCRTINV"
+local INVITE_REQUEST = "REQUEST"
+local pendingRequests = {}
+local popupActive = false
+
 local function InitDB()
     C.InitDB()
     AutoPromoteDB.inviteTool = AutoPromoteDB.inviteTool or {}
@@ -10,6 +15,10 @@ local function InitDB()
     end
     if AutoPromoteDB.inviteTool.enabled == nil then
         AutoPromoteDB.inviteTool.enabled = true
+    end
+
+    if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
+        C_ChatInfo.RegisterAddonMessagePrefix(ADDON_PREFIX)
     end
 end
 
@@ -39,6 +48,84 @@ local function SkinEdit(box)
     box:SetBackdropColor(0.018, 0.018, 0.024, 0.90)
     box:SetBackdropBorderColor(0, 0, 0, 1)
     box:SetTextColor(1, 1, 1)
+end
+
+local function GetGroupLeaderName()
+    if IsInRaid() then
+        for i = 1, GetNumGroupMembers() or 0 do
+            local unit = "raid" .. i
+            if UnitExists(unit) and UnitIsGroupLeader(unit) then
+                local name, realm = UnitName(unit)
+                if name and name ~= "" then
+                    if realm and realm ~= "" then
+                        return name .. "-" .. realm
+                    end
+                    return name
+                end
+            end
+        end
+    elseif IsInGroup() then
+        if UnitIsGroupLeader("player") then
+            local name, realm = UnitName("player")
+            if name and name ~= "" then
+                if realm and realm ~= "" then
+                    return name .. "-" .. realm
+                end
+                return name
+            end
+        end
+        for i = 1, 4 do
+            local unit = "party" .. i
+            if UnitExists(unit) and UnitIsGroupLeader(unit) then
+                local name, realm = UnitName(unit)
+                if name and name ~= "" then
+                    if realm and realm ~= "" then
+                        return name .. "-" .. realm
+                    end
+                    return name
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local function WhisperLeader(leaderName, requester)
+    if not leaderName or leaderName == "" or not requester or requester == "" then
+        return
+    end
+    local text = "[CC RaidTools] " .. requester .. " demande une invitation."
+    if C_ChatInfo and C_ChatInfo.SendChatMessage then
+        C_ChatInfo.SendChatMessage(text, "WHISPER", nil, leaderName)
+    elseif SendChatMessage then
+        SendChatMessage(text, "WHISPER", nil, leaderName)
+    end
+end
+
+local function ShowNextRequest()
+    if popupActive then
+        return
+    end
+
+    local requester = table.remove(pendingRequests, 1)
+    if not requester then
+        return
+    end
+
+    popupActive = true
+    StaticPopup_Show("CCRT_INVITE_REQUEST", requester)
+end
+
+local function QueueLeaderSuggestion(requester)
+    if not requester or requester == "" then
+        return
+    end
+    if not UnitIsGroupLeader("player") then
+        return
+    end
+
+    pendingRequests[#pendingRequests + 1] = requester
+    ShowNextRequest()
 end
 
 local function BuildUI(f)
@@ -119,6 +206,21 @@ local function Invite(message, sender)
     end
 
     if IsInGroup() and not UnitIsGroupLeader("player") and not UnitIsGroupAssistant("player") then
+        local leaderName = GetGroupLeaderName()
+        if leaderName then
+            -- If the leader also has CC RaidTools, they get an in-game
+            -- confirmation popup with an Invite button. The normal whisper is
+            -- also sent so this remains useful when the leader does not have
+            -- the addon installed.
+            if C_ChatInfo and C_ChatInfo.SendAddonMessage then
+                C_ChatInfo.SendAddonMessage(ADDON_PREFIX, INVITE_REQUEST .. ":" .. sender, "WHISPER", leaderName)
+            end
+            WhisperLeader(leaderName, sender)
+        end
+        return
+    end
+
+    if not UnitIsGroupLeader("player") and not UnitIsGroupAssistant("player") then
         return
     end
 
@@ -131,14 +233,58 @@ local function Invite(message, sender)
     end
 end
 
+StaticPopupDialogs["CCRT_INVITE_REQUEST"] = {
+    text = "CC RaidTools : %s demande une invitation.",
+    button1 = "Inviter",
+    button2 = "Ignorer",
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+    OnAccept = function(self, data)
+        local requester = data
+        if requester and requester ~= "" then
+            if C_PartyInfo and C_PartyInfo.InviteUnit then
+                C_PartyInfo.InviteUnit(requester)
+            elseif InviteUnit then
+                InviteUnit(requester)
+            end
+        end
+    end,
+    OnCancel = function()
+        popupActive = false
+        C_Timer.After(0, ShowNextRequest)
+    end,
+    OnHide = function()
+        popupActive = false
+        C_Timer.After(0, ShowNextRequest)
+    end,
+}
+
 local e = CreateFrame("Frame")
 e:RegisterEvent("PLAYER_LOGIN")
 e:RegisterEvent("CHAT_MSG_WHISPER")
+e:RegisterEvent("CHAT_MSG_ADDON")
 e:SetScript("OnEvent", function(_, ev, ...)
     if ev == "PLAYER_LOGIN" then
         InitDB()
-    else
+    elseif ev == "CHAT_MSG_WHISPER" then
         local msg, sender = ...
         Invite(msg, sender)
+    elseif ev == "CHAT_MSG_ADDON" then
+        local prefix, message, channel, sender = ...
+        if prefix ~= ADDON_PREFIX or channel ~= "WHISPER" then
+            return
+        end
+        if issecretvalue and (issecretvalue(message) or issecretvalue(sender)) then
+            return
+        end
+        if not UnitIsGroupLeader("player") then
+            return
+        end
+        local requester = message and message:match("^" .. INVITE_REQUEST .. ":(.+)$")
+        if requester then
+            QueueLeaderSuggestion(requester)
+        end
     end
 end)
