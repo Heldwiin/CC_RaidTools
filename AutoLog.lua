@@ -1,6 +1,7 @@
 -- CC RaidTools - AutoLog
 local C = CCRT
 local startedByAddon = false
+local recoveringOwnership = false
 local lastStartAttempt = 0
 local lastStopAttempt = 0
 local ACTION_COOLDOWN = 5
@@ -64,7 +65,20 @@ end
 
 local function CheckAutoLog()
     C.InitDB()
-    if IsLoggingTarget() then StartLogging() else StopLogging() end
+    if IsLoggingTarget() then
+        if recoveringOwnership and IsLoggingActive() and not startedByAddon then
+            -- A reload resets this local flag while the WoW combat log can remain active.
+            -- If AutoLog targets the current instance, reclaim ownership so we can stop it on exit.
+            startedByAddon = true
+            recoveringOwnership = false
+            return
+        end
+        recoveringOwnership = false
+        StartLogging()
+    else
+        recoveringOwnership = false
+        StopLogging()
+    end
 end
 C.CheckAutoLog = CheckAutoLog
 
@@ -131,6 +145,7 @@ e:SetScript("OnEvent", function(_, event, arg1)
         C.InitDB()
         MigrateDungeonSetting()
         startedByAddon = false
+        recoveringOwnership = true
         C_Timer.After(2, CheckAutoLog)
     elseif event == "CHALLENGE_MODE_START" then
         C_Timer.After(1, StartChallengeLogging)
