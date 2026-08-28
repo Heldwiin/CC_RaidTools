@@ -118,12 +118,14 @@ local function Invite(message, sender)
         return
     end
 
-    if IsInGroup() and not UnitIsGroupLeader("player") and not UnitIsGroupAssistant("player") then
-        return
-    end
-
-    -- Match Method Raid Tools: do not add our own combat-delay queue or whisper.
-    -- Call the Blizzard invite API immediately and let WoW handle the protected call.
+    -- Blizzard's native invite action already handles the distinction between
+    -- leaders/assistants and ordinary group members. When a non-leader selects
+    -- "Suggest Invite" from the UnitPopup menu, the same invite API is used and
+    -- Blizzard routes the suggestion to the group's leader. Do not duplicate
+    -- that mechanism with addon messages, whispers, or a custom popup.
+    --
+    -- This is intentionally the same path as the native UnitPopup action:
+    -- right-click player -> Suggest Invite.
     if C_PartyInfo and C_PartyInfo.InviteUnit then
         C_PartyInfo.InviteUnit(sender)
     elseif InviteUnit then
@@ -137,7 +139,7 @@ e:RegisterEvent("CHAT_MSG_WHISPER")
 e:SetScript("OnEvent", function(_, ev, ...)
     if ev == "PLAYER_LOGIN" then
         InitDB()
-    else
+    elseif ev == "CHAT_MSG_WHISPER" then
         local msg, sender = ...
         Invite(msg, sender)
     end

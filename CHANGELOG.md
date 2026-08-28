@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.2.2
+
+### Raid Inspect
+
+- Correction de la détection des gemmes manquantes.
+- Comptage fiable des sockets vides à partir des données structurées Blizzard (`GemSocket` / `GemSocketEnchantment`).
+- Réduction des faux positifs liés aux données de tooltip.
+- Conservation de la détection des enchantements via l'item link, avec fallback structuré/textuel.
+
+### Focus
+
+- Correction du Focus avec Shift + clic sur les unit frames sécurisées, notamment la Target et les Boss Frames.
+- Support des boutons configurés sur les unit frames sans casser leurs actions sécurisées existantes.
+- Restauration des attributs d'origine lors de la désactivation ou du changement de configuration.
+
+### Invite Tool
+
+- Lorsqu'un joueur envoie le mot-clé d'invitation à un membre qui n'est pas leader, la demande utilise désormais la mécanique native Blizzard **Suggest Invite**.
+- Le comportement est identique à l'action **Suggérer une invitation** du menu contextuel de WoW.
+- Suppression du système de popup/communication maison pour ce cas.
+
 ## 1.2.1
 
 ### Raid Inspect
