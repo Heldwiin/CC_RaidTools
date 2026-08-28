@@ -66,6 +66,10 @@ local frFR = {
     itCombatBlocked = "Invitation impossible pendant le combat.",
     itLabel = "Invite Tool :",
     itKeywordsLabel = "Mots-clés :",
+    itLeaderWhisper = "|cff33ff99[CC RaidTools]|r %s demande une invitation.",
+    itInviteRequest = "CC RaidTools : %s demande une invitation.",
+    itInviteButton = "Inviter",
+    itInviteIgnore = "Ignorer",
 
     -- Focus
     focusEnable = "Activer le Focus",
@@ -187,6 +191,10 @@ local enUS = {
     itCombatBlocked = "Cannot invite while in combat.",
     itLabel = "Invite Tool:",
     itKeywordsLabel = "Keywords:",
+    itLeaderWhisper = "|cff33ff99[CC RaidTools]|r %s is requesting an invite.",
+    itInviteRequest = "CC RaidTools: %s is requesting an invite.",
+    itInviteButton = "Invite",
+    itInviteIgnore = "Ignore",
 
     focusEnable = "Enable Focus",
     focusMouseClick = "Mouse click",
