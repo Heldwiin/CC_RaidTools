@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.3
+
+### Interface
+
+- Suppression du message de bienvenue/version affiché dans le chat au chargement de l'addon.
+- Affichage de la version directement dans la fenêtre `/ccrt`.
+- La version affichée dans l'interface est maintenant récupérée automatiquement depuis le fichier `.toc`, évitant les numéros de version codés en dur.
+
 ## 1.2.2
 
 ### Raid Inspect
