@@ -138,15 +138,42 @@ local function IsOffhandWeapon(unit, slot)
     return classID == Enum.ItemClass.Weapon
 end
 
+-- Prefer Blizzard's structured GemSocket line over localized EMPTY_SOCKET text.
+-- A GemSocket line represents an actual empty socket in the item tooltip,
+-- while a filled socket is represented by GemSocketEnchantment. This avoids
+-- false "missing gem" results when the localized tooltip text is unavailable
+-- or still settling on the inspecting client.
 local function CountEmptySocketsOnSlot(unit, slot)
     if not C_TooltipInfo or not C_TooltipInfo.GetInventoryItem then
         return 0
     end
+
     local ok, data = pcall(C_TooltipInfo.GetInventoryItem, unit, slot)
     if not ok or not data or not data.lines then
         return 0
     end
+
     SurfaceTooltipData(data)
+
+    local lineTypes = Enum and Enum.TooltipDataLineType
+    local gemSocketType = lineTypes and lineTypes.GemSocket
+    if gemSocketType then
+        local n = 0
+        local sawStructuredSocket = false
+        for _, line in ipairs(data.lines) do
+            if line.type == gemSocketType then
+                sawStructuredSocket = true
+                n = n + 1
+            end
+        end
+        if sawStructuredSocket then
+            return n
+        end
+    end
+
+    -- Compatibility fallback for clients/API states where structured socket
+    -- lines are unavailable. Do not let a missing tooltip string override a
+    -- structured result; this path is only used when no socket lines exist.
     local texts = GetEmptySocketTexts()
     local n = 0
     for _, line in ipairs(data.lines) do
