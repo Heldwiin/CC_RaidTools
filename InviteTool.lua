@@ -94,10 +94,8 @@ local function WhisperLeader(leaderName, requester)
     if not leaderName or leaderName == "" or not requester or requester == "" then
         return
     end
-    local text = "[CC RaidTools] " .. requester .. " demande une invitation."
-    if C_ChatInfo and C_ChatInfo.SendChatMessage then
-        C_ChatInfo.SendChatMessage(text, "WHISPER", nil, leaderName)
-    elseif SendChatMessage then
+    local text = C.L.itLeaderWhisper:format(requester)
+    if SendChatMessage then
         SendChatMessage(text, "WHISPER", nil, leaderName)
     end
 end
@@ -113,7 +111,7 @@ local function ShowNextRequest()
     end
 
     popupActive = true
-    StaticPopup_Show("CCRT_INVITE_REQUEST", requester)
+    StaticPopup_Show("CCRT_INVITE_REQUEST", requester, nil, requester)
 end
 
 local function QueueLeaderSuggestion(requester)
@@ -234,9 +232,9 @@ local function Invite(message, sender)
 end
 
 StaticPopupDialogs["CCRT_INVITE_REQUEST"] = {
-    text = "CC RaidTools : %s demande une invitation.",
-    button1 = "Inviter",
-    button2 = "Ignorer",
+    text = C.L.itInviteRequest,
+    button1 = C.L.itInviteButton,
+    button2 = C.L.itInviteIgnore,
     timeout = 0,
     whileDead = true,
     hideOnEscape = true,
