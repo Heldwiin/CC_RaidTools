@@ -12,6 +12,7 @@ The addon is intentionally lightweight and modular, with no external library dep
 
 Core:
 - `CC_RaidTools.lua` — addon core, SavedVariables, `/ccrt`, main configuration window and shared UI helpers.
+- `DBMigration.lua` — one-release compatibility migration from the legacy `AutoPromoteDB` SavedVariable to `CCRaidToolsDB`.
 
 Gameplay modules:
 - `AutoPromote.lua` — automatic raid-assistant promotion.
@@ -20,6 +21,7 @@ Gameplay modules:
 - `InviteTool.lua` — whisper keyword invitation system.
 - `Focus.lua` — mouse-button focus helper using secure actions.
 - `MarksBar.lua` — raid target markers and world markers.
+- `MarksBarPerformance.lua` — lightweight mouseover update throttle for the Marks Bar, applied on addon load.
 - `RaidInspect.lua` — raid/party inspection for item level, enchants and gem sockets.
 
 UI/branding:
@@ -41,9 +43,17 @@ Do not create duplicate `*Fix.lua` or compatibility modules unless there is a cl
 
 ## SavedVariables
 
-The addon uses one main SavedVariable:
+The canonical SavedVariable is:
+
+`CCRaidToolsDB`
+
+Existing installations may still provide the legacy:
 
 `AutoPromoteDB`
+
+During the 1.2.3 migration period, `CC_RaidTools.toc` declares both names so WoW loads the legacy data before `DBMigration.lua` runs. `DBMigration.lua` copies the legacy table to `CCRaidToolsDB` when needed and then aliases `AutoPromoteDB` to the canonical table so existing modules can continue using their current references without a risky rewrite.
+
+**Migration TODO:** after 1.2.3 has been deployed and compatibility is confirmed, remove `AutoPromoteDB` from the `.toc` and remove the compatibility migration/alias. Do not do this before the migration window is intentionally closed.
 
 Existing settings include, among others:
 - `names`
@@ -142,6 +152,8 @@ The bar supports:
 - horizontal/vertical orientation
 - mouseover display
 - saved position
+
+The mouseover display check is throttled by `MarksBarPerformance.lua` and must be applied during `ADDON_LOADED`; it must not depend on opening `/ccrt`.
 
 Any layout change affecting secure buttons must be deferred outside combat.
 
@@ -321,6 +333,7 @@ For Marks Bar specifically:
 - test orientation changes;
 - test locked position;
 - test mouseover mode;
+- verify mouseover throttling is active immediately after login without opening `/ccrt`;
 - test configuration changes during combat.
 
 For AutoLog specifically:
@@ -370,7 +383,8 @@ Previous bugs have included:
 - AutoLog ownership state being lost after `/reload`;
 - incorrect world-marker mapping;
 - creating separate `*Fix.lua` files that were not properly loaded by the TOC;
-- late inspect events advancing the inspection queue twice.
+- late inspect events advancing the inspection queue twice;
+- Marks Bar mouseover throttling being incorrectly tied to opening `/ccrt`.
 
 Treat these as known failure modes and avoid reintroducing them.
 
