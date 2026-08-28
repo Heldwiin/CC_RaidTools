@@ -15,7 +15,6 @@ ReadyCheck.lua
 InviteTool.lua
 Focus.lua
 MarksBar.lua
-MarksBarPerformance.lua
 RaidInspect.lua
 GuildBranding.lua
 ModuleIcons.lua
