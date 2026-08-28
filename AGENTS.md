@@ -264,18 +264,22 @@ Keep README and in-game behavior synchronized with this rule.
 
 ## Versioning and releases
 
-Version is stored in `CC_RaidTools.toc`.
+Version is stored in `CC_RaidTools.toc` and is the **single source of truth for the in-game displayed version**.
 
-When the user asks to prepare, bump, finalize, or release a new version, synchronize the version everywhere it is visibly or explicitly stored. At minimum:
+The `/ccrt` main window displays the version automatically from the `.toc` metadata. **Do not hard-code a release number in Lua.** The addon no longer prints a version/welcome message to chat on load.
+
+When the user asks to prepare, bump, finalize, or release a new version, follow this procedure:
 
 1. Update `## Version:` in `CC_RaidTools.toc`.
-2. Update the in-game loading message in `CC_RaidTools.lua`.
+2. Verify that `CC_RaidTools.lua` still reads the version from `.toc` metadata and displays it in the `/ccrt` window. Do not add a hard-coded version or restore the chat welcome message.
 3. `ReadyCheck.lua` uses the static title `CC RaidTools - Ready Check`; **do not add or remove a version number from this title during releases**.
 4. Update the displayed version in `README.md` and its release/version section if present.
-5. Add/update the corresponding entry in `CHANGELOG.md`.
-6. Search the entire repository for the previous version string and update any remaining user-visible release/version references.
-7. Before declaring the release ready, verify that the versioned files contain the same target version and that the Ready Check title remains static.
-8. Perform the mandatory `wow-ui-source` API review described above for relevant changed code.
+5. Add/update the corresponding entry in `CHANGELOG.md` with the user-visible changes from the release.
+6. Search the entire repository for the previous version string and update any remaining user-visible release/version references, but do not blindly replace historical changelog entries or unrelated version references.
+7. Review the release diff for dead code, obsolete compatibility workarounds, duplicated logic, temporary debug code, stale comments, and unused files. Remove anything that no longer serves a purpose, provided it is not required for compatibility.
+8. Before declaring the release ready, verify that the `.toc`, `/ccrt` displayed version, README and changelog all correspond to the target release, and that the Ready Check title remains static.
+9. Perform the mandatory `wow-ui-source` API review described above for relevant changed code.
+10. Perform the relevant testing checklist before declaring the release ready.
 
 When only a bug fix is requested and no version bump is requested, do not silently increment the release version.
 
@@ -298,6 +302,7 @@ After significant changes, test the affected module and, when relevant:
 7. behavior after leaving combat
 8. protected-action behavior
 9. fresh installation/upgrade behavior
+10. verify the `/ccrt` title shows the version from the `.toc` and no load message is printed to chat
 
 For Ready Check specifically:
 - start a real Ready Check;
