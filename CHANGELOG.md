@@ -72,3 +72,40 @@
 - Fermeture 2 secondes après l'expiration du timer.
 - Un seul délai de fermeture peut être programmé par Ready Check, empêchant le ticker de repousser continuellement la fermeture.
 - Réinitialisation propre de l'état de fermeture à chaque nouveau Ready Check.
+
+### v1.1.15 — AutoLog et Ready Check
+
+- Migration du réglage unifié Donjons (M0 / M+) dès le chargement de l'addon.
+- Consolidation du suivi des réponses `READY_CHECK_CONFIRM`.
+- Conservation de la fermeture automatique rapide en groupe comme en raid.
+- Validation des APIs concernées avec la source UI Blizzard de WoW.
+
+### v1.1.14 — Focus activable/désactivable
+
+- Ajout de l'option **Activer le Focus**.
+- Désactivation et réactivation propre du binding sécurisé associé.
+
+### v1.1.13 — Ready Check stabilisée
+
+- Timer basé sur la durée réelle fournie par Blizzard.
+- Barre de compte à rebours fluide.
+- Fermeture fiable environ 2 secondes après que tout le monde est prêt.
+
+### v1.1.11 — Ready Check
+
+- Correction de la fermeture automatique en groupe et en raid via la fin réelle du Ready Check Blizzard.
+- Utilisation de la durée réelle fournie au lancement du Ready Check.
+- Barre de compte à rebours rendue plus fluide.
+
+### v1.1.10 — Ready Check : largeur dynamique
+
+- Largeur calculée selon les buffs réellement disponibles en groupe.
+- Mise à jour immédiate lors des changements de composition.
+- Réduction de la largeur du mode raid à 640 px.
+
+### v1.1.9 — Ready Check Groupe & Buffs dynamiques
+
+- Ajout du mode groupe 5 joueurs.
+- Suppression du check Vantus en groupe.
+- Affichage dynamique des buffs selon les classes présentes.
+- Ajout du buff Évocateur / Bronze.
