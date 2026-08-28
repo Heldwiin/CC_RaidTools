@@ -62,37 +62,59 @@ local function IsOffhandWeapon(unit, slot)
 end
 
 -- GemSocket is emitted once per socket. gemIcon on that same line tells us
--- whether that particular socket is occupied. GemSocketEnchantment is an
--- auxiliary tooltip line and must never be added to the filled count when
--- gemIcon data is available, otherwise mixed filled/empty sockets are wrong.
+-- whether that particular socket is occupied. Do not use GemSocketEnchantment
+-- when gemIcon data is available: mixed filled/empty sockets must be counted
+-- from the individual GemSocket lines themselves.
 local function CountEmptySocketsOnSlot(unit, slot)
     if not C_TooltipInfo or not C_TooltipInfo.GetInventoryItem then return 0 end
     local ok, data = pcall(C_TooltipInfo.GetInventoryItem, unit, slot)
     if not ok or not data or not data.lines then return 0 end
     SurfaceTooltipData(data)
+
     local lineTypes = Enum and Enum.TooltipDataLineType
     local gemSocketType = lineTypes and lineTypes.GemSocket
     local gemEnchantmentType = lineTypes and lineTypes.GemSocketEnchantment
+
     if gemSocketType then
-        local socketCount, emptyCount = 0, 0
-        local hasGemIconField, filledByEnchantment = false, 0
+        local socketCount = 0
+        local filledCount = 0
+        local emptyCount = 0
+        local unknownCount = 0
+        local filledByEnchantment = 0
+
         for _, line in ipairs(data.lines) do
             if line.type == gemSocketType then
                 socketCount = socketCount + 1
                 local gemIcon = SafeText(line.gemIcon)
                 if gemIcon ~= nil then
-                    hasGemIconField = true
-                    if not gemIcon then emptyCount = emptyCount + 1 end
+                    if gemIcon then
+                        filledCount = filledCount + 1
+                    else
+                        emptyCount = emptyCount + 1
+                    end
+                else
+                    unknownCount = unknownCount + 1
                 end
             elseif gemEnchantmentType and line.type == gemEnchantmentType then
                 filledByEnchantment = filledByEnchantment + 1
             end
         end
+
         if socketCount > 0 then
-            if hasGemIconField then return emptyCount end
-            return math.max(0, socketCount - filledByEnchantment)
+            if unknownCount == 0 then
+                return emptyCount
+            end
+
+            -- If Blizzard did not expose gemIcon for some sockets, retain the
+            -- previous structured fallback for the unknown sockets only.
+            local knownFilled = filledCount
+            local knownEmpty = emptyCount
+            local fallbackFilled = math.min(filledByEnchantment, unknownCount)
+            local fallbackEmpty = unknownCount - fallbackFilled
+            return knownEmpty + fallbackEmpty
         end
     end
+
     local texts, n = GetEmptySocketTexts(), 0
     for _, line in ipairs(data.lines) do
         local leftText = SafeText(line.leftText)
@@ -170,6 +192,12 @@ local function GetResult(unit)
     return guid and results[guid] or nil
 end
 
+local function IsBlizzardInspectActive()
+    local inspectFrameActive = InspectFrame and InspectFrame:IsShown()
+    local playerSpellsInspectActive = PlayerSpellsFrame and PlayerSpellsFrame.IsInspecting and PlayerSpellsFrame:IsInspecting()
+    return inspectFrameActive or playerSpellsInspectActive
+end
+
 local function NewRow(parent, i)
     local r = CreateFrame("Frame", nil, parent); r:SetSize(420, ROW_H); r:SetPoint("TOPLEFT", 0, -(i - 1) * ROW_H)
     local function T(x, w, justify)
@@ -227,7 +255,7 @@ local function StopInspectQueue()
     if inventoryCapTimer then inventoryCapTimer:Cancel(); inventoryCapTimer=nil end
     pendingGUID=nil; pendingQueueIndex=0
     if inspectButton then inspectButton:SetText(C.L.riInspectButton); inspectButton:Enable() end
-    if not (InspectFrame and InspectFrame:IsShown() and InspectFrame.IsInspecting and InspectFrame:IsInspecting()) then ClearInspectPlayer() end
+    if not IsBlizzardInspectActive() then ClearInspectPlayer() end
 end
 local function InspectNext()
     queueIndex=queueIndex+1; local unit=queue[queueIndex]
@@ -245,7 +273,7 @@ local function InspectNext()
     pendingTimeout=C_Timer.NewTimer(5,function()
         pendingTimeout=nil; if not inspecting or pendingGUID~=requestGUID or queueIndex~=requestQueueIndex then return end
         pendingGUID=nil; pendingQueueIndex=0
-        if not (InspectFrame and InspectFrame:IsShown() and InspectFrame.IsInspecting and InspectFrame:IsInspecting()) then ClearInspectPlayer() end
+        if not IsBlizzardInspectActive() then ClearInspectPlayer() end
         if requestGUID then results[requestGUID]={status="timeout"} end
         RefreshList(); C_Timer.After(1.8,InspectNext)
     end)
@@ -255,7 +283,7 @@ local function FinalizeInspect(unit,guid)
     if inventorySettleTimer then inventorySettleTimer:Cancel(); inventorySettleTimer=nil end; if inventoryCapTimer then inventoryCapTimer:Cancel(); inventoryCapTimer=nil end
     pendingGUID=nil; pendingQueueIndex=0
     if unit and UnitExists(unit) and UnitGUID(unit)==guid then results[guid]=CollectUnitData(unit) end
-    if not (InspectFrame and InspectFrame:IsShown() and InspectFrame.IsInspecting and InspectFrame:IsInspecting()) then ClearInspectPlayer() end
+    if not IsBlizzardInspectActive() then ClearInspectPlayer() end
     RefreshList(); C_Timer.After(1.8,InspectNext)
 end
 local function OnInspectReady(guid)
@@ -272,6 +300,10 @@ local function OnUnitInventoryChanged(unit)
 end
 local function StartInspectQueue()
     if inspecting then return end
+    if IsBlizzardInspectActive() then
+        if statusText then statusText:SetText(C.L.riStatusWaiting) end
+        return
+    end
     if not (IsInRaid() or IsInGroup()) then print("|cffff6666[CC RaidTools]|r "..C.L.riNeedGroup); return end
     queue=GetGroupUnits(); queueIndex=0; pendingGUID=nil; pendingQueueIndex=0; wipe(results); inspecting=true
     if inspectButton then inspectButton:SetText(C.L.riInspectingButton); inspectButton:Disable() end; if statusText then statusText:SetText("") end
