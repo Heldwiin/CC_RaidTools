@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.2.4
+
+### Performance / Focus
+
+- Correction d'un freeze important à la sortie de combat.
+- Le binding Focus n'effectue plus un scan complet de toutes les frames WoW à chaque `PLAYER_REGEN_ENABLED`.
+- Le parcours des unit frames reste réservé aux moments où la configuration des bindings doit réellement être appliquée.
+
+### Raid Inspect
+
+- Correction du comptage des sockets gemmes lorsque certaines sockets sont remplies et d'autres vides.
+- Les sockets sont maintenant évaluées individuellement afin d'éviter les faux résultats.
+- Protection renforcée autour de l'état d'inspection Blizzard natif.
+
+### AutoLog
+
+- Récupération de l'ownership du combat log après `/reload` lorsque le log est déjà actif dans une instance ciblée.
+
+### Base de données
+
+- Suppression de l'ancienne migration `AutoPromoteDB` → `CCRaidToolsDB`.
+- `CCRaidToolsDB` est désormais la seule SavedVariable utilisée par l'addon.
 ## 1.2.3
 
 ### Interface / versioning
