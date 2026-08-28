@@ -33,7 +33,15 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.2**
+**1.2.3**
+
+### v1.2.3
+
+#### Interface
+
+- Suppression du message de bienvenue/version affiché dans le chat au chargement de l'addon.
+- Affichage de la version directement dans la fenêtre `/ccrt`.
+- La version affichée dans l'interface est maintenant récupérée automatiquement depuis le fichier `.toc`, évitant les numéros de version codés en dur.
 
 ### v1.2.2
 
