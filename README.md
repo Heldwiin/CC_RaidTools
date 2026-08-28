@@ -33,7 +33,30 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.3**
+**1.2.4**
+
+### v1.2.4
+
+#### Performance / Focus
+
+- Correction d'un freeze important à la sortie de combat.
+- Le binding Focus n'effectue plus un scan complet de toutes les frames WoW à chaque `PLAYER_REGEN_ENABLED`.
+- Le parcours des unit frames reste réservé aux moments où la configuration des bindings doit réellement être appliquée.
+
+#### Raid Inspect
+
+- Correction du comptage des sockets gemmes lorsque certaines sockets sont remplies et d'autres vides.
+- Les sockets sont maintenant évaluées individuellement afin d'éviter les faux résultats.
+- Protection renforcée autour de l'état d'inspection Blizzard natif.
+
+#### AutoLog
+
+- Récupération de l'ownership du combat log après `/reload` lorsque le log est déjà actif dans une instance ciblée.
+
+#### Base de données
+
+- Suppression de l'ancienne migration `AutoPromoteDB` → `CCRaidToolsDB`.
+- `CCRaidToolsDB` est désormais la seule SavedVariable utilisée par l'addon.
 
 ### v1.2.3
 
@@ -42,6 +65,29 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - Suppression du message de bienvenue/version affiché dans le chat au chargement de l'addon.
 - Affichage de la version directement dans la fenêtre `/ccrt`.
 - La version affichée dans l'interface est maintenant récupérée automatiquement depuis le fichier `.toc`, évitant les numéros de version codés en dur.
+
+#### Marks Bar
+
+- Throttle de la vérification mouseover à 30 ms afin d'éviter un `IsMouseOver()` à chaque frame.
+- Le throttle est appliqué directement dans `MarksBar.lua` dès la création de la barre.
+- Suppression du fichier `MarksBarPerformance.lua`, devenu inutile après intégration du correctif dans le module principal.
+
+#### Raid Inspect
+
+- Correction du comptage des sockets et réduction des faux positifs.
+- Les résultats d'inspection sont indexés par GUID afin d'éviter les données obsolètes après un changement de roster.
+- Gestion des changements de composition du groupe pendant une inspection.
+
+#### Focus
+
+- Correction du Focus avec Shift + clic sur les unit frames sécurisées, notamment la Target et les Boss Frames.
+- Support des boutons configurés sur les unit frames sans casser leurs actions sécurisées existantes.
+- Restauration des attributs d'origine lors de la désactivation ou du changement de configuration.
+
+#### Invite Tool
+
+- Lorsqu'un joueur envoie le mot-clé d'invitation à un membre qui n'est pas leader, la demande utilise désormais la mécanique native Blizzard **Suggest Invite**.
+- Le comportement est identique à l'action **Suggérer une invitation** du menu contextuel de WoW.
 
 ### v1.2.2
 
@@ -60,15 +106,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 #### Invite Tool
 
-- Lorsqu'un joueur envoie le mot-clé d'invitation à un membre qui n'est pas leader, la demande utilise désormais la mécanique native Blizzard **Suggest Invite**.
-- Le comportement est identique à l'action **Suggérer une invitation** du menu contextuel de WoW.
-- Suppression du système de popup/communication maison pour ce cas.
+- Utilisation de la mécanique native Blizzard **Suggest Invite** lorsqu'un membre non-leader reçoit une demande d'invitation.
 
 ### v1.2.1 — Raid Inspect
 
 - Correction de la détection des enchantements sur les équipements inspectés.
 - Détection native des enchantements permanents via les données structurées des tooltips Blizzard, avec fallback textuel pour les états/API où le type structuré n'est pas disponible.
-- Suppression des faux positifs où un joueur correctement enchanté pouvait être signalé comme non enchanté.
+- Correction des faux positifs où un joueur correctement enchanté pouvait être signalé comme non enchanté.
 - Conservation de la file d'inspection temporisée et des protections contre les inspections sans réponse et les événements `INSPECT_READY` tardifs.
 
 ### v1.2.0 — Raid Inspect
