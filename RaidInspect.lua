@@ -20,9 +20,10 @@ local inventorySettleTimer
 local inventoryCapTimer
 local inspectRetryTimer
 local inspectRetryCount = 0
-local INSPECT_SETTLE_DELAY = 1.2
-local INSPECT_CAP_DELAY = 4.0
-local INSPECT_MAX_RETRIES = 3
+local pendingSnapshot
+local INSPECT_SETTLE_DELAY = 0.45
+local INSPECT_RECHECK_DELAY = 0.35
+local INSPECT_CAP_DELAY = 2.5
 
 local inspectButton
 local statusText
@@ -493,7 +494,20 @@ local function RefreshList()
     end
 end
 
-local CancelInspectSettleTimers
+local function CancelInspectSettleTimers()
+    if inventorySettleTimer then
+        inventorySettleTimer:Cancel()
+        inventorySettleTimer = nil
+    end
+    if inventoryCapTimer then
+        inventoryCapTimer:Cancel()
+        inventoryCapTimer = nil
+    end
+    if inspectRetryTimer then
+        inspectRetryTimer:Cancel()
+        inspectRetryTimer = nil
+    end
+end
 
 local function StopInspectQueue()
     inspecting = false
@@ -506,6 +520,8 @@ local function StopInspectQueue()
 
     pendingGUID = nil
     pendingQueueIndex = 0
+    pendingSnapshot = nil
+    inspectRetryCount = 0
 
     if inspectButton then
         inspectButton:SetText(C.L.riInspectButton)
@@ -568,8 +584,8 @@ local function InspectNext()
 
         pendingGUID = nil
         pendingQueueIndex = 0
-        CancelInspectSettleTimers()
-
+        pendingSnapshot = nil
+        inspectRetryCount = 0
         if not IsBlizzardInspectActive() then
             ClearInspectPlayer()
         end
@@ -583,34 +599,7 @@ local function InspectNext()
     end)
 end
 
-local function BuildInspectSignature(data)
-    if not data then
-        return ""
-    end
-
-    local enchants = table.concat(data.missingEnchantSlots or {}, "|")
-    local gems = table.concat(data.missingGemSlots or {}, "|")
-    return tostring(data.ilvl or 0) .. ";" ..
-        tostring(data.missingEnchants or 0) .. ";" .. enchants .. ";" ..
-        tostring(data.missingGems or 0) .. ";" .. gems
-end
-
-CancelInspectSettleTimers = function()
-    if inventorySettleTimer then
-        inventorySettleTimer:Cancel()
-        inventorySettleTimer = nil
-    end
-    if inventoryCapTimer then
-        inventoryCapTimer:Cancel()
-        inventoryCapTimer = nil
-    end
-    if inspectRetryTimer then
-        inspectRetryTimer:Cancel()
-        inspectRetryTimer = nil
-    end
-end
-
-local function FinalizeInspect(unit, guid)
+local function FinalizeInspect(unit, guid, data)
     if not inspecting or pendingGUID ~= guid or queue[queueIndex] ~= unit or pendingQueueIndex ~= queueIndex then
         return
     end
@@ -619,8 +608,12 @@ local function FinalizeInspect(unit, guid)
 
     pendingGUID = nil
     pendingQueueIndex = 0
+    pendingSnapshot = nil
+    inspectRetryCount = 0
 
-    if unit and UnitExists(unit) and UnitGUID(unit) == guid then
+    if data then
+        results[guid] = data
+    elseif unit and UnitExists(unit) and UnitGUID(unit) == guid then
         results[guid] = CollectUnitData(unit)
     end
 
@@ -638,40 +631,38 @@ local function TryFinalizeInspect(unit, guid)
     end
 
     local data = CollectUnitData(unit)
-    local signature = BuildInspectSignature(data)
 
-    -- Take more than one snapshot. This is deliberate: INSPECT_READY does not
-    -- guarantee that every remote inventory/tooltip field has settled at the
-    -- exact moment the event fires.
-    if inspectRetryCount > 0 and signature == (data._previousSignature or "") then
-        results[guid] = data
-        FinalizeInspect(unit, guid)
+    if not pendingSnapshot then
+        -- First snapshot is intentionally fast. Keep it and perform one
+        -- re-read shortly afterwards because remote inspect data can still be
+        -- settling when INSPECT_READY fires.
+        pendingSnapshot = data
+        inspectRetryCount = 1
+
+        inspectRetryTimer = C_Timer.NewTimer(INSPECT_RECHECK_DELAY, function()
+            inspectRetryTimer = nil
+            TryFinalizeInspect(unit, guid)
+        end)
         return
     end
 
-    data._previousSignature = signature
-    inspectRetryCount = inspectRetryCount + 1
-
-    if inspectRetryCount >= INSPECT_MAX_RETRIES then
-        results[guid] = data
-        FinalizeInspect(unit, guid)
-        return
-    end
-
-    inspectRetryTimer = C_Timer.NewTimer(0.45, function()
-        inspectRetryTimer = nil
-        TryFinalizeInspect(unit, guid)
-    end)
+    -- The second snapshot is authoritative. It replaces the first snapshot
+    -- so a transient stale tooltip/enchant state is less likely to leak into
+    -- the final result, without requiring a third full equipment scan.
+    pendingSnapshot = nil
+    inspectRetryCount = 0
+    FinalizeInspect(unit, guid, data)
 end
 
 local function ScheduleInventorySettle(unit, guid)
     CancelInspectSettleTimers()
 
+    pendingSnapshot = nil
     inspectRetryCount = 0
 
-    -- Remote inspect data can arrive in several pieces. Wait longer than the
-    -- previous 0.8s delay, then take repeated snapshots before accepting the
-    -- result. The cap guarantees that a broken inspect never stalls the queue.
+    -- Keep the initial wait short. A single re-read is enough to catch the
+    -- transient stale tooltip/enchant state without making the whole raid
+    -- inspection noticeably slower.
     inventorySettleTimer = C_Timer.NewTimer(INSPECT_SETTLE_DELAY, function()
         inventorySettleTimer = nil
         TryFinalizeInspect(unit, guid)
@@ -690,10 +681,14 @@ local function OnInspectReady(guid)
 
     local unit = queue[queueIndex]
 
+    if inventoryCapTimer then
+        inventoryCapTimer:Cancel()
+    end
+
     ScheduleInventorySettle(unit, guid)
 
     -- Safety cap: never leave a player stuck in the inspection queue because
-    -- UNIT_INVENTORY_CHANGED or tooltip data never settles.
+    -- inventory data never settles.
     inventoryCapTimer = C_Timer.NewTimer(INSPECT_CAP_DELAY, function()
         inventoryCapTimer = nil
         if inspecting and pendingGUID == guid and queue[queueIndex] == unit then
@@ -738,6 +733,7 @@ local function StartInspectQueue()
         inspectButton:SetText(C.L.riInspectingButton)
         inspectButton:Disable()
     end
+
     if statusText then
         statusText:SetText("")
     end
@@ -817,7 +813,7 @@ eventFrame:SetScript("OnEvent", function(_, event, arg1)
         -- A roster change invalidates an active queue because party/raid unit
         -- tokens may now refer to different GUIDs. Once the scan has finished,
         -- retain GUID-keyed results so a harmless roster refresh does not erase
-        -- the completed inspection from the UI.
+        -- completed inspections from the UI.
         if inspecting then
             StopInspectQueue()
             wipe(results)
