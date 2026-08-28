@@ -206,14 +206,20 @@ local function Invite(message, sender)
     if IsInGroup() and not UnitIsGroupLeader("player") and not UnitIsGroupAssistant("player") then
         local leaderName = GetGroupLeaderName()
         if leaderName then
-            -- If the leader also has CC RaidTools, they get an in-game
-            -- confirmation popup with an Invite button. The normal whisper is
-            -- also sent so this remains useful when the leader does not have
-            -- the addon installed.
+            -- Route the request through the group/raid addon channel. The previous
+            -- implementation used a WHISPER addon message, but the leader's
+            -- CHAT_MSG_ADDON handler cannot reliably receive that path in all
+            -- Midnight contexts. The regular whisper remains a fallback when the
+            -- addon message is unavailable (for example, the leader has no addon).
+            local sent = false
             if C_ChatInfo and C_ChatInfo.SendAddonMessage then
-                C_ChatInfo.SendAddonMessage(ADDON_PREFIX, INVITE_REQUEST .. ":" .. sender, "WHISPER", leaderName)
+                local channel = IsInRaid() and "RAID" or "PARTY"
+                local result = C_ChatInfo.SendAddonMessage(ADDON_PREFIX, INVITE_REQUEST, channel)
+                sent = (result == nil or result == 0)
             end
-            WhisperLeader(leaderName, sender)
+            if not sent then
+                WhisperLeader(leaderName, sender)
+            end
         end
         return
     end
@@ -271,7 +277,7 @@ e:SetScript("OnEvent", function(_, ev, ...)
         Invite(msg, sender)
     elseif ev == "CHAT_MSG_ADDON" then
         local prefix, message, channel, sender = ...
-        if prefix ~= ADDON_PREFIX or channel ~= "WHISPER" then
+        if prefix ~= ADDON_PREFIX or (channel ~= "PARTY" and channel ~= "RAID") then
             return
         end
         if issecretvalue and (issecretvalue(message) or issecretvalue(sender)) then
@@ -280,9 +286,8 @@ e:SetScript("OnEvent", function(_, ev, ...)
         if not UnitIsGroupLeader("player") then
             return
         end
-        local requester = message and message:match("^" .. INVITE_REQUEST .. ":(.+)$")
-        if requester then
-            QueueLeaderSuggestion(requester)
+        if message == INVITE_REQUEST then
+            QueueLeaderSuggestion(sender)
         end
     end
 end)
