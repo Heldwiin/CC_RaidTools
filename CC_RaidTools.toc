@@ -4,16 +4,18 @@
 ## Author: Heldwiin
 ## Version: 1.2.3
 ## IconTexture: Interface\AddOns\CC_RaidTools\TexturesGUI\logo.png
-## SavedVariables: AutoPromoteDB
+## SavedVariables: CCRaidToolsDB, AutoPromoteDB
 
 Locales.lua
 CC_RaidTools.lua
+DBMigration.lua
 AutoPromote.lua
 AutoLog.lua
 ReadyCheck.lua
 InviteTool.lua
 Focus.lua
 MarksBar.lua
+MarksBarPerformance.lua
 RaidInspect.lua
 GuildBranding.lua
 ModuleIcons.lua
