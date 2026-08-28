@@ -21,10 +21,105 @@ local focusButton = CreateFrame("CheckButton", "CCRTFocusButton", UIParent, "Sec
 focusButton:SetAttribute("type1", "macro")
 focusButton:SetAttribute("macrotext", "/focus mouseover")
 
+-- Unit frames are themselves secure buttons. A global override binding can work
+-- over the world, but a protected unit frame may consume its mouse click first.
+-- In that case the reliable secure path is to put the configured focus action
+-- directly on the unit button's modified click attribute:
+--   shift-type1 = focus
+--   shift-type2 = focus
+-- etc.
+--
+-- We discover secure unit buttons out of combat and save the original modified
+-- attribute before changing it. This makes the feature work with Blizzard,
+-- EUI and other SecureUnitButtonTemplate-based unit frames, including boss
+-- frames, without replacing their normal unmodified clicks.
+local unitFrameBindings = setmetatable({}, { __mode = "k" })
+
+local function UnitFocusAttributeName()
+    if not modifier or not mouseButton then
+        return nil
+    end
+    return string.lower(modifier) .. "-type" .. tostring(mouseButton)
+end
+
+local function RestoreUnitFrameBindings()
+    if InCombatLockdown() then
+        return
+    end
+    for frame, info in pairs(unitFrameBindings) do
+        if frame and info and info.attribute then
+            pcall(frame.SetAttribute, frame, info.attribute, info.original)
+        end
+        unitFrameBindings[frame] = nil
+    end
+end
+
+local function ApplyUnitFrameBindings()
+    if InCombatLockdown() or not enabled then
+        return
+    end
+
+    local attribute = UnitFocusAttributeName()
+    if not attribute or not EnumerateFrames then
+        return
+    end
+
+    local frame = EnumerateFrames()
+    while frame do
+        -- Secure unit frames expose their unit through the secure "unit"
+        -- attribute. Only Button widgets are candidates; this avoids touching
+        -- ordinary decorative frames while still catching custom target/boss
+        -- frames created by unit-frame addons.
+        local isButton = false
+        local unit = nil
+        local ok = pcall(function()
+            isButton = frame:IsObjectType("Button")
+            unit = frame:GetAttribute("unit")
+        end)
+
+        if ok and isButton and unit and type(unit) == "string" then
+            local already = unitFrameBindings[frame]
+            if not already then
+                local original
+                local gotOriginal = pcall(function()
+                    original = frame:GetAttribute(attribute)
+                end)
+                if gotOriginal then
+                    local changed = pcall(frame.SetAttribute, frame, attribute, "focus")
+                    if changed then
+                        unitFrameBindings[frame] = {
+                            attribute = attribute,
+                            original = original,
+                        }
+                    end
+                end
+            elseif already.attribute ~= attribute then
+                -- The binding configuration changed since the last sweep.
+                -- Restore the old attribute before applying the new one.
+                pcall(frame.SetAttribute, frame, already.attribute, already.original)
+                unitFrameBindings[frame] = nil
+                local original
+                local gotOriginal = pcall(function()
+                    original = frame:GetAttribute(attribute)
+                end)
+                if gotOriginal and pcall(frame.SetAttribute, frame, attribute, "focus") then
+                    unitFrameBindings[frame] = {
+                        attribute = attribute,
+                        original = original,
+                    }
+                end
+            end
+        end
+
+        frame = EnumerateFrames(frame)
+    end
+end
+
 local function ApplyFocusBinding()
     if InCombatLockdown() then
         return
     end
+    RestoreUnitFrameBindings()
     if not enabled then
         ClearOverrideBindings(focusButton)
         previousModifier = nil
@@ -44,6 +139,7 @@ local function ApplyFocusBinding()
     SetOverrideBindingClick(focusButton, true, newKey, "CCRTFocusButton")
     previousModifier = modifier
     previousMouseButton = mouseButton
+    ApplyUnitFrameBindings()
 end
 
 local function SaveFocusSettings()
@@ -206,6 +302,7 @@ C.RegisterModule("Focus", BuildUI, RefreshUI)
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("ADDON_LOADED")
+events:RegisterEvent("PLAYER_ENTERING_WORLD")
 events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == "CC_RaidTools" then
@@ -224,7 +321,7 @@ events:SetScript("OnEvent", function(_, event, arg1)
         AutoPromoteDB.focusMouseButton = mouseButton
         ApplyFocusBinding()
         RefreshUI()
-    elseif event == "PLAYER_REGEN_ENABLED" then
+    elseif event == "PLAYER_REGEN_ENABLED" or event == "PLAYER_ENTERING_WORLD" then
         ApplyFocusBinding()
     end
 end)
