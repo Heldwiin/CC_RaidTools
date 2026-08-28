@@ -1,5 +1,6 @@
 -- CC RaidTools - Core
 local ADDON_NAME = "CC_RaidTools"
+local ADDON_VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version")) or "?"
 local C = CCRT or {}
 CCRT = C
 C.modules = C.modules or {}
@@ -293,7 +294,7 @@ function C.BuildMainFrame()
     RestoreMainFramePosition()
     local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOP", 0, -7)
-    title:SetText("CC RaidTools")
+    title:SetText("CC RaidTools v" .. ADDON_VERSION)
     title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
     local close = CreateFrame("Button", nil, mainFrame)
     close:SetSize(22, 22)
@@ -426,6 +427,5 @@ coreEvents:RegisterEvent("ADDON_LOADED")
 coreEvents:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
         C.InitDB()
-        print(C.L.addonLoaded:format("1.2.1"))
     end
 end)
