@@ -4,11 +4,10 @@
 ## Author: Heldwiin
 ## Version: 1.2.3
 ## IconTexture: Interface\AddOns\CC_RaidTools\TexturesGUI\logo.png
-## SavedVariables: CCRaidToolsDB, AutoPromoteDB
+## SavedVariables: CCRaidToolsDB
 
 Locales.lua
 CC_RaidTools.lua
-DBMigration.lua
 AutoPromote.lua
 AutoLog.lua
 ReadyCheck.lua
