@@ -4,7 +4,6 @@
 local C = CCRT
 
 local startedByAddon = false
-local recoveringOwnership = false
 local lastStartAttempt = 0
 local lastStopAttempt = 0
 
@@ -18,18 +17,25 @@ local function IsLoggingActive()
     return false
 end
 
+-- WoW does not expose who enabled combat logging. Persist only CC RaidTools'
+-- own state so a reload can resume a log that this addon started, without
+-- claiming a log that was already active.
+local function SetOwnership(owned)
+    startedByAddon = owned and true or false
+    C.InitDB()
+    AutoPromoteDB.logging.ccrtOwnsCombatLog = startedByAddon
+end
+
 local function StartLogging()
     local now = GetTime()
 
-    -- Ownership is session-local. SavedVariables must never be used to decide
-    -- whether this addon started the current combat log session.
     if startedByAddon then
         if IsLoggingActive() then
             return
         end
 
         -- The log was stopped externally, so release stale ownership.
-        startedByAddon = false
+        SetOwnership(false)
     end
 
     if now - lastStartAttempt < ACTION_COOLDOWN then
@@ -43,8 +49,10 @@ local function StartLogging()
     end
 
     LoggingCombat(true)
-    startedByAddon = true
-    print(C.L.chatPrefix .. C.L.autoLogStarted)
+    if IsLoggingActive() then
+        SetOwnership(true)
+        print(C.L.chatPrefix .. C.L.autoLogStarted)
+    end
 end
 
 local function StopLogging()
@@ -60,8 +68,10 @@ local function StopLogging()
 
     lastStopAttempt = now
     LoggingCombat(false)
-    startedByAddon = false
-    print(C.L.chatPrefix .. C.L.autoLogStopped)
+    if not IsLoggingActive() then
+        SetOwnership(false)
+        print(C.L.chatPrefix .. C.L.autoLogStopped)
+    end
 end
 
 local function IsLoggingTarget()
@@ -98,20 +108,10 @@ local function CheckAutoLog()
     C.InitDB()
 
     if IsLoggingTarget() then
-        if recoveringOwnership and IsLoggingActive() and not startedByAddon then
-            -- A reload resets this local flag while WoW can keep combat logging
-            -- active. Reclaim ownership so AutoLog can stop it when we leave.
-            startedByAddon = true
-            recoveringOwnership = false
-            return
-        end
-
-        recoveringOwnership = false
         StartLogging()
         return
     end
 
-    recoveringOwnership = false
     StopLogging()
 end
 
@@ -198,8 +198,10 @@ events:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == "CC_RaidTools" then
         C.InitDB()
         MigrateDungeonSetting()
-        startedByAddon = false
-        recoveringOwnership = true
+        startedByAddon = AutoPromoteDB.logging.ccrtOwnsCombatLog and true or false
+        if startedByAddon and not IsLoggingActive() then
+            SetOwnership(false)
+        end
         C_Timer.After(2, CheckAutoLog)
         return
     end
