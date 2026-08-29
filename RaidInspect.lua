@@ -748,6 +748,16 @@ local function StartInspectQueue()
         return
     end
 
+    -- Blizzard inspect APIs are protected during combat. Never start an
+    -- inspection queue while in combat; the queue is also cancelled as soon
+    -- as combat starts so it cannot remain stuck waiting for INSPECT_READY.
+    if InCombatLockdown() then
+        if statusText then
+            statusText:SetText(C.L.riCombatBlocked)
+        end
+        return
+    end
+
     if IsBlizzardInspectActive() then
         if statusText then
             statusText:SetText(C.L.riStatusWaiting)
@@ -805,6 +815,9 @@ local function BuildUI(frame)
     inspectButton:SetText(C.L.riInspectButton)
     C.SkinButton(inspectButton)
     inspectButton:SetScript("OnClick", StartInspectQueue)
+    if InCombatLockdown() then
+        inspectButton:Disable()
+    end
 
     statusText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     statusText:SetPoint("LEFT", inspectButton, "RIGHT", 10, 0)
@@ -853,7 +866,29 @@ local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("INSPECT_READY")
 eventFrame:RegisterEvent("UNIT_INVENTORY_CHANGED")
 eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 eventFrame:SetScript("OnEvent", function(_, event, arg1)
+    if event == "PLAYER_REGEN_DISABLED" then
+        if inspecting then
+            StopInspectQueue()
+        end
+        if inspectButton then
+            inspectButton:SetText(C.L.riInspectButton)
+            inspectButton:Disable()
+        end
+        if statusText then
+            statusText:SetText(C.L.riCombatBlocked)
+        end
+        return
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        if inspectButton and not inspecting then
+            inspectButton:SetText(C.L.riInspectButton)
+            inspectButton:Enable()
+        end
+        return
+    end
+
     if event == "INSPECT_READY" then
         OnInspectReady(arg1)
     elseif event == "UNIT_INVENTORY_CHANGED" then
@@ -899,26 +934,30 @@ eventFrame:SetScript("OnEvent", function(_, event, arg1)
             local newIndex = 0
 
             if pendingGUID and currentByGUID[pendingGUID] then
-                newIndex = 1
-                newQueue[1] = currentByGUID[pendingGUID]
+                newIndex = newIndex + 1
+                newQueue[newIndex] = currentByGUID[pendingGUID]
             end
 
             for _, unit in ipairs(currentUnits) do
                 local guid = GetUnitGUID(unit)
-                if guid and guid ~= pendingGUID and not results[guid] then
+                if guid and not results[guid] and guid ~= pendingGUID then
                     newIndex = newIndex + 1
                     newQueue[newIndex] = unit
                 end
             end
 
             queue = newQueue
-            queueIndex = pendingGUID and currentByGUID[pendingGUID] and 1 or 0
-
-            if queueIndex == 0 and #queue > 0 and not pendingGUID then
-                C_Timer.After(0, InspectNext)
+            queueIndex = 0
+            if pendingGUID then
+                for index, unit in ipairs(queue) do
+                    if GetUnitGUID(unit) == pendingGUID then
+                        queueIndex = index - 1
+                        break
+                    end
+                end
             end
+        else
+            RefreshList()
         end
-
-        RefreshList()
     end
 end)
