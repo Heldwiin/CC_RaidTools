@@ -1,0 +1,127 @@
+name: Release CC RaidTools
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+    branches:
+      - "release/**"
+  create:
+
+permissions:
+  contents: write
+
+jobs:
+  validate-package-release:
+    if: github.event_name == 'push' || (github.event_name == 'create' && github.ref_type == 'branch' && startsWith(github.ref_name, 'release/'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Resolve release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_NAME}" == release/* ]]; then
+            version="${GITHUB_REF_NAME#release/}"
+            version="${version#v}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v$version" >> "$GITHUB_ENV"
+
+      - name: Install Lua 5.1 compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.1
+
+      - name: Validate Lua syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=( *.lua )
+          test ${#files[@]} -gt 0
+          for file in "${files[@]}"; do
+            echo "Checking $file"
+            luac5.1 -p "$file"
+          done
+
+      - name: Validate TOC and package file list
+        shell: bash
+        run: |
+          set -euo pipefail
+          toc="CC_RaidTools.toc"
+          grep -Fxq "## Version: ${VERSION}" "$toc"
+          grep -Fxq '## Interface: 120100' "$toc"
+          awk 'NF && $1 !~ /^##/ && $1 !~ /^#/ {print $1}' "$toc" > /tmp/toc-files.txt
+          while IFS= read -r file; do
+            test -f "$file" || { echo "Missing TOC file: $file"; exit 1; }
+          done < /tmp/toc-files.txt
+
+      - name: Build WowUp-compatible ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf package
+          mkdir -p package/CC_RaidTools
+          cp -p CC_RaidTools.toc package/CC_RaidTools/CC_RaidTools.toc
+          while IFS= read -r file; do
+            mkdir -p "package/CC_RaidTools/$(dirname "$file")"
+            cp -p "$file" "package/CC_RaidTools/$file"
+          done < /tmp/toc-files.txt
+          find TexturesGUI -type f -print0 | while IFS= read -r -d '' file; do
+            mkdir -p "package/CC_RaidTools/$(dirname "$file")"
+            cp -p "$file" "package/CC_RaidTools/$file"
+          done
+          (cd package && zip -qr "../CC_RaidTools-${VERSION}.zip" CC_RaidTools)
+
+      - name: Validate WowUp ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "$PWD/CC_RaidTools-${VERSION}.zip" <<'PY'
+          import sys
+          import zipfile
+          path = sys.argv[1]
+          with zipfile.ZipFile(path) as z:
+              names = [name for name in z.namelist() if name]
+          roots = {name.split('/', 1)[0] for name in names}
+          if roots != {"CC_RaidTools"}:
+              raise SystemExit(f"Invalid ZIP root folders: {sorted(roots)}")
+          if "CC_RaidTools/CC_RaidTools.toc" not in names:
+              raise SystemExit("CC_RaidTools.toc is missing from the ZIP")
+          forbidden = {"CC_RaidTools/AGENTS.md", "CC_RaidTools/README.md", "CC_RaidTools/CHANGELOG.md"}
+          found_forbidden = sorted(forbidden.intersection(names))
+          if found_forbidden:
+              raise SystemExit(f"Forbidden documentation files in release ZIP: {found_forbidden}")
+          wrappers = sorted(name for name in names if name.startswith("CC_RaidTools-"))
+          if wrappers:
+              raise SystemExit(f"Release wrapper folder/files found in ZIP: {wrappers}")
+          print(f"WowUp ZIP validation OK: {path}")
+          print(f"Entries: {len(names)}")
+          PY
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: CC RaidTools ${{ env.RELEASE_TAG }}
+          body_path: CHANGELOG.md
+          files: CC_RaidTools-${{ env.VERSION }}.zip
+          fail_on_unmatched_files: true
+
+      - name: Remove temporary release branch
+        if: startsWith(github.ref_name, 'release/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method DELETE \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${GITHUB_REPOSITORY}/git/refs/heads/${GITHUB_REF_NAME}"
