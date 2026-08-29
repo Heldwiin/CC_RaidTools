@@ -33,7 +33,26 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.4**
+**1.2.5**
+
+### v1.2.5
+
+#### Raid Inspect
+
+- Stabilisation complète de la file d'inspection et des inspections Blizzard.
+- Correction de la détection des enchants et gemmes manquants.
+- Ajout de l'emplacement **Jambières** dans les emplacements inspectés pour les enchantements.
+- Gestion explicite des données d'inspection encore inconnues afin d'éviter les faux `OK`.
+- Amélioration de la revalidation des données de tooltip pour les enchants et les gemmes.
+- Conservation des résultats lors des changements de composition du groupe.
+- Arrêt propre de l'inspection lorsque la fenêtre Raid Inspect est fermée.
+- Correction des états d'inspection pouvant rester bloqués après fermeture de la fenêtre.
+- Amélioration des tooltips affichant les emplacements d'enchants et de gemmes manquants ou encore non confirmés.
+
+#### Stabilité
+
+- Réduction des faux résultats liés aux données de tooltip Blizzard disponibles de façon asynchrone.
+- Renforcement de la gestion des réponses d'inspection tardives et des états incomplets.
 
 ### v1.2.4
 
