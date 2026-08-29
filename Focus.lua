@@ -367,17 +367,17 @@ events:SetScript("OnEvent", function(_, event, arg1)
         AutoPromoteDB.focusModifier = modifier
         AutoPromoteDB.focusMouseButton = mouseButton
 
-        C_Timer.After(1, ApplyFocusBinding)
+        ApplyFocusBinding()
         RefreshUI()
         return
     end
 
     if event == "PLAYER_REGEN_ENABLED" then
-        ApplyFocusBinding()
+        ApplyFocusOverrideBinding()
         return
     end
 
     if event == "PLAYER_ENTERING_WORLD" then
-        C_Timer.After(1, ApplyFocusBinding)
+        ApplyFocusBinding()
     end
 end)
