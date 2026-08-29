@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.2.5
+
+### Raid Inspect — stabilité et fiabilité
+
+- Stabilisation complète de l'inspection du raid après les problèmes de freeze introduits depuis la 1.2.3.
+- L'inspection Raid Inspect reste entièrement déclenchée à la demande.
+- Correction de la gestion de la file d'inspection afin d'éviter les blocages et les états d'inspection persistants.
+- Fermeture de la fenêtre Raid Inspect pendant un scan : l'inspection et ses timers sont maintenant annulés proprement.
+- Gestion des changements de roster pendant une inspection sans réinitialiser inutilement les résultats déjà obtenus.
+- Conservation des résultats par GUID plutôt que par unit token.
+- Correction de la détection des enchantements et des états de tooltip incomplets.
+- Ajout de l'emplacement **Jambières** dans les emplacements inspectés pour les enchantements.
+- Correction de la détection des sockets de gemmes, avec distinction entre sockets remplies, vides et données encore indisponibles.
+- Correction des faux résultats `OK` lorsque les données d'inspection ne sont pas encore suffisamment disponibles.
+- Conservation et fiabilisation des tooltips indiquant les emplacements exacts des enchants et gemmes manquants.
+- Renforcement des protections autour des résultats d'inspection Blizzard asynchrones et des données de tooltip.
+
+### Nettoyage
+
+- Suppression des restes de l'ancien mécanisme de retry devenu inutilisé.
+- Simplification de la gestion des timers d'inspection.
+
 ## 1.2.4
 
 ### Performance / Focus
