@@ -33,7 +33,21 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.5**
+**1.2.6**
+
+### v1.2.6
+
+#### Raid Inspect
+
+- Correction définitive du blocage de Raid Inspect lorsque la fenêtre est fermée pendant une inspection.
+- Annulation propre de la file et des timers d'inspection lors de la fermeture de la fenêtre.
+- Blocage complet du lancement d'une inspection pendant le combat.
+- Arrêt immédiat d'une inspection en cours lors de l'entrée en combat.
+- Le bouton **Inspecter le raid** reste désactivé pendant le combat et est réactivé à la sortie de combat.
+- Stabilisation des résultats lorsque les données Blizzard arrivent en plusieurs étapes.
+- Les résultats `...` ne remplacent plus inutilement des données plus complètes déjà obtenues.
+- Évite les faux états `manquant(s)` / `...` / `OK` liés aux données d'inspection encore incomplètes.
+- Conservation des résultats les plus fiables lorsqu'une seconde passe fournit moins d'informations que la première.
 
 ### v1.2.5
 
@@ -120,7 +134,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 #### Focus
 
 - Correction du Focus avec Shift + clic sur les unit frames sécurisées, notamment la Target et les Boss Frames.
-- Support des boutons configurés sur les unit frames sans casser leurs actions sécurisées existantes.
+- Support des boutons configurés sur les unit frames sans casser leurs actions sécurisées.
 - Restauration des attributs d'origine lors de la désactivation ou du changement de configuration.
 
 #### Invite Tool

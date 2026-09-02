@@ -9,6 +9,7 @@ local ROW_H = 18
 local MAX_SCROLL_HEIGHT = 20 * ROW_H
 
 local inspecting = false
+local combatBlocked = false
 local queue = {}
 local queueIndex = 0
 local results = {} -- keyed by unit GUID, never by party/raid token
@@ -30,7 +31,7 @@ local ENCHANT_SLOTS = {
     INVSLOT_FINGER1,
     INVSLOT_FINGER2,
     INVSLOT_CHEST,
-    INVSLOT_LEGS,      -- Missing from the previous list: leg enchant/armor enchant.
+    INVSLOT_LEGS,
     INVSLOT_FEET,
     INVSLOT_MAINHAND,
     INVSLOT_OFFHAND,
@@ -142,9 +143,6 @@ local function IsOffhandWeapon(unit, slot)
     return ok and classID == Enum.ItemClass.Weapon
 end
 
--- Blizzard exposes one GemSocket line per socket. gemIcon on that line tells
--- us whether that specific socket is occupied. This is important when a piece
--- contains a mixture of filled and empty sockets.
 local function CountEmptySocketsOnSlot(unit, slot)
     if not C_TooltipInfo or not C_TooltipInfo.GetInventoryItem then
         return nil
@@ -170,12 +168,6 @@ local function CountEmptySocketsOnSlot(unit, slot)
     for _, line in ipairs(data.lines) do
         if line.type == gemSocketType then
             socketCount = socketCount + 1
-
-            -- Blizzard's current TooltipData GemSocket line exposes either:
-            --   gemIcon   -> occupied socket
-            --   socketType -> empty socket
-            -- Do not infer socket state from GemSocketEnchantment line count:
-            -- that is a separate tooltip line and is not a 1:1 socket map.
             local gemIcon = SafeText(line.gemIcon)
             local socketType = SafeText(line.socketType)
 
@@ -225,9 +217,6 @@ local function HasEnchantFromItemLink(unit, slot)
     return nil
 end
 
--- Inspect data can briefly contain stale item-link information immediately
--- after INSPECT_READY. Prefer Blizzard's structured tooltip result and only
--- use the item link when structured data is unavailable.
 local function HasEnchantOnSlot(unit, slot)
     if C_TooltipInfo and C_TooltipInfo.GetInventoryItem then
         local ok, data = pcall(C_TooltipInfo.GetInventoryItem, unit, slot)
@@ -237,28 +226,17 @@ local function HasEnchantOnSlot(unit, slot)
             local lineTypes = Enum and Enum.TooltipDataLineType
             local permanentEnchantType = lineTypes and lineTypes.ItemEnchantmentPermanent
             if permanentEnchantType then
-                local sawStructuredEnchantData = false
-
                 for _, line in ipairs(data.lines) do
                     if line.type == permanentEnchantType then
                         return true
                     end
 
-                    -- Blizzard/other addons expose the enchant ID directly on
-                    -- ItemEnchantmentPermanent lines in current TooltipData.
                     local enchantID = SafeText(line.enchantID)
-                    if enchantID ~= nil then
-                        sawStructuredEnchantData = true
-                        if tonumber(enchantID) and tonumber(enchantID) > 0 then
-                            return true
-                        end
+                    if enchantID ~= nil and tonumber(enchantID) and tonumber(enchantID) > 0 then
+                        return true
                     end
                 end
 
-                -- A complete tooltip with no enchant line is a confirmed
-                -- unenchanted item. If we did not get enough structured data to
-                -- make that determination, keep it unknown and let the caller
-                -- revalidate instead of reporting a false negative.
                 if #data.lines > 1 then
                     return false
                 end
@@ -506,7 +484,7 @@ local function RefreshRow(index, unit, name)
         row.ilvlText:SetText(tostring(data.ilvl or "?"))
 
         local uncertainEnchants = #(data.uncertainEnchantSlots or {})
-        if (data.missingEnchants or 0) > 0 then
+        if (data.missingEnchants or 0) > 0 and uncertainEnchants == 0 then
             row.enchantsText:SetText("|cffff4444" .. C.L.riMissingCount:format(data.missingEnchants) .. "|r")
         elseif uncertainEnchants > 0 then
             row.enchantsText:SetText("|cffff9900...|r")
@@ -515,7 +493,7 @@ local function RefreshRow(index, unit, name)
         end
 
         local uncertainGems = #(data.uncertainGemSlots or {})
-        if (data.missingGems or 0) > 0 then
+        if (data.missingGems or 0) > 0 and uncertainGems == 0 then
             row.gemsText:SetText("|cffff4444" .. C.L.riMissingCount:format(data.missingGems) .. "|r")
         elseif uncertainGems > 0 then
             row.gemsText:SetText("|cffff9900...|r")
@@ -566,7 +544,11 @@ local function StopInspectQueue()
 
     if inspectButton then
         inspectButton:SetText(C.L.riInspectButton)
-        inspectButton:Enable()
+        if combatBlocked or InCombatLockdown() then
+            inspectButton:Disable()
+        else
+            inspectButton:Enable()
+        end
     end
 
     if not IsBlizzardInspectActive() then
@@ -575,6 +557,10 @@ local function StopInspectQueue()
 end
 
 local function InspectNext()
+    if not inspecting or combatBlocked or InCombatLockdown() then
+        return
+    end
+
     queueIndex = queueIndex + 1
     local unit = queue[queueIndex]
 
@@ -655,9 +641,6 @@ local function FinalizeInspect(unit, guid)
     end
     RefreshList()
 
-    -- Only re-read when the first pass contains a warning or incomplete data.
-    -- A clean, fully-known result stays fast; a suspicious result gets one
-    -- targeted stabilization pass before we trust it.
     local needsRecheck = firstPass and (
         (firstPass.missingEnchants or 0) > 0
         or (firstPass.missingGems or 0) > 0
@@ -668,16 +651,21 @@ local function FinalizeInspect(unit, guid)
 
     if needsRecheck then
         C_Timer.After(0.4, function()
+            if not inspecting or combatBlocked or InCombatLockdown() then
+                return
+            end
             if unit and UnitExists(unit) and UnitGUID(unit) == guid then
                 local secondPass = CollectUnitData(unit)
                 local firstUnknown = #(firstPass.uncertainEnchantSlots or {}) + #(firstPass.uncertainGemSlots or {})
                     + (firstPass.uncertainItemLevel and 1 or 0)
                 local secondUnknown = #(secondPass.uncertainEnchantSlots or {}) + #(secondPass.uncertainGemSlots or {})
                     + (secondPass.uncertainItemLevel and 1 or 0)
+
+                -- Never replace a more complete snapshot with a less complete
+                -- one. If any field is still uncertain, keep the first result
+                -- and let the next explicit scan revalidate it.
                 if secondUnknown < firstUnknown
-                    or (secondPass.missingEnchants or 0) < (firstPass.missingEnchants or 0)
-                    or (secondPass.missingGems or 0) < (firstPass.missingGems or 0)
-                    or firstUnknown == 0 then
+                    or (secondUnknown == 0 and firstUnknown == 0) then
                     results[guid] = secondPass
                     RefreshList()
                 end
@@ -685,7 +673,9 @@ local function FinalizeInspect(unit, guid)
             if not IsBlizzardInspectActive() then
                 ClearInspectPlayer()
             end
-            C_Timer.After(1.8, InspectNext)
+            if inspecting and not combatBlocked and not InCombatLockdown() then
+                C_Timer.After(1.8, InspectNext)
+            end
         end)
         return
     end
@@ -701,8 +691,6 @@ local function ScheduleInventorySettle(unit, guid)
         inventorySettleTimer:Cancel()
     end
 
-    -- Remote inspect data can arrive in several pieces. Give Blizzard a little
-    -- more time than the old 0.3s delay before taking the final snapshot.
     inventorySettleTimer = C_Timer.NewTimer(0.8, function()
         inventorySettleTimer = nil
         FinalizeInspect(unit, guid)
@@ -727,8 +715,6 @@ local function OnInspectReady(guid)
 
     ScheduleInventorySettle(unit, guid)
 
-    -- Safety cap: never leave a player stuck in the inspection queue because
-    -- UNIT_INVENTORY_CHANGED or tooltip data never settles.
     inventoryCapTimer = C_Timer.NewTimer(2.0, function()
         inventoryCapTimer = nil
         FinalizeInspect(unit, guid)
@@ -748,10 +734,7 @@ local function StartInspectQueue()
         return
     end
 
-    -- Blizzard inspect APIs are protected during combat. Never start an
-    -- inspection queue while in combat; the queue is also cancelled as soon
-    -- as combat starts so it cannot remain stuck waiting for INSPECT_READY.
-    if InCombatLockdown() then
+    if combatBlocked or InCombatLockdown() then
         if statusText then
             statusText:SetText(C.L.riCombatBlocked)
         end
@@ -792,9 +775,6 @@ end
 local function BuildUI(frame)
     panelRef = frame
 
-    -- Closing the CC RaidTools window must cancel an active inspection queue.
-    -- Without this, the queue keeps waiting for INSPECT_READY/timers while the
-    -- panel is hidden, leaving the button stuck on "Inspecting..." until /reload.
     frame:SetScript("OnHide", function()
         if inspecting then
             StopInspectQueue()
@@ -815,7 +795,7 @@ local function BuildUI(frame)
     inspectButton:SetText(C.L.riInspectButton)
     C.SkinButton(inspectButton)
     inspectButton:SetScript("OnClick", StartInspectQueue)
-    if InCombatLockdown() then
+    if combatBlocked or InCombatLockdown() then
         inspectButton:Disable()
     end
 
@@ -862,6 +842,8 @@ C.RegisterModule("RaidInspect", BuildUI, function()
     end
 end)
 
+combatBlocked = InCombatLockdown() and true or false
+
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("INSPECT_READY")
 eventFrame:RegisterEvent("UNIT_INVENTORY_CHANGED")
@@ -870,6 +852,7 @@ eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 eventFrame:SetScript("OnEvent", function(_, event, arg1)
     if event == "PLAYER_REGEN_DISABLED" then
+        combatBlocked = true
         if inspecting then
             StopInspectQueue()
         end
@@ -882,6 +865,7 @@ eventFrame:SetScript("OnEvent", function(_, event, arg1)
         end
         return
     elseif event == "PLAYER_REGEN_ENABLED" then
+        combatBlocked = false
         if inspectButton and not inspecting then
             inspectButton:SetText(C.L.riInspectButton)
             inspectButton:Enable()
@@ -895,8 +879,6 @@ eventFrame:SetScript("OnEvent", function(_, event, arg1)
         OnUnitInventoryChanged(arg1)
     elseif event == "GROUP_ROSTER_UPDATE" then
         if inspecting then
-            -- Reconcile the active queue by GUID instead of restarting it.
-            -- partyX/raidX tokens can change when someone joins or leaves.
             local currentUnits = GetGroupUnits()
             local currentByGUID = {}
             local pendingUnit
@@ -912,11 +894,8 @@ eventFrame:SetScript("OnEvent", function(_, event, arg1)
             end
 
             if pendingGUID and pendingUnit then
-                -- Keep the active request alive, but update its unit token.
                 queue[queueIndex] = pendingUnit
             elseif pendingGUID then
-                -- The player being inspected left. Cancel only that request;
-                -- completed results remain valid.
                 if pendingTimeout then
                     pendingTimeout:Cancel()
                     pendingTimeout = nil
@@ -927,9 +906,6 @@ eventFrame:SetScript("OnEvent", function(_, event, arg1)
                 C_Timer.After(0, InspectNext)
             end
 
-            -- Keep the active request first, then append only members that do
-            -- not already have a result. This adds newcomers without rescanning
-            -- everyone who has already been inspected.
             local newQueue = {}
             local newIndex = 0
 
