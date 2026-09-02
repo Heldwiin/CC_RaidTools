@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.6
+
+### Raid Inspect — stabilité et combat
+
+- Correction définitive du blocage de Raid Inspect lorsque la fenêtre est fermée pendant une inspection.
+- Annulation propre de la file et des timers d'inspection lors de la fermeture de la fenêtre.
+- Blocage complet du lancement d'une inspection pendant le combat.
+- Arrêt immédiat d'une inspection en cours lors de l'entrée en combat.
+- Le bouton **Inspecter le raid** reste désactivé pendant le combat et est réactivé à la sortie de combat.
+- Stabilisation des résultats lorsque les données Blizzard arrivent en plusieurs étapes.
+- Les résultats `...` ne remplacent plus inutilement des données plus complètes déjà obtenues.
+- Correction des faux états `manquant(s)` / `...` / `OK` liés aux données d'inspection encore incomplètes.
+- Conservation des résultats les plus fiables lorsqu'une seconde passe fournit moins d'informations que la première.
+
 ## 1.2.5
 
 ### Raid Inspect — stabilité et fiabilité
@@ -44,6 +58,7 @@
 
 - Suppression de l'ancienne migration `AutoPromoteDB` → `CCRaidToolsDB`.
 - `CCRaidToolsDB` est désormais la seule SavedVariable utilisée par l'addon.
+
 ## 1.2.3
 
 ### Interface / versioning
