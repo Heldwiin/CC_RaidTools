@@ -5,6 +5,7 @@ local MODULE_ICONS = {
     AutoPromote = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\AutoPromote.png",
     AutoLog = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\AutoLog.png",
     ReadyCheck = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\ReadyCheck.png",
+    RaidGroups = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\RaidGroups.png",
     InviteTool = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\InviteTool.png",
     Focus = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\Focus.png",
     MarksBar = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\MarksBar.png",

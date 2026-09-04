@@ -1,10 +1,12 @@
 -- CC RaidTools - Ready Check
 local C = CCRT
-local frame, rows, statuses, auraStatuses, responded, hideTimer, auraRefreshTimer
+local frame, rows, statuses, auraStatuses, durabilityStatuses, responded, hideTimer, auraRefreshTimer
 rows = {}
 statuses = {}
 auraStatuses = {}
 responded = {}
+durabilityStatuses = {}
+local DURABILITY_PREFIX = "CCRT_DUR"
 local ROW_H = 20
 local closeScheduled = false
 local ScheduleClose
@@ -252,6 +254,53 @@ local function Ready(v)
     return "|cffff9900WAIT|r"
 end
 
+local function GetDurabilityPercent()
+    local slots = { 1, 2, 3, 4, 5, 9, 6, 10, 7, 8, 11, 12, 13, 14, 15, 16 }
+    local totalCurrent, totalMax = 0, 0
+    for _, slot in ipairs(slots) do
+        local current, maximum = GetInventoryItemDurability(slot)
+        if current and maximum and maximum > 0 then
+            totalCurrent = totalCurrent + current
+            totalMax = totalMax + maximum
+        end
+    end
+    if totalMax == 0 then
+        return 100
+    end
+    return totalCurrent / totalMax * 100
+end
+
+local function SendDurability()
+    local percent = GetDurabilityPercent()
+    local name = UnitName("player")
+    if not name then return end
+    durabilityStatuses[name] = percent
+    durabilityStatuses[C.StripRealm(name)] = percent
+    if not C_ChatInfo or not C_ChatInfo.SendAddonMessage then return end
+    local channel
+    if IsInRaid() then
+        channel = "RAID"
+    elseif IsInGroup() then
+        channel = "PARTY"
+    end
+    if channel then
+        C_ChatInfo.SendAddonMessage(DURABILITY_PREFIX, string.format("%.2f", percent), channel)
+    end
+end
+
+local function DurabilityText(value)
+    if value == nil then return "-" end
+    value = tonumber(value)
+    if not value then return "-" end
+    local text = string.format("%d%%", math.floor(value + 0.5))
+    if value <= 20 then
+        return "|cffff4444" .. text .. "|r"
+    elseif value <= 50 then
+        return "|cffffcc33" .. text .. "|r"
+    end
+    return "|cff66ff66" .. text .. "|r"
+end
+
 local function BuffIcon(row, x, spell)
     local t = row:CreateTexture(nil, "ARTWORK")
     t:SetSize(16, 16)
@@ -276,16 +325,17 @@ local function NewRow(parent, i)
     end
     r.nameText = T(4, 125, "LEFT")
     r.readyText = T(130, 48)
-    r.foodText = T(179, 48)
-    r.flaskText = T(228, 48)
-    r.runeText = T(277, 48)
-    r.vantusText = T(326, 52)
-    r.intIcon = BuffIcon(r, 380, 1459)
-    r.apIcon = BuffIcon(r, 419, 6673)
-    r.druidIcon = BuffIcon(r, 458, 1126)
-    r.stamIcon = BuffIcon(r, 497, 21562)
-    r.shamIcon = BuffIcon(r, 536, 462854)
-    r.bronzeIcon = BuffIcon(r, 575, 364342)
+    r.durabilityText = T(179, 50)
+    r.foodText = T(229, 48)
+    r.flaskText = T(278, 48)
+    r.runeText = T(327, 48)
+    r.vantusText = T(377, 52)
+    r.intIcon = BuffIcon(r, 431, 1459)
+    r.apIcon = BuffIcon(r, 470, 6673)
+    r.druidIcon = BuffIcon(r, 509, 1126)
+    r.stamIcon = BuffIcon(r, 548, 21562)
+    r.shamIcon = BuffIcon(r, 587, 462854)
+    r.bronzeIcon = BuffIcon(r, 626, 364342)
     return r
 end
 
@@ -429,7 +479,7 @@ local function ResizeFrameWidth(group, cols)
     end
     local width
     if group then
-        local content = 326
+        local content = 376
         if cols.intel then
             content = content + 42
         end
@@ -450,7 +500,7 @@ local function ResizeFrameWidth(group, cols)
         end
         width = math.max(450, content + 25)
     else
-        width = 640
+        width = 700
     end
     frame:SetWidth(width)
     if frame.scrollFrame then
@@ -583,16 +633,17 @@ local function BuildFrame()
     frame.header = {
         name = H("0/0", 4, 125, "LEFT"),
         ready = H("Prêt", 130, 48),
-        food = H(C.L.rcColFood, 179, 48),
-        flask = H(C.L.rcColFlask, 228, 48),
-        rune = H(C.L.rcColRune, 277, 48),
-        vantus = H(C.L.rcColVantus, 326, 52),
-        intel = H(C.L.rcColIntel, 380, 38),
-        ap = H(C.L.rcColAP, 419, 38),
-        druid = H(C.L.rcColDruid, 458, 38),
-        stam = H(C.L.rcColStam, 497, 38),
-        sham = H(C.L.rcColSham, 536, 38),
-        bronze = H(C.L.rcColBronze, 575, 48),
+        durability = H("Durabilité", 179, 50),
+        food = H(C.L.rcColFood, 229, 48),
+        flask = H(C.L.rcColFlask, 278, 48),
+        rune = H(C.L.rcColRune, 327, 48),
+        vantus = H(C.L.rcColVantus, 377, 52),
+        intel = H(C.L.rcColIntel, 431, 38),
+        ap = H(C.L.rcColAP, 470, 38),
+        druid = H(C.L.rcColDruid, 509, 38),
+        stam = H(C.L.rcColStam, 548, 38),
+        sham = H(C.L.rcColSham, 587, 38),
+        bronze = H(C.L.rcColBronze, 626, 48),
     }
     frame._ccrtCountText = frame.header.name
     local s = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
@@ -615,10 +666,11 @@ local function LayoutHeaders(group, cols)
     end
     h.name:Show()
     h.ready:Show()
+    h.durability:Show()
     h.food:Show()
     h.flask:Show()
     h.rune:Show()
-    local x = 326
+    local x = 376
     local function S(k, label, w)
         local f = h[k]
         f:ClearAllPoints()
@@ -659,7 +711,7 @@ local function LayoutHeaders(group, cols)
 end
 
 local function LayoutRow(r, group, cols)
-    local x = group and 326 or 380
+    local x = group and 376 or 431
     local function P(icon, show, w)
         icon:ClearAllPoints()
         icon:SetPoint("CENTER", r, "LEFT", x + 19, 0)
@@ -785,6 +837,8 @@ local function Refresh()
             statuses[unit] = api
         end
         r.readyText:SetText(Ready(st))
+        local durName = C.StripRealm(name)
+        r.durabilityText:SetText(DurabilityText(durabilityStatuses[unit] or durabilityStatuses[name] or durabilityStatuses[durName]))
         if st == "ready" then
             ready = ready + 1
         end
@@ -839,6 +893,7 @@ local function Show(starter, force)
     end
     wipe(statuses)
     wipe(auraStatuses)
+    wipe(durabilityStatuses)
     wipe(responded)
     closeScheduled = false
     if hideTimer then
@@ -862,6 +917,7 @@ local function Show(starter, force)
         hideTimer = nil
     end
     frame:Show()
+    SendDurability()
     ResizeFrame()
     Refresh()
     StartCountdown()
@@ -973,6 +1029,9 @@ local function RefreshUI()
     end
 end
 C.RegisterModule("ReadyCheck", BuildUI, RefreshUI)
+if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
+    C_ChatInfo.RegisterAddonMessagePrefix(DURABILITY_PREFIX)
+end
 local e = CreateFrame("Frame")
 for _, ev in ipairs({
     "READY_CHECK",
@@ -981,10 +1040,25 @@ for _, ev in ipairs({
     "UNIT_AURA",
     "GROUP_ROSTER_UPDATE",
     "CHAT_MSG_SYSTEM",
+    "CHAT_MSG_ADDON",
 }) do
     e:RegisterEvent(ev)
 end
-e:SetScript("OnEvent", function(_, ev, a, b)
+e:SetScript("OnEvent", function(_, ev, a, b, c, d)
+    if ev == "CHAT_MSG_ADDON" then
+        local prefix, msg, sender = a, b, d
+        if prefix == DURABILITY_PREFIX and sender and msg then
+            local percent = tonumber(msg)
+            if percent then
+                durabilityStatuses[sender] = percent
+                durabilityStatuses[C.StripRealm(sender)] = percent
+                if frame and frame:IsShown() then
+                    Refresh()
+                end
+            end
+        end
+        return
+    end
     if ev == "CHAT_MSG_SYSTEM" and frame and frame:IsShown() and type(a) == "string" then
         local msg = string.lower(a)
         if msg:find("tout le monde") and msg:find("prêt") or msg:find("everyone") and msg:find("ready") then
@@ -994,6 +1068,10 @@ e:SetScript("OnEvent", function(_, ev, a, b)
     end
     if ev == "READY_CHECK" then
         readyCheckDuration = (tonumber(b) and tonumber(b) > 0) and tonumber(b) or 30
+        -- Always broadcast our own durability, even if this player has disabled
+        -- the local Ready Check window (raidCheckEnabled = false), so everyone
+        -- else's durability column stays accurate.
+        SendDurability()
         Show(a)
     elseif ev == "READY_CHECK_CONFIRM" then
         Update(a, b)

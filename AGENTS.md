@@ -12,17 +12,18 @@ The addon is intentionally lightweight and modular, with no external library dep
 
 Core:
 - `CC_RaidTools.lua` — addon core, SavedVariables, `/ccrt`, main configuration window and shared UI helpers.
-- `DBMigration.lua` — one-release compatibility migration from the legacy `AutoPromoteDB` SavedVariable to `CCRaidToolsDB`.
 
 Gameplay modules:
 - `AutoPromote.lua` — automatic raid-assistant promotion.
 - `AutoLog.lua` — automatic combat logging for configured raid/dungeon difficulties.
-- `ReadyCheck.lua` — custom Ready Check display, readiness state and raid buff/consumable checks.
+- `ReadyCheck.lua` — custom Ready Check display, readiness state, raid buff/consumable checks and player durability (shared between raid members via addon message).
+- `RaidGroups.lua` — raid group organizer: drag & drop between the 8 groups, configurable auto sort (affected groups, number of parts, consecutive/alternating split rule), named presets, in-game sharing and text export/import, and applying the layout to the live raid (leader/assistant only, outside combat).
 - `InviteTool.lua` — whisper keyword invitation system.
 - `Focus.lua` — mouse-button focus helper using secure actions.
-- `MarksBar.lua` — raid target markers and world markers.
-- `MarksBarPerformance.lua` — lightweight mouseover update throttle for the Marks Bar, applied on addon load.
+- `MarksBar.lua` — raid target markers and world markers, including its own throttled mouseover check (see Marks Bar section below).
 - `RaidInspect.lua` — raid/party inspection for item level, enchants and gem sockets.
+
+`DBMigration.lua` and `MarksBarPerformance.lua` no longer exist: the `AutoPromoteDB` → `CCRaidToolsDB` migration and the Marks Bar mouseover throttle were both folded into their respective modules once stabilized (see Changelog 1.2.3/1.2.4). Do not recreate them; keep this document in sync if that ever changes again.
 
 UI/branding:
 - `GuildBranding.lua` — Caelestis Concilium watermark.
@@ -47,13 +48,7 @@ The canonical SavedVariable is:
 
 `CCRaidToolsDB`
 
-Existing installations may still provide the legacy:
-
-`AutoPromoteDB`
-
-During the 1.2.3 migration period, `CC_RaidTools.toc` declares both names so WoW loads the legacy data before `DBMigration.lua` runs. `DBMigration.lua` copies the legacy table to `CCRaidToolsDB` when needed and then aliases `AutoPromoteDB` to the canonical table so existing modules can continue using their current references without a risky rewrite.
-
-**Migration TODO:** after 1.2.3 has been deployed and compatibility is confirmed, remove `AutoPromoteDB` from the `.toc` and remove the compatibility migration/alias. Do not do this before the migration window is intentionally closed.
+`.toc` only declares `CCRaidToolsDB`; the legacy `AutoPromoteDB` migration (introduced in 1.2.3) is complete and was removed in 1.2.4. `CC_RaidTools.lua` still sets `AutoPromoteDB = CCRaidToolsDB` as a permanent in-memory Lua alias (not a SavedVariable) so existing modules can keep referencing `AutoPromoteDB.xxx` internally without a risky rewrite. Do not reintroduce `AutoPromoteDB` as a `.toc` SavedVariable, and do not remove the in-memory alias without first migrating every module that still reads/writes `AutoPromoteDB.*` to `CCRaidToolsDB.*`.
 
 Existing settings include, among others:
 - `names`
@@ -64,6 +59,7 @@ Existing settings include, among others:
 - `marksBar`
 - `logging`
 - `raidCheckEnabled`
+- `raidGroups` (`presets`, `current`, `sortSettings`)
 
 When adding settings:
 1. Initialize the parent table defensively.
@@ -153,7 +149,7 @@ The bar supports:
 - mouseover display
 - saved position
 
-The mouseover display check is throttled by `MarksBarPerformance.lua` and must be applied during `ADDON_LOADED`; it must not depend on opening `/ccrt`.
+The mouseover display check is throttled directly inside `MarksBar.lua` and must be applied during `ADDON_LOADED`; it must not depend on opening `/ccrt`.
 
 Any layout change affecting secure buttons must be deferred outside combat.
 
@@ -176,6 +172,21 @@ If a ticker is used:
 Aura scanning can be expensive. Avoid repeatedly scanning unnecessary aura slots at very high frequency. Prefer event-driven refreshes (`UNIT_AURA`) and a modest fallback ticker when necessary.
 
 Do not assume all aura values are readable; respect WoW secret/protected values.
+
+### Durability
+
+Ready Check also shows each raid/party member's average equipment durability. Each client computes its own percentage from `GetInventoryItemDurability` and broadcasts it via `C_ChatInfo.SendAddonMessage` on a dedicated prefix (`CCRT_DUR`), registered with `C_ChatInfo.RegisterAddonMessagePrefix`. The broadcast is sent as soon as the `READY_CHECK` event fires, not only when the local Ready Check window is shown, so a player who has disabled their own window (`raidCheckEnabled = false`) still reports their durability to everyone else. Received values are read on `CHAT_MSG_ADDON` and kept keyed by both the full and realm-stripped sender name.
+
+## Raid Groups
+
+`RaidGroups.lua` lets the raid leader (or anyone browsing) organize the 8 raid subgroups without leaving `/ccrt`.
+
+- Layout state (`assign[name] = groupNumber`) is drag & drop only; it never touches the live raid until **Appliquer** is clicked.
+- **Appliquer** requires raid leader/assistant and is blocked in combat (`InCombatLockdown()`); it moves players via `SetRaidSubgroup` when the target group has room, and falls back to `SwapRaidSubgroup` when it doesn't. Both are global Blizzard functions (not namespaced under `C_PartyInfo`) and are `#nocombat`.
+- **Tri auto** is configurable (gear icon): which of the 8 groups participate, how many parts to split them into (2-8), and whether the split is consecutive (`1,2,3 vs 4,5,6`) or alternating (`1,3,5 vs 2,4,6`). Groups excluded from the sort keep their current occupants untouched. Settings persist in `CCRaidToolsDB.raidGroups.sortSettings`.
+- Presets are saved/loaded/deleted by name in `CCRaidToolsDB.raidGroups.presets`; the working layout persists across sessions in `CCRaidToolsDB.raidGroups.current`.
+- **Partager** broadcasts the current layout to the raid/party via a dedicated addon message prefix (`CCRT_RG`), chunked to stay under the ~255 character addon message limit and reassembled on receipt. **Exporter**/**Importer** do the same as a copy-pasteable text string, usable outside of a raid. Both paths always land as a new preset on the receiving end — never applied automatically — named after whatever preset name the sender had active.
+- When changing sort/apply logic, re-check `SetRaidSubgroup` / `SwapRaidSubgroup` / `GetRaidRosterInfo` against `wow-ui-source`; their signatures and combat restrictions matter here.
 
 ## AutoLog
 
@@ -261,8 +272,9 @@ Current visual intent:
 - Focus → target icon.
 - Marks Bar → raid marker icon.
 - Raid Inspect → raid inspection / character inspection icon.
+- Raid Groups → dedicated custom crest icon (`TexturesGUI/RaidGroups.png`), commissioned specifically for this module.
 
-Use actual WoW UI textures where possible rather than emoji or text glyphs.
+Use actual WoW UI textures where possible rather than emoji or text glyphs. Raid Groups is the one deliberate exception (custom commissioned art rather than a repurposed Blizzard texture); keep using a real icon asset for any future module rather than emoji/text glyphs.
 
 ## Commands
 
@@ -325,7 +337,18 @@ For Ready Check specifically:
 - verify the window width adapts immediately after group composition changes;
 - close it manually;
 - verify no refresh ticker continues running;
-- start another Ready Check.
+- start another Ready Check;
+- verify each raid member's durability column populates, including a member who has disabled their own Ready Check window.
+
+For Raid Groups specifically:
+- drag a player between two slots and between a slot and the unassigned pool;
+- run Tri auto with default settings and with a custom split (fewer parts, groups excluded, alternating rule);
+- save, load and delete a preset;
+- click Appliquer as leader/assistant outside of combat and verify the live raid subgroups update, including moving into an empty group (no swap partner available);
+- verify Appliquer is refused/disabled in combat and outside of raid/without lead;
+- share a composition in-game and verify it lands as a new preset on another client, named after the sender's active preset name;
+- export a composition, import it back (with and without a manual preset name) and verify the round trip;
+- test with a raid larger than 20/30 players to confirm overflow into groups outside the configured split.
 
 For Marks Bar specifically:
 - test raid markers;
