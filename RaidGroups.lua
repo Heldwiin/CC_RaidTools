@@ -272,10 +272,13 @@ end
 
 -- ===== UI building =====
 
-local function NewSlotFrame(parent, g, s, x, y)
-    local btn = CreateFrame("Button", nil, parent, "BackdropTemplate")
+local function NewSlotFrame(createParent, g, s, x, y)
+    local btn = CreateFrame("Button", nil, createParent, "BackdropTemplate")
     btn:SetSize(TOKEN_W, TOKEN_H)
-    btn:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+    -- Anchored to the pool's bottom edge (not a fixed panel offset) so the
+    -- grid always sits right below the unassigned list, however many rows
+    -- that list wraps to.
+    btn:SetPoint("TOPLEFT", poolContainer, "BOTTOMLEFT", x, y)
     btn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
     btn:SetBackdropColor(0.03, 0.03, 0.04, 0.85)
     btn:SetBackdropBorderColor(0, 0, 0, 1)
@@ -288,14 +291,14 @@ local function NewSlotFrame(parent, g, s, x, y)
     return btn
 end
 
-local function NewGroupColumn(panel, g, x, y)
-    local header = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    header:SetPoint("TOPLEFT", panel, "TOPLEFT", x, y)
+local function NewGroupColumn(createParent, g, x, y)
+    local header = createParent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    header:SetPoint("TOPLEFT", poolContainer, "BOTTOMLEFT", x, y)
     header:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
     groupHeaders[g] = header
     slotFrames[g] = {}
     for s = 1, NUM_SLOTS do
-        slotFrames[g][s] = NewSlotFrame(panel, g, s, x, y - 14 - (s - 1) * (TOKEN_H + 2))
+        slotFrames[g][s] = NewSlotFrame(createParent, g, s, x, y - 14 - (s - 1) * (TOKEN_H + 2))
     end
 end
 
@@ -1285,8 +1288,9 @@ local function BuildUI(panel)
     poolContainer:SetHeight(TOKEN_H + 4)
     poolContainer:EnableMouse(true)
 
-    -- Groups grid: 2 rows x 4 columns
-    local gridTop = -250
+    -- Groups grid: 2 rows x 4 columns, anchored to the pool's bottom edge
+    -- (not a fixed offset) so it never overlaps it, however many rows the
+    -- unassigned list wraps to.
     local colWidth = 118
     local rowGap = 14
     local rowHeight = 14 + NUM_SLOTS * (TOKEN_H + 2) + rowGap
@@ -1294,7 +1298,7 @@ local function BuildUI(panel)
         local col = (g - 1) % 4
         local row = math.floor((g - 1) / 4)
         local x = 10 + col * (colWidth + 6)
-        local y = gridTop - row * rowHeight
+        local y = -10 - row * rowHeight
         NewGroupColumn(panel, g, x, y)
     end
 
@@ -1303,7 +1307,7 @@ local function BuildUI(panel)
     local bottomSpacer = CreateFrame("Frame", nil, panel)
     bottomSpacer:SetSize(4, 4)
     local lastRow = math.floor((NUM_GROUPS - 1) / 4)
-    bottomSpacer:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, gridTop - lastRow * rowHeight - rowHeight - 24)
+    bottomSpacer:SetPoint("TOPLEFT", poolContainer, "BOTTOMLEFT", 10, -10 - lastRow * rowHeight - rowHeight - 24)
 
     frame = panel
     Refresh()
