@@ -42,7 +42,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 #### Raid Groups (nouveau module)
 
 - Organisation des 8 groupes de raid par glisser-déposer.
-- Tri automatique configurable : groupes concernés, nombre de parts (2 à 8), règle de split consécutive ou alternée.
+- Tri automatique configurable : groupes concernés, nombre de splits (1 à 8), règle de split consécutive ou alternée.
 - Presets de composition nommés, persistants après `/reload`.
 - Partage en jeu et export/import texte, toujours enregistrés comme un nouveau preset côté réception.
 - Bouton **Appliquer** pour déplacer réellement les joueurs dans les groupes du raid (chef de raid/assistant, bloqué en combat).
