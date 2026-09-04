@@ -137,7 +137,7 @@ local frFR = {
 
     rgSortSettingsTitle = "Options du tri auto",
     rgSortGroupsLabel = "Groupes concernés par le tri :",
-    rgSortPartsLabel = "Nombre de parts :",
+    rgSortPartsLabel = "Nombre de splits :",
     rgSortRuleLabel = "Règle de split :",
     rgSortRuleConsecutive = "Consécutif (1,2,3)",
     rgSortRuleAlternating = "Alterné (1,3,5)",
@@ -325,7 +325,7 @@ local enUS = {
 
     rgSortSettingsTitle = "Auto sort options",
     rgSortGroupsLabel = "Groups affected by sort:",
-    rgSortPartsLabel = "Number of parts:",
+    rgSortPartsLabel = "Number of splits:",
     rgSortRuleLabel = "Split rule:",
     rgSortRuleConsecutive = "Consecutive (1,2,3)",
     rgSortRuleAlternating = "Alternating (1,3,5)",

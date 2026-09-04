@@ -5,7 +5,7 @@
 ### Nouveau module : Raid Groups
 
 - Ajout du module **Raid Groups** : organisation des 8 groupes de raid par glisser-déposer, directement depuis `/ccrt`.
-- Tri automatique configurable (icône ⚙️) : groupes concernés par le tri, nombre de parts (2 à 8) et règle de split consécutive (`1,2,3 vs 4,5,6`) ou alternée (`1,3,5 vs 2,4,6`). Les groupes exclus du tri conservent leurs occupants actuels.
+- Tri automatique configurable (icône ⚙️) : groupes concernés par le tri, nombre de splits (1 à 8) et règle de split consécutive (`1,2,3 vs 4,5,6`) ou alternée (`1,3,5 vs 2,4,6`). Les groupes exclus du tri conservent leurs occupants actuels.
 - Presets de composition nommés : sauvegarde, chargement et suppression, persistants après `/reload`.
 - Partage en jeu de la composition active à tout le raid/groupe via message d'addon, ainsi qu'export/import sous forme de texte copiable (utilisable hors raid). Dans les deux cas, la composition reçue est toujours enregistrée comme un nouveau preset, jamais appliquée automatiquement, et reprend le nom du preset actif chez l'expéditeur.
 - Bouton **Appliquer** : déplace réellement les joueurs dans les groupes du raid (chef de raid ou assistant uniquement, bloqué en combat), avec déplacement direct si le groupe cible a de la place ou échange sinon.

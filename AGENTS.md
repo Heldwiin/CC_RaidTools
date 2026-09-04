@@ -17,7 +17,7 @@ Gameplay modules:
 - `AutoPromote.lua` — automatic raid-assistant promotion.
 - `AutoLog.lua` — automatic combat logging for configured raid/dungeon difficulties.
 - `ReadyCheck.lua` — custom Ready Check display, readiness state, raid buff/consumable checks and player durability (shared between raid members via addon message).
-- `RaidGroups.lua` — raid group organizer: drag & drop between the 8 groups, configurable auto sort (affected groups, number of parts, consecutive/alternating split rule), named presets, in-game sharing and text export/import, and applying the layout to the live raid (leader/assistant only, outside combat).
+- `RaidGroups.lua` — raid group organizer: drag & drop between the 8 groups, configurable auto sort (affected groups, number of splits, consecutive/alternating split rule), named presets, in-game sharing and text export/import, and applying the layout to the live raid (leader/assistant only, outside combat).
 - `InviteTool.lua` — whisper keyword invitation system.
 - `Focus.lua` — mouse-button focus helper using secure actions.
 - `MarksBar.lua` — raid target markers and world markers, including its own throttled mouseover check (see Marks Bar section below).
@@ -183,7 +183,7 @@ Ready Check also shows each raid/party member's average equipment durability. Ea
 
 - Layout state (`assign[name] = groupNumber`) is drag & drop only; it never touches the live raid until **Appliquer** is clicked.
 - **Appliquer** requires raid leader/assistant and is blocked in combat (`InCombatLockdown()`); it moves players via `SetRaidSubgroup` when the target group has room, and falls back to `SwapRaidSubgroup` when it doesn't. Both are global Blizzard functions (not namespaced under `C_PartyInfo`) and are `#nocombat`.
-- **Tri auto** is configurable (gear icon): which of the 8 groups participate, how many parts to split them into (2-8), and whether the split is consecutive (`1,2,3 vs 4,5,6`) or alternating (`1,3,5 vs 2,4,6`). Groups excluded from the sort keep their current occupants untouched. Settings persist in `CCRaidToolsDB.raidGroups.sortSettings`.
+- **Tri auto** is configurable (gear icon): which of the 8 groups participate, how many splits to divide them into (1-8, where 1 means no split at all — the default), and whether the split is consecutive (`1,2,3 vs 4,5,6`) or alternating (`1,3,5 vs 2,4,6`). Tanks and healers alternate between the splits for balance; DPS ignore the split and simply top up the concerned groups in ascending order, so low-numbered groups fill to capacity before higher ones are touched. Groups excluded from the sort keep their current occupants untouched. Settings persist in `CCRaidToolsDB.raidGroups.sortSettings`.
 - Presets are saved/loaded/deleted by name in `CCRaidToolsDB.raidGroups.presets`; the working layout persists across sessions in `CCRaidToolsDB.raidGroups.current`.
 - **Partager** broadcasts the current layout to the raid/party via a dedicated addon message prefix (`CCRT_RG`), chunked to stay under the ~255 character addon message limit and reassembled on receipt. **Exporter**/**Importer** do the same as a copy-pasteable text string, usable outside of a raid. Both paths always land as a new preset on the receiving end — never applied automatically — named after whatever preset name the sender had active.
 - When changing sort/apply logic, re-check `SetRaidSubgroup` / `SwapRaidSubgroup` / `GetRaidRosterInfo` against `wow-ui-source`; their signatures and combat restrictions matter here.
@@ -342,7 +342,7 @@ For Ready Check specifically:
 
 For Raid Groups specifically:
 - drag a player between two slots and between a slot and the unassigned pool;
-- run Tri auto with default settings and with a custom split (fewer parts, groups excluded, alternating rule);
+- run Tri auto with default settings and with a custom split (fewer splits, groups excluded, alternating rule);
 - save, load and delete a preset;
 - click Appliquer as leader/assistant outside of combat and verify the live raid subgroups update, including moving into an empty group (no swap partner available);
 - verify Appliquer is refused/disabled in combat and outside of raid/without lead;
