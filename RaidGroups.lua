@@ -727,9 +727,27 @@ local function SortGroups()
         nextPart = (nextPart % parts) + 1
     end
 
+    -- DPS don't need to be balanced between sides for a mechanic split, and
+    -- alternating them produced two simultaneously-half-full trailing groups
+    -- (one per side). Instead they just top up the concerned groups in plain
+    -- ascending order, so the low-numbered groups fill up completely before
+    -- any high-numbered one gets touched at all.
+    local function PlaceSequentialAll(name)
+        for _, g in ipairs(concernedGroups) do
+            if TryGroup(g, name) then
+                return
+            end
+        end
+        PlaceOverflow(name)
+    end
+
     for _, role in ipairs(ROLE_ORDER) do
         for _, name in ipairs(buckets[role]) do
-            PlaceAlternating(name)
+            if role == "DAMAGER" then
+                PlaceSequentialAll(name)
+            else
+                PlaceAlternating(name)
+            end
         end
     end
     currentPresetName = nil
