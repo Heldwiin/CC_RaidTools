@@ -1068,6 +1068,10 @@ e:SetScript("OnEvent", function(_, ev, a, b, c, d)
     end
     if ev == "READY_CHECK" then
         readyCheckDuration = (tonumber(b) and tonumber(b) > 0) and tonumber(b) or 30
+        -- Always broadcast our own durability, even if this player has disabled
+        -- the local Ready Check window (raidCheckEnabled = false), so everyone
+        -- else's durability column stays accurate.
+        SendDurability()
         Show(a)
     elseif ev == "READY_CHECK_CONFIRM" then
         Update(a, b)

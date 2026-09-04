@@ -22,6 +22,9 @@ function C.InitDB()
     CCRaidToolsDB.focus = CCRaidToolsDB.focus or {}
     CCRaidToolsDB.marksBar = CCRaidToolsDB.marksBar or {}
     CCRaidToolsDB.logging = CCRaidToolsDB.logging or {}
+    CCRaidToolsDB.raidGroups = CCRaidToolsDB.raidGroups or {}
+    CCRaidToolsDB.raidGroups.presets = CCRaidToolsDB.raidGroups.presets or {}
+    CCRaidToolsDB.raidGroups.current = CCRaidToolsDB.raidGroups.current or {}
     if CCRaidToolsDB.focus.enabled == nil then
         CCRaidToolsDB.focus.enabled = true
     end
@@ -197,9 +200,12 @@ local function ResizeMainFrame(name)
     local panel = mainFrame.modulePanels[name]
     if not panel then return end
     local height = GetModuleHeight(panel)
-    local minimums = { AutoPromote = 690, MarksBar = 350, RaidInspect = 520 }
+    local minimums = { AutoPromote = 690, MarksBar = 350, RaidInspect = 520, RaidGroups = 620 }
     if minimums[name] and height < minimums[name] then height = minimums[name] end
-    if height < 300 then height = 300 end
+    -- Floor tall enough that the left-hand module menu (currently 8 buttons,
+    -- last one anchored at -62 - 7*32 = -286, +28 tall) never gets clipped by
+    -- a module whose own content is short. Bump this if more modules are added.
+    if height < 340 then height = 340 end
     if height > 705 then height = 705 end
     mainFrame:SetHeight(height)
     mainFrame._ccrtLastHeight = height
@@ -229,14 +235,14 @@ function C.BuildMainFrame()
     local divider = mainFrame:CreateTexture(nil, "BORDER"); divider:SetPoint("TOPLEFT", 132, -29); divider:SetPoint("BOTTOMLEFT", 132, 8); divider:SetWidth(1); divider:SetColorTexture(0, 0, 0, 0.9)
     local menuTitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"); menuTitle:SetPoint("TOPLEFT", 8, -37); menuTitle:SetText("Modules"); menuTitle:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
     local content = CreateFrame("Frame", nil, mainFrame); content:SetPoint("TOPLEFT", 133, -31); content:SetPoint("BOTTOMRIGHT", -5, 7); mainFrame.content = content
-    local order = { "AutoPromote", "AutoLog", "ReadyCheck", "InviteTool", "Focus", "MarksBar", "RaidInspect" }
-    local labels = { AutoPromote="Auto Promote", AutoLog="AutoLog", ReadyCheck="Ready Check", InviteTool="Invite Tool", Focus="Focus", MarksBar="Marks Bar", RaidInspect="Raid Inspect" }
+    local order = { "AutoPromote", "AutoLog", "ReadyCheck", "RaidGroups", "InviteTool", "Focus", "MarksBar", "RaidInspect" }
+    local labels = { AutoPromote="Auto Promote", AutoLog="AutoLog", ReadyCheck="Ready Check", RaidGroups="Raid Groups", InviteTool="Invite Tool", Focus="Focus", MarksBar="Marks Bar", RaidInspect="Raid Inspect" }
     local buttons, panels = {}, {}
     local function Select(name)
         currentModuleName = name
         for n, p in pairs(panels) do p:SetShown(n == name) end
         for n, b in pairs(buttons) do SetMenuButtonSkin(b, n == name) end
-        if mainFrame._ccrtWatermark then mainFrame._ccrtWatermark:SetAlpha(name == "RaidInspect" and 0.07 or 1) end
+        if mainFrame._ccrtWatermark then mainFrame._ccrtWatermark:SetAlpha((name == "RaidInspect" or name == "RaidGroups") and 0.07 or 1) end
         local m = C.modules[name]
         if m and m.refresh then m.refresh(panels[name]) end
         if C_Timer and C_Timer.After then C_Timer.After(0, function() if mainFrame and mainFrame:IsShown() then ResizeMainFrame(name) end end) else ResizeMainFrame(name) end
