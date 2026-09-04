@@ -52,8 +52,8 @@ local function EnsureDB()
             s.groups[g] = true
         end
     end
-    if not s.parts or s.parts < 2 or s.parts > NUM_GROUPS then
-        s.parts = 2
+    if not s.parts or s.parts < 1 or s.parts > NUM_GROUPS then
+        s.parts = 1
     end
     if s.rule ~= "consecutive" and s.rule ~= "alternating" then
         s.rule = "consecutive"
@@ -551,7 +551,7 @@ local function EnsureSortSettingsFrame(panel)
     partsLabel:SetTextColor(0.8, 0.8, 0.8)
 
     f.partChips = {}
-    for i, n in ipairs({ 2, 3, 4, 5, 6, 7, 8 }) do
+    for i, n in ipairs({ 1, 2, 3, 4, 5, 6, 7, 8 }) do
         local chip = NewChip(f)
         chip.text:SetText(tostring(n))
         chip:SetPoint("TOPLEFT", partsLabel, "BOTTOMLEFT", (i - 1) * 32, -6)
@@ -708,25 +708,13 @@ local function SortGroups()
         end
     end
 
-    -- partPtr[p] remembers which of the part's groups to try first next, so
-    -- consecutive placements into the same part rotate through all of them.
-    local partPtr = {}
-    for p = 1, parts do
-        partPtr[p] = 1
-    end
+    -- Fill each part's groups in order, to capacity, before moving to the
+    -- next group of that same part (e.g. groups 1,2,3,4 fully before ever
+    -- touching group 5) — never spread thin round-robin across them.
     local function PlaceInPart(p, name)
         local list = PARTS_LIST[p]
-        local len = #list
-        if len == 0 then
-            PlaceOverflow(name)
-            return
-        end
-        local start = partPtr[p]
-        for i = 0, len - 1 do
-            local slot = ((start - 1 + i) % len) + 1
-            local g = list[slot]
+        for _, g in ipairs(list) do
             if TryGroup(g, name) then
-                partPtr[p] = (slot % len) + 1
                 return
             end
         end
