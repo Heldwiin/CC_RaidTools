@@ -9,6 +9,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - AutoLog configurable pour LFR, Normal, Héroïque, Mythique et Donjons (M0 / M+).
 - Fenêtre Ready Check automatique lors d'un appel.
 - Statut dynamique OK / KO / WAIT.
+- Colonne **Durabilité** de l'équipement, partagée entre les membres du raid/groupe.
 - Vérification des consommables : repas, flacon, rune et rune de Vantus.
 - Affichage des buffs de raid Mage (Intel), Guerrier (PA), Druide, Prêtre (Endu), Chaman et Évocateur (Bronze).
 - En groupe 5 joueurs, affichage dynamique uniquement des buffs correspondant aux classes présentes et suppression du check Vantus.
@@ -24,6 +25,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - Invite Tool avec invitation sur mot-clé reçu en chuchotement.
 - Utilisation de la mécanique native Blizzard **Suggest Invite** lorsqu'un membre non-leader reçoit une demande d'invitation.
 - **Raid Inspect** : inspection du groupe/raid avec ilvl moyen, enchants manquants et gemmes non serties.
+- **Raid Groups** : organisation des 8 groupes de raid par glisser-déposer, tri automatique configurable, presets nommés, partage en jeu et export/import texte, application directe des groupes en jeu.
 - Interface personnalisée sombre/transparente avec bordures pixel et branding Caelestis Concilium.
 - Configuration persistante après `/reload`.
 
@@ -33,7 +35,21 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.6**
+**1.2.7**
+
+### v1.2.7
+
+#### Raid Groups (nouveau module)
+
+- Organisation des 8 groupes de raid par glisser-déposer.
+- Tri automatique configurable : groupes concernés, nombre de parts (2 à 8), règle de split consécutive ou alternée.
+- Presets de composition nommés, persistants après `/reload`.
+- Partage en jeu et export/import texte, toujours enregistrés comme un nouveau preset côté réception.
+- Bouton **Appliquer** pour déplacer réellement les joueurs dans les groupes du raid (chef de raid/assistant, bloqué en combat).
+
+#### Ready Check
+
+- Ajout d'une colonne **Durabilité** de l'équipement, colorée selon le seuil et partagée entre les membres du raid/groupe.
 
 ### v1.2.6
 
