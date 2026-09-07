@@ -185,6 +185,7 @@ Ready Check also shows each raid/party member's average equipment durability. Ea
 - **Appliquer** requires raid leader/assistant and is blocked in combat (`InCombatLockdown()`); it moves players via `SetRaidSubgroup` when the target group has room, and falls back to `SwapRaidSubgroup` when it doesn't. Both are global Blizzard functions (not namespaced under `C_PartyInfo`) and are `#nocombat`.
 - **Tri auto** is configurable (gear icon): which of the 8 groups participate, how many splits to divide them into (1-8, where 1 means no split at all — the default), and whether the split is consecutive (`1,2,3 vs 4,5,6`) or alternating (`1,3,5 vs 2,4,6`). Tanks and healers alternate between the splits for balance; DPS ignore the split and simply top up the concerned groups in ascending order, so low-numbered groups fill to capacity before higher ones are touched. Groups excluded from the sort keep their current occupants untouched. Settings persist in `CCRaidToolsDB.raidGroups.sortSettings`.
 - Presets are saved/loaded/deleted by name in `CCRaidToolsDB.raidGroups.presets`; the working layout persists across sessions in `CCRaidToolsDB.raidGroups.current`.
+- The unassigned pool can be sourced from the current raid/party (default) or from the guild roster (`CCRaidToolsDB.raidGroups.poolSource`), so a composition can be prepped ahead of a raid night before anyone has even invited/zoned in. Guild roster data comes from `GetGuildRosterInfo`/`GetNumGuildMembers` (still global, not under `C_GuildInfo`) after requesting a refresh via `C_GuildInfo.GuildRoster()` (throttled ~10s server-side); `GUILD_ROSTER_UPDATE` triggers a re-render. Since guild members outside your group have no unit token, Tri auto treats everyone as DPS (no role awareness) while in guild-source mode. Presets/export/import/share all just store names, so a comp prepped from the guild list loads and applies fine later once people are actually in the raid.
 - **Partager** broadcasts the current layout to the raid/party via a dedicated addon message prefix (`CCRT_RG`), chunked to stay under the ~255 character addon message limit and reassembled on receipt. **Exporter**/**Importer** do the same as a copy-pasteable text string, usable outside of a raid. Both paths always land as a new preset on the receiving end — never applied automatically — named after whatever preset name the sender had active.
 - When changing sort/apply logic, re-check `SetRaidSubgroup` / `SwapRaidSubgroup` / `GetRaidRosterInfo` against `wow-ui-source`; their signatures and combat restrictions matter here.
 
@@ -348,7 +349,8 @@ For Raid Groups specifically:
 - verify Appliquer is refused/disabled in combat and outside of raid/without lead;
 - share a composition in-game and verify it lands as a new preset on another client, named after the sender's active preset name;
 - export a composition, import it back (with and without a manual preset name) and verify the round trip;
-- test with a raid larger than 20/30 players to confirm overflow into groups outside the configured split.
+- test with a raid larger than 20/30 players to confirm overflow into groups outside the configured split;
+- switch the pool source to Guilde while not in a raid, drag guild members into groups, save as a preset, then switch back to Raid once people are grouped and confirm the preset still loads/applies correctly by name.
 
 For Marks Bar specifically:
 - test raid markers;

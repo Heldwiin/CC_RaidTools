@@ -23,6 +23,8 @@ local presetsArrowTex
 local exportFrame
 local importFrame
 local sortSettingsFrame
+local sourceRaidBtn
+local sourceGuildBtn
 
 -- Working assignment table, mirrored into CCRaidToolsDB.raidGroups.current
 -- assign[strippedName] = groupNumber (1-8)
@@ -57,6 +59,9 @@ local function EnsureDB()
     end
     if s.rule ~= "consecutive" and s.rule ~= "alternating" then
         s.rule = "consecutive"
+    end
+    if CCRaidToolsDB.raidGroups.poolSource ~= "raid" and CCRaidToolsDB.raidGroups.poolSource ~= "guild" then
+        CCRaidToolsDB.raidGroups.poolSource = "raid"
     end
 end
 
@@ -140,7 +145,7 @@ local function GetRosterUnits()
     return units
 end
 
-local function RefreshRoster()
+local function RefreshRosterFromRaid()
     wipe(rosterSet)
     wipe(classByName)
     for _, unit in ipairs(GetRosterUnits()) do
@@ -153,6 +158,39 @@ local function RefreshRoster()
                 classByName[short] = class
             end
         end
+    end
+end
+
+-- Pull the pool from the guild roster instead of the current raid/party, so
+-- a composition can be prepped ahead of time before anyone has even
+-- invited/zoned in. Requests a fresh roster (throttled by Blizzard to once
+-- every 10s) and relies on GUILD_ROSTER_UPDATE to refresh once it arrives.
+local function RefreshRosterFromGuild()
+    wipe(rosterSet)
+    wipe(classByName)
+    if not IsInGuild() then
+        return
+    end
+    if C_GuildInfo and C_GuildInfo.GuildRoster then
+        C_GuildInfo.GuildRoster()
+    end
+    local n = GetNumGuildMembers() or 0
+    for i = 1, n do
+        local name, _, _, _, _, _, _, _, _, _, class = GetGuildRosterInfo(i)
+        if name then
+            local short = C.StripRealm(name)
+            rosterSet[short] = true
+            classByName[short] = class
+        end
+    end
+end
+
+local function RefreshRoster()
+    EnsureDB()
+    if CCRaidToolsDB.raidGroups.poolSource == "guild" then
+        RefreshRosterFromGuild()
+    else
+        RefreshRosterFromRaid()
     end
 end
 
@@ -648,15 +686,26 @@ local function SortGroups()
     end
 
     local buckets = { TANK = {}, HEALER = {}, DAMAGER = {} }
-    for _, unit in ipairs(GetRosterUnits()) do
-        if UnitExists(unit) then
-            local name = C.StripRealm(UnitName(unit))
-            if name and not preserved[name] then
-                local role = UnitGroupRolesAssigned and UnitGroupRolesAssigned(unit)
-                if role ~= "TANK" and role ~= "HEALER" then
-                    role = "DAMAGER"
+    if CCRaidToolsDB.raidGroups.poolSource == "guild" then
+        -- No unit tokens to read a role from outside of a real group; treat
+        -- everyone as DPS (the sort still spreads them evenly, just without
+        -- tank/healer awareness).
+        for name in pairs(rosterSet) do
+            if not preserved[name] then
+                table.insert(buckets.DAMAGER, name)
+            end
+        end
+    else
+        for _, unit in ipairs(GetRosterUnits()) do
+            if UnitExists(unit) then
+                local name = C.StripRealm(UnitName(unit))
+                if name and not preserved[name] then
+                    local role = UnitGroupRolesAssigned and UnitGroupRolesAssigned(unit)
+                    if role ~= "TANK" and role ~= "HEALER" then
+                        role = "DAMAGER"
+                    end
+                    table.insert(buckets[role], name)
                 end
-                table.insert(buckets[role], name)
             end
         end
     end
@@ -1093,11 +1142,31 @@ end
 
 -- ===== Refresh (render) =====
 
+local function RefreshSourceButtons()
+    if not sourceRaidBtn or not sourceGuildBtn then
+        return
+    end
+    EnsureDB()
+    local source = CCRaidToolsDB.raidGroups.poolSource
+    local function Style(btn, active)
+        if active then
+            btn:SetBackdropColor(C.BRAND_R * 0.55, C.BRAND_G * 0.55, C.BRAND_B * 0.55, 0.95)
+            btn.text:SetTextColor(1, 1, 1)
+        else
+            btn:SetBackdropColor(0.05, 0.05, 0.06, 0.9)
+            btn.text:SetTextColor(0.7, 0.7, 0.7)
+        end
+    end
+    Style(sourceRaidBtn, source == "raid")
+    Style(sourceGuildBtn, source == "guild")
+end
+
 function Refresh()
     if not frame then
         return
     end
     RefreshRoster()
+    RefreshSourceButtons()
 
     for g = 1, NUM_GROUPS do
         local members = {}
@@ -1288,6 +1357,40 @@ local function BuildUI(panel)
     poolLabel:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
     countText = poolLabel
 
+    -- Source toggle: pull the pool from the current raid/party, or from the
+    -- guild roster to prep a composition ahead of time before anyone is
+    -- even grouped up yet.
+    local function NewSourceChip(text)
+        local btn = CreateFrame("Button", nil, panel, "BackdropTemplate")
+        btn:SetSize(56, 20)
+        btn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+        btn:SetBackdropBorderColor(0, 0, 0, 1)
+        btn.text = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        btn.text:SetPoint("CENTER")
+        btn.text:SetText(text)
+        return btn
+    end
+
+    sourceRaidBtn = NewSourceChip(C.L.rgSourceRaid)
+    sourceRaidBtn:SetPoint("LEFT", poolLabel, "RIGHT", 10, 0)
+    sourceRaidBtn:SetScript("OnClick", function()
+        EnsureDB()
+        CCRaidToolsDB.raidGroups.poolSource = "raid"
+        Refresh()
+    end)
+
+    sourceGuildBtn = NewSourceChip(C.L.rgSourceGuild)
+    sourceGuildBtn:SetPoint("LEFT", sourceRaidBtn, "RIGHT", 4, 0)
+    sourceGuildBtn:SetScript("OnClick", function()
+        EnsureDB()
+        if not IsInGuild() then
+            print(C.L.rgNoGuild)
+            return
+        end
+        CCRaidToolsDB.raidGroups.poolSource = "guild"
+        Refresh()
+    end)
+
     poolContainer = CreateFrame("Frame", nil, panel)
     poolContainer:SetPoint("TOPLEFT", poolLabel, "BOTTOMLEFT", 0, -4)
     poolContainer:SetPoint("RIGHT", panel, "RIGHT", -10, 0)
@@ -1337,6 +1440,7 @@ e:RegisterEvent("PLAYER_ENTERING_WORLD")
 e:RegisterEvent("PLAYER_REGEN_DISABLED")
 e:RegisterEvent("PLAYER_REGEN_ENABLED")
 e:RegisterEvent("CHAT_MSG_ADDON")
+e:RegisterEvent("GUILD_ROSTER_UPDATE")
 e:SetScript("OnEvent", function(_, ev, a, b, c, d)
     if ev == "PLAYER_REGEN_DISABLED" then
         if applyButton then applyButton:Disable() end
