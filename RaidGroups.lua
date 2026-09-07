@@ -240,6 +240,7 @@ local function EnsureGhost()
 end
 
 local Refresh -- forward declaration
+local StartSlotEdit -- forward declaration
 
 local function FindDropTarget()
     for g = 1, NUM_GROUPS do
@@ -338,6 +339,7 @@ local function NewSlotFrame(createParent, g, s, x, y)
     btn.text:SetText("-")
     btn:EnableMouse(true)
     MakeDraggableSlot(btn)
+    btn:SetScript("OnClick", function(self) StartSlotEdit(self) end)
     return btn
 end
 
@@ -917,6 +919,68 @@ local function SkinPopupEditBox(editBox)
     editBox:SetAutoFocus(false)
 end
 
+-- ===== Type a name directly into a slot (instead of only drag & drop) =====
+
+local slotEditBox
+local slotEditTarget
+
+local function EnsureSlotEditBox()
+    if slotEditBox then
+        return slotEditBox
+    end
+    local e = CreateFrame("EditBox", nil, frame, "BackdropTemplate")
+    e:SetFrameStrata("DIALOG")
+    SkinPopupEditBox(e)
+    e:SetMaxLetters(40)
+    e:SetJustifyH("CENTER")
+    e:Hide()
+
+    local function Commit()
+        local target = slotEditTarget
+        if not target then
+            return
+        end
+        slotEditTarget = nil
+        local text = e:GetText()
+        text = text and text:gsub("^%s+", ""):gsub("%s+$", "") or ""
+        text = text ~= "" and C.StripRealm(text) or text
+        local oldMember = target.member
+        if oldMember and oldMember ~= text then
+            assign[oldMember] = nil
+        end
+        if text ~= "" then
+            assign[text] = target.group
+        end
+        e:Hide()
+        SaveCurrent()
+        Refresh()
+    end
+
+    local function Cancel()
+        slotEditTarget = nil
+        e:Hide()
+    end
+
+    e:SetScript("OnEnterPressed", function(self) Commit(); self:ClearFocus() end)
+    e:SetScript("OnEscapePressed", function(self) Cancel(); self:ClearFocus() end)
+    e:SetScript("OnEditFocusLost", Commit)
+
+    slotEditBox = e
+    return e
+end
+
+function StartSlotEdit(slot)
+    local e = EnsureSlotEditBox()
+    slotEditTarget = slot
+    e:ClearAllPoints()
+    e:SetPoint("CENTER", slot, "CENTER", 0, 0)
+    e:SetSize(slot:GetWidth(), slot:GetHeight())
+    e:SetText(slot.member or "")
+    e:Show()
+    e:SetFocus()
+    e:HighlightText()
+end
+
 local function EnsureExportFrame(panel)
     if exportFrame then
         return exportFrame
@@ -1188,7 +1252,7 @@ function Refresh()
     for g = 1, NUM_GROUPS do
         local members = {}
         for name, grp in pairs(assign) do
-            if grp == g and rosterSet[name] then
+            if grp == g then
                 members[#members + 1] = name
             end
         end
