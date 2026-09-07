@@ -1380,12 +1380,14 @@ local function ApplyGroups()
                 if (subgroupCount[wantGroup] or 0) < NUM_SLOTS then
                     -- Target group has room: plain move, no swap needed.
                     local curGroup = indexToGroup[idx]
-                    SetSubgroupFn(idx, wantGroup)
-                    subgroupCount[curGroup] = subgroupCount[curGroup] - 1
-                    subgroupCount[wantGroup] = subgroupCount[wantGroup] + 1
-                    indexToGroup[idx] = wantGroup
-                    moved = moved + 1
-                    changed = true
+                    local ok = pcall(SetSubgroupFn, idx, wantGroup)
+                    if ok then
+                        subgroupCount[curGroup] = subgroupCount[curGroup] - 1
+                        subgroupCount[wantGroup] = subgroupCount[wantGroup] + 1
+                        indexToGroup[idx] = wantGroup
+                        moved = moved + 1
+                        changed = true
+                    end
                 else
                     -- Target group is full: swap with someone in it (prefer
                     -- someone who also wants to leave that group).
@@ -1406,11 +1408,13 @@ local function ApplyGroups()
                     end
                     if partnerIdx then
                         local curGroup = indexToGroup[idx]
-                        SwapFn(idx, partnerIdx)
-                        indexToGroup[idx] = wantGroup
-                        indexToGroup[partnerIdx] = curGroup
-                        moved = moved + 1
-                        changed = true
+                        local ok = pcall(SwapFn, idx, partnerIdx)
+                        if ok then
+                            indexToGroup[idx] = wantGroup
+                            indexToGroup[partnerIdx] = curGroup
+                            moved = moved + 1
+                            changed = true
+                        end
                     end
                 end
             end
