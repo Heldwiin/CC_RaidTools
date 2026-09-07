@@ -1068,9 +1068,12 @@ end
 -- filter) instead of dumping every single guild member into the pool.
 
 -- Only these guild rank indices (0-based, as returned by GetGuildRosterInfo)
--- are ever shown in the picker — Caelestis Concilium's raiders/applicants.
+-- are ever shown in the picker. In-game the guild UI shows ranks as "Grade 1"
+-- to "Grade 9" (1-based), so Grade N here is rankIndex N-1:
+--   Grade 1 "Tyran" (GM) = 0, Grade 2 "Séraphins" (Officers) = 1,
+--   Grade 5 "Archanges" (Raiders) = 4, Grade 9 "Dévots" (Applys) = 8.
 -- Adjust this set if the guild's rank structure changes.
-local ALLOWED_GUILD_RANKS = { [1] = true, [2] = true, [5] = true, [9] = true }
+local ALLOWED_GUILD_RANKS = { [0] = true, [1] = true, [4] = true, [8] = true }
 
 local function GetGuildMemberCache()
     local cache = {}
