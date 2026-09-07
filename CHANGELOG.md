@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.2.8
+
+### Raid Groups — amélioration du tri automatique
+
+- Le tri auto remplit maintenant les groupes **complètement dans l'ordre** (1, 2, 3, 4...) au lieu de les étaler en éventail sur tous les groupes concernés — les groupes 1-4 se remplissent à fond avant que le surplus ne parte dans les suivants.
+- Les dps ne suivent plus l'alternance entre les côtés d'un split (seuls tanks et heals continuent d'alterner pour l'équilibrage) : ça évite de se retrouver avec deux groupes à moitié pleins en même temps de chaque côté.
+- Renommage de "Nombre de parts" en **"Nombre de splits"**, et la valeur 1 (aucun split) est maintenant possible et devient la valeur par défaut.
+- Correction d'un chevauchement visuel entre la grille des groupes et la liste des non-assignés quand celle-ci comptait beaucoup de monde.
+
+### Raid Groups — préparation depuis la liste de guilde
+
+- Nouveau bouton **Guilde** à côté de **Raid** : bascule la source des non-assignés pour permettre de préparer une composition à l'avance, avant même d'inviter qui que ce soit.
+- La liste de guilde est automatiquement filtrée sur les grades pertinents (Tyran, Séraphins, Souk de Barbès, Archanges, Dévots) — pas besoin de sélectionner un par un.
+- Les compositions préparées depuis la guilde se comportent comme les autres : sauvegarde en preset, export/partage, puis application normale une fois tout le monde effectivement en raid.
+
+### Raid Groups — saisie directe
+
+- Il est maintenant possible de **cliquer sur une case d'un groupe et taper un nom directement**, sans passer par le glisser-déposer. Pratique pour placer quelqu'un qui n'est pas encore dans le pool.
+- Effet de bord : un joueur qui quitte le raid garde désormais sa place affichée dans son groupe (au lieu de disparaître) jusqu'à ce qu'elle soit modifiée manuellement ou qu'un tri auto/réinitialisation soit relancé.
+
+### Robustesse
+
+- Le bouton **Appliquer** est maintenant protégé contre les erreurs inattendues lors du déplacement des joueurs, sans risque de désynchroniser l'affichage si un déplacement échoue.
+- Nettoyage d'un ancien mécanisme de détection de fin de Ready Check devenu redondant (le comptage réel des réponses fait déjà ce travail, de façon fiable quelle que soit la langue du client).
+
 ## 1.2.7
 
 ### Nouveau module : Raid Groups

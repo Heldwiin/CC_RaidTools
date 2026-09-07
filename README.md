@@ -35,7 +35,22 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.7**
+**1.2.8**
+
+### v1.2.8
+
+#### Raid Groups
+
+- Tri auto : remplissage séquentiel des groupes (1,2,3,4 complets avant de déborder sur les suivants), dps qui ne suivent plus l'alternance des côtés d'un split.
+- Renommage "Nombre de parts" → "Nombre de splits", valeur 1 (pas de split) possible et par défaut.
+- Correction du chevauchement visuel grille/liste des non-assignés.
+- Nouvelle source **Guilde** pour préparer une composition à l'avance (filtrée sur les grades raiders/officers/applys).
+- Saisie directe d'un nom dans une case, en plus du glisser-déposer.
+
+#### Robustesse
+
+- Protection du bouton Appliquer contre les erreurs de déplacement.
+- Nettoyage d'un mécanisme redondant de détection de fin de Ready Check.
 
 ### v1.2.7
 

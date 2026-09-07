@@ -23,6 +23,8 @@ local presetsArrowTex
 local exportFrame
 local importFrame
 local sortSettingsFrame
+local sourceRaidBtn
+local sourceGuildBtn
 
 -- Working assignment table, mirrored into CCRaidToolsDB.raidGroups.current
 -- assign[strippedName] = groupNumber (1-8)
@@ -57,6 +59,9 @@ local function EnsureDB()
     end
     if s.rule ~= "consecutive" and s.rule ~= "alternating" then
         s.rule = "consecutive"
+    end
+    if CCRaidToolsDB.raidGroups.poolSource ~= "raid" and CCRaidToolsDB.raidGroups.poolSource ~= "guild" then
+        CCRaidToolsDB.raidGroups.poolSource = "raid"
     end
 end
 
@@ -140,7 +145,7 @@ local function GetRosterUnits()
     return units
 end
 
-local function RefreshRoster()
+local function RefreshRosterFromRaid()
     wipe(rosterSet)
     wipe(classByName)
     for _, unit in ipairs(GetRosterUnits()) do
@@ -153,6 +158,51 @@ local function RefreshRoster()
                 classByName[short] = class
             end
         end
+    end
+end
+
+-- Only these guild rank indices (0-based, as returned by GetGuildRosterInfo)
+-- are shown for the guild pool source. In-game the guild UI shows ranks as
+-- "Grade 1" to "Grade 9" (1-based), so Grade N here is rankIndex N-1:
+--   Grade 1 "Tyran" (GM) = 0, Grade 2 "Séraphins" (Officers) = 1,
+--   Grade 4 "Souk de Barbès" = 3, Grade 5 "Archanges" (Raiders) = 4,
+--   Grade 9 "Dévots" (Applys) = 8.
+-- Adjust this set if the guild's rank structure changes.
+local ALLOWED_GUILD_RANKS = { [0] = true, [1] = true, [3] = true, [4] = true, [8] = true }
+
+-- Pull the pool from the guild roster instead of the current raid/party, so
+-- a composition can be prepped ahead of time before anyone has even
+-- invited/zoned in. Requests a fresh roster (throttled by Blizzard to once
+-- every 10s) and relies on GUILD_ROSTER_UPDATE to refresh once it arrives.
+-- Everyone in one of the allowed ranks shows up automatically — no manual
+-- picking needed, since that rank list already scopes it to raiders/officers/
+-- applicants rather than the whole guild.
+local function RefreshRosterFromGuild()
+    wipe(rosterSet)
+    wipe(classByName)
+    if not IsInGuild() then
+        return
+    end
+    if C_GuildInfo and C_GuildInfo.GuildRoster then
+        C_GuildInfo.GuildRoster()
+    end
+    local n = GetNumGuildMembers() or 0
+    for i = 1, n do
+        local name, _, rankIndex, _, _, _, _, _, _, _, class = GetGuildRosterInfo(i)
+        if name and ALLOWED_GUILD_RANKS[rankIndex or -1] then
+            local short = C.StripRealm(name)
+            rosterSet[short] = true
+            classByName[short] = class
+        end
+    end
+end
+
+local function RefreshRoster()
+    EnsureDB()
+    if CCRaidToolsDB.raidGroups.poolSource == "guild" then
+        RefreshRosterFromGuild()
+    else
+        RefreshRosterFromRaid()
     end
 end
 
@@ -190,6 +240,7 @@ local function EnsureGhost()
 end
 
 local Refresh -- forward declaration
+local StartSlotEdit -- forward declaration
 
 local function FindDropTarget()
     for g = 1, NUM_GROUPS do
@@ -288,6 +339,7 @@ local function NewSlotFrame(createParent, g, s, x, y)
     btn.text:SetText("-")
     btn:EnableMouse(true)
     MakeDraggableSlot(btn)
+    btn:SetScript("OnClick", function(self) StartSlotEdit(self) end)
     return btn
 end
 
@@ -616,6 +668,7 @@ local function OpenSortSettingsPopup(panel)
     sortSettingsFrame:Show()
 end
 
+
 local function SortGroups()
     RefreshRoster()
     EnsureDB()
@@ -648,15 +701,26 @@ local function SortGroups()
     end
 
     local buckets = { TANK = {}, HEALER = {}, DAMAGER = {} }
-    for _, unit in ipairs(GetRosterUnits()) do
-        if UnitExists(unit) then
-            local name = C.StripRealm(UnitName(unit))
-            if name and not preserved[name] then
-                local role = UnitGroupRolesAssigned and UnitGroupRolesAssigned(unit)
-                if role ~= "TANK" and role ~= "HEALER" then
-                    role = "DAMAGER"
+    if CCRaidToolsDB.raidGroups.poolSource == "guild" then
+        -- No unit tokens to read a role from outside of a real group; treat
+        -- everyone as DPS (the sort still spreads them evenly, just without
+        -- tank/healer awareness).
+        for name in pairs(rosterSet) do
+            if not preserved[name] then
+                table.insert(buckets.DAMAGER, name)
+            end
+        end
+    else
+        for _, unit in ipairs(GetRosterUnits()) do
+            if UnitExists(unit) then
+                local name = C.StripRealm(UnitName(unit))
+                if name and not preserved[name] then
+                    local role = UnitGroupRolesAssigned and UnitGroupRolesAssigned(unit)
+                    if role ~= "TANK" and role ~= "HEALER" then
+                        role = "DAMAGER"
+                    end
+                    table.insert(buckets[role], name)
                 end
-                table.insert(buckets[role], name)
             end
         end
     end
@@ -853,6 +917,68 @@ local function SkinPopupEditBox(editBox)
     editBox:SetTextInsets(5, 5, 0, 0)
     editBox:SetFontObject("ChatFontNormal")
     editBox:SetAutoFocus(false)
+end
+
+-- ===== Type a name directly into a slot (instead of only drag & drop) =====
+
+local slotEditBox
+local slotEditTarget
+
+local function EnsureSlotEditBox()
+    if slotEditBox then
+        return slotEditBox
+    end
+    local e = CreateFrame("EditBox", nil, frame, "BackdropTemplate")
+    e:SetFrameStrata("DIALOG")
+    SkinPopupEditBox(e)
+    e:SetMaxLetters(40)
+    e:SetJustifyH("CENTER")
+    e:Hide()
+
+    local function Commit()
+        local target = slotEditTarget
+        if not target then
+            return
+        end
+        slotEditTarget = nil
+        local text = e:GetText()
+        text = text and text:gsub("^%s+", ""):gsub("%s+$", "") or ""
+        text = text ~= "" and C.StripRealm(text) or text
+        local oldMember = target.member
+        if oldMember and oldMember ~= text then
+            assign[oldMember] = nil
+        end
+        if text ~= "" then
+            assign[text] = target.group
+        end
+        e:Hide()
+        SaveCurrent()
+        Refresh()
+    end
+
+    local function Cancel()
+        slotEditTarget = nil
+        e:Hide()
+    end
+
+    e:SetScript("OnEnterPressed", function(self) Commit(); self:ClearFocus() end)
+    e:SetScript("OnEscapePressed", function(self) Cancel(); self:ClearFocus() end)
+    e:SetScript("OnEditFocusLost", Commit)
+
+    slotEditBox = e
+    return e
+end
+
+function StartSlotEdit(slot)
+    local e = EnsureSlotEditBox()
+    slotEditTarget = slot
+    e:ClearAllPoints()
+    e:SetPoint("CENTER", slot, "CENTER", 0, 0)
+    e:SetSize(slot:GetWidth(), slot:GetHeight())
+    e:SetText(slot.member or "")
+    e:Show()
+    e:SetFocus()
+    e:HighlightText()
 end
 
 local function EnsureExportFrame(panel)
@@ -1052,12 +1178,14 @@ local function ApplyGroups()
                 if (subgroupCount[wantGroup] or 0) < NUM_SLOTS then
                     -- Target group has room: plain move, no swap needed.
                     local curGroup = indexToGroup[idx]
-                    SetSubgroupFn(idx, wantGroup)
-                    subgroupCount[curGroup] = subgroupCount[curGroup] - 1
-                    subgroupCount[wantGroup] = subgroupCount[wantGroup] + 1
-                    indexToGroup[idx] = wantGroup
-                    moved = moved + 1
-                    changed = true
+                    local ok = pcall(SetSubgroupFn, idx, wantGroup)
+                    if ok then
+                        subgroupCount[curGroup] = subgroupCount[curGroup] - 1
+                        subgroupCount[wantGroup] = subgroupCount[wantGroup] + 1
+                        indexToGroup[idx] = wantGroup
+                        moved = moved + 1
+                        changed = true
+                    end
                 else
                     -- Target group is full: swap with someone in it (prefer
                     -- someone who also wants to leave that group).
@@ -1078,11 +1206,13 @@ local function ApplyGroups()
                     end
                     if partnerIdx then
                         local curGroup = indexToGroup[idx]
-                        SwapFn(idx, partnerIdx)
-                        indexToGroup[idx] = wantGroup
-                        indexToGroup[partnerIdx] = curGroup
-                        moved = moved + 1
-                        changed = true
+                        local ok = pcall(SwapFn, idx, partnerIdx)
+                        if ok then
+                            indexToGroup[idx] = wantGroup
+                            indexToGroup[partnerIdx] = curGroup
+                            moved = moved + 1
+                            changed = true
+                        end
                     end
                 end
             end
@@ -1093,16 +1223,36 @@ end
 
 -- ===== Refresh (render) =====
 
+local function RefreshSourceButtons()
+    if not sourceRaidBtn or not sourceGuildBtn then
+        return
+    end
+    EnsureDB()
+    local source = CCRaidToolsDB.raidGroups.poolSource
+    local function Style(btn, active)
+        if active then
+            btn:SetBackdropColor(C.BRAND_R * 0.55, C.BRAND_G * 0.55, C.BRAND_B * 0.55, 0.95)
+            btn.text:SetTextColor(1, 1, 1)
+        else
+            btn:SetBackdropColor(0.05, 0.05, 0.06, 0.9)
+            btn.text:SetTextColor(0.7, 0.7, 0.7)
+        end
+    end
+    Style(sourceRaidBtn, source == "raid")
+    Style(sourceGuildBtn, source == "guild")
+end
+
 function Refresh()
     if not frame then
         return
     end
     RefreshRoster()
+    RefreshSourceButtons()
 
     for g = 1, NUM_GROUPS do
         local members = {}
         for name, grp in pairs(assign) do
-            if grp == g and rosterSet[name] then
+            if grp == g then
                 members[#members + 1] = name
             end
         end
@@ -1288,6 +1438,40 @@ local function BuildUI(panel)
     poolLabel:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
     countText = poolLabel
 
+    -- Source toggle: pull the pool from the current raid/party, or from the
+    -- guild roster to prep a composition ahead of time before anyone is
+    -- even grouped up yet.
+    local function NewSourceChip(text)
+        local btn = CreateFrame("Button", nil, panel, "BackdropTemplate")
+        btn:SetSize(56, 20)
+        btn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+        btn:SetBackdropBorderColor(0, 0, 0, 1)
+        btn.text = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        btn.text:SetPoint("CENTER")
+        btn.text:SetText(text)
+        return btn
+    end
+
+    sourceRaidBtn = NewSourceChip(C.L.rgSourceRaid)
+    sourceRaidBtn:SetPoint("LEFT", poolLabel, "RIGHT", 10, 0)
+    sourceRaidBtn:SetScript("OnClick", function()
+        EnsureDB()
+        CCRaidToolsDB.raidGroups.poolSource = "raid"
+        Refresh()
+    end)
+
+    sourceGuildBtn = NewSourceChip(C.L.rgSourceGuild)
+    sourceGuildBtn:SetPoint("LEFT", sourceRaidBtn, "RIGHT", 4, 0)
+    sourceGuildBtn:SetScript("OnClick", function()
+        EnsureDB()
+        if not IsInGuild() then
+            print(C.L.rgNoGuild)
+            return
+        end
+        CCRaidToolsDB.raidGroups.poolSource = "guild"
+        Refresh()
+    end)
+
     poolContainer = CreateFrame("Frame", nil, panel)
     poolContainer:SetPoint("TOPLEFT", poolLabel, "BOTTOMLEFT", 0, -4)
     poolContainer:SetPoint("RIGHT", panel, "RIGHT", -10, 0)
@@ -1337,6 +1521,7 @@ e:RegisterEvent("PLAYER_ENTERING_WORLD")
 e:RegisterEvent("PLAYER_REGEN_DISABLED")
 e:RegisterEvent("PLAYER_REGEN_ENABLED")
 e:RegisterEvent("CHAT_MSG_ADDON")
+e:RegisterEvent("GUILD_ROSTER_UPDATE")
 e:SetScript("OnEvent", function(_, ev, a, b, c, d)
     if ev == "PLAYER_REGEN_DISABLED" then
         if applyButton then applyButton:Disable() end
