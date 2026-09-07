@@ -1665,14 +1665,8 @@ local function BuildUI(panel)
         end
         CCRaidToolsDB.raidGroups.poolSource = "guild"
         Refresh()
+        OpenGuildPickerPopup(panel)
     end)
-
-    local guildChooseBtn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-    guildChooseBtn:SetSize(78, 20)
-    guildChooseBtn:SetPoint("LEFT", sourceGuildBtn, "RIGHT", 6, 0)
-    guildChooseBtn:SetText(C.L.rgGuildChooseButton)
-    C.SkinButton(guildChooseBtn)
-    guildChooseBtn:SetScript("OnClick", function() OpenGuildPickerPopup(panel) end)
 
     poolContainer = CreateFrame("Frame", nil, panel)
     poolContainer:SetPoint("TOPLEFT", poolLabel, "BOTTOMLEFT", 0, -4)
