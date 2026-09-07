@@ -1071,9 +1071,10 @@ end
 -- are ever shown in the picker. In-game the guild UI shows ranks as "Grade 1"
 -- to "Grade 9" (1-based), so Grade N here is rankIndex N-1:
 --   Grade 1 "Tyran" (GM) = 0, Grade 2 "Séraphins" (Officers) = 1,
---   Grade 5 "Archanges" (Raiders) = 4, Grade 9 "Dévots" (Applys) = 8.
+--   Grade 4 "Souk de Barbès" = 3, Grade 5 "Archanges" (Raiders) = 4,
+--   Grade 9 "Dévots" (Applys) = 8.
 -- Adjust this set if the guild's rank structure changes.
-local ALLOWED_GUILD_RANKS = { [0] = true, [1] = true, [4] = true, [8] = true }
+local ALLOWED_GUILD_RANKS = { [0] = true, [1] = true, [3] = true, [4] = true, [8] = true }
 
 local function GetGuildMemberCache()
     local cache = {}
