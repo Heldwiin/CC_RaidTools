@@ -25,7 +25,6 @@ local importFrame
 local sortSettingsFrame
 local sourceRaidBtn
 local sourceGuildBtn
-local guildPickerFrame
 
 -- Working assignment table, mirrored into CCRaidToolsDB.raidGroups.current
 -- assign[strippedName] = groupNumber (1-8)
@@ -64,8 +63,6 @@ local function EnsureDB()
     if CCRaidToolsDB.raidGroups.poolSource ~= "raid" and CCRaidToolsDB.raidGroups.poolSource ~= "guild" then
         CCRaidToolsDB.raidGroups.poolSource = "raid"
     end
-    CCRaidToolsDB.raidGroups.guildPicks = CCRaidToolsDB.raidGroups.guildPicks or {}
-    CCRaidToolsDB.raidGroups.guildRankFilter = CCRaidToolsDB.raidGroups.guildRankFilter or {}
 end
 
 local function SaveCurrent()
@@ -164,13 +161,22 @@ local function RefreshRosterFromRaid()
     end
 end
 
+-- Only these guild rank indices (0-based, as returned by GetGuildRosterInfo)
+-- are shown for the guild pool source. In-game the guild UI shows ranks as
+-- "Grade 1" to "Grade 9" (1-based), so Grade N here is rankIndex N-1:
+--   Grade 1 "Tyran" (GM) = 0, Grade 2 "Séraphins" (Officers) = 1,
+--   Grade 4 "Souk de Barbès" = 3, Grade 5 "Archanges" (Raiders) = 4,
+--   Grade 9 "Dévots" (Applys) = 8.
+-- Adjust this set if the guild's rank structure changes.
+local ALLOWED_GUILD_RANKS = { [0] = true, [1] = true, [3] = true, [4] = true, [8] = true }
+
 -- Pull the pool from the guild roster instead of the current raid/party, so
 -- a composition can be prepped ahead of time before anyone has even
 -- invited/zoned in. Requests a fresh roster (throttled by Blizzard to once
 -- every 10s) and relies on GUILD_ROSTER_UPDATE to refresh once it arrives.
--- Only players explicitly picked via the guild member picker are shown —
--- dumping the whole guild (which can be hundreds of members) into the pool
--- would be unusable.
+-- Everyone in one of the allowed ranks shows up automatically — no manual
+-- picking needed, since that rank list already scopes it to raiders/officers/
+-- applicants rather than the whole guild.
 local function RefreshRosterFromGuild()
     wipe(rosterSet)
     wipe(classByName)
@@ -180,16 +186,13 @@ local function RefreshRosterFromGuild()
     if C_GuildInfo and C_GuildInfo.GuildRoster then
         C_GuildInfo.GuildRoster()
     end
-    local picks = CCRaidToolsDB.raidGroups.guildPicks
     local n = GetNumGuildMembers() or 0
     for i = 1, n do
-        local name, _, _, _, _, _, _, _, _, _, class = GetGuildRosterInfo(i)
-        if name then
+        local name, _, rankIndex, _, _, _, _, _, _, _, class = GetGuildRosterInfo(i)
+        if name and ALLOWED_GUILD_RANKS[rankIndex or -1] then
             local short = C.StripRealm(name)
-            if picks[short] then
-                rosterSet[short] = true
-                classByName[short] = class
-            end
+            rosterSet[short] = true
+            classByName[short] = class
         end
     end
 end
@@ -1063,276 +1066,6 @@ local function OpenImportPopup(panel)
     f.pasteBox:SetFocus()
 end
 
--- ===== Guild member picker =====
--- Lets the user pick a manageable subset of the guild roster (search + rank
--- filter) instead of dumping every single guild member into the pool.
-
--- Only these guild rank indices (0-based, as returned by GetGuildRosterInfo)
--- are ever shown in the picker. In-game the guild UI shows ranks as "Grade 1"
--- to "Grade 9" (1-based), so Grade N here is rankIndex N-1:
---   Grade 1 "Tyran" (GM) = 0, Grade 2 "Séraphins" (Officers) = 1,
---   Grade 4 "Souk de Barbès" = 3, Grade 5 "Archanges" (Raiders) = 4,
---   Grade 9 "Dévots" (Applys) = 8.
--- Adjust this set if the guild's rank structure changes.
-local ALLOWED_GUILD_RANKS = { [0] = true, [1] = true, [3] = true, [4] = true, [8] = true }
-
-local function GetGuildMemberCache()
-    local cache = {}
-    if not IsInGuild() then
-        return cache
-    end
-    local n = GetNumGuildMembers() or 0
-    for i = 1, n do
-        local name, rankName, rankIndex, _, _, _, _, _, _, _, class = GetGuildRosterInfo(i)
-        if name and ALLOWED_GUILD_RANKS[rankIndex or -1] then
-            cache[#cache + 1] = {
-                name = C.StripRealm(name),
-                rankName = rankName or "",
-                rankIndex = rankIndex or 0,
-                class = class,
-            }
-        end
-    end
-    return cache
-end
-
-local function RefreshGuildPickerList()
-    local f = guildPickerFrame
-    if not f then
-        return
-    end
-    EnsureDB()
-    local picks = CCRaidToolsDB.raidGroups.guildPicks
-    local rankFilter = CCRaidToolsDB.raidGroups.guildRankFilter
-    local search = (f.searchBox:GetText() or ""):lower()
-
-    -- Rank filter chips: (re)built from whatever ranks are actually present.
-    local ranks = {}
-    local seenRank = {}
-    for _, m in ipairs(f.cache) do
-        if not seenRank[m.rankIndex] then
-            seenRank[m.rankIndex] = true
-            ranks[#ranks + 1] = { index = m.rankIndex, name = m.rankName }
-            if rankFilter[m.rankIndex] == nil then
-                rankFilter[m.rankIndex] = true
-            end
-        end
-    end
-    table.sort(ranks, function(a, b) return a.index < b.index end)
-
-    for _, chip in ipairs(f.rankChips) do
-        chip:Hide()
-    end
-    local rowW, rowH, perRow = 96, 20, 3
-    for i, rank in ipairs(ranks) do
-        local chip = f.rankChips[i]
-        if not chip then
-            chip = CreateFrame("Button", nil, f.ranksArea, "BackdropTemplate")
-            chip:SetSize(rowW, rowH)
-            chip:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-            chip:SetBackdropBorderColor(0, 0, 0, 1)
-            chip.text = chip:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            chip.text:SetPoint("CENTER")
-            chip.text:SetJustifyH("CENTER")
-            f.rankChips[i] = chip
-        end
-        chip.rankIndex = rank.index
-        chip.text:SetText(rank.name ~= "" and rank.name or tostring(rank.index))
-        local col = (i - 1) % perRow
-        local row = math.floor((i - 1) / perRow)
-        chip:ClearAllPoints()
-        chip:SetPoint("TOPLEFT", f.ranksArea, "TOPLEFT", col * (rowW + 4), -row * (rowH + 3))
-        local active = rankFilter[rank.index] ~= false
-        if active then
-            chip:SetBackdropColor(C.BRAND_R * 0.5, C.BRAND_G * 0.5, C.BRAND_B * 0.5, 0.95)
-            chip.text:SetTextColor(1, 1, 1)
-        else
-            chip:SetBackdropColor(0.05, 0.05, 0.06, 0.9)
-            chip.text:SetTextColor(0.6, 0.6, 0.6)
-        end
-        chip:SetScript("OnClick", function()
-            rankFilter[rank.index] = not active
-            RefreshGuildPickerList()
-        end)
-        chip:Show()
-    end
-    local rankRows = math.max(1, math.ceil(#ranks / perRow))
-    f.ranksArea:SetHeight(rankRows * (rowH + 3))
-
-    -- Filtered member rows.
-    local matches = {}
-    for _, m in ipairs(f.cache) do
-        if rankFilter[m.rankIndex] ~= false and (search == "" or m.name:lower():find(search, 1, true)) then
-            matches[#matches + 1] = m
-        end
-    end
-    table.sort(matches, function(a, b) return a.name < b.name end)
-
-    for _, row in ipairs(f.memberRows) do
-        row:Hide()
-    end
-    for i, m in ipairs(matches) do
-        local row = f.memberRows[i]
-        if not row then
-            row = CreateFrame("Button", nil, f.listChild, "BackdropTemplate")
-            row:SetSize(280, 20)
-            row:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-            row:SetBackdropBorderColor(0, 0, 0, 1)
-            row.name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            row.name:SetPoint("LEFT", 6, 0)
-            row.name:SetWidth(140)
-            row.name:SetJustifyH("LEFT")
-            row.rank = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            row.rank:SetPoint("LEFT", 150, 0)
-            row.rank:SetWidth(120)
-            row.rank:SetJustifyH("LEFT")
-            row.rank:SetTextColor(0.6, 0.6, 0.6)
-            f.memberRows[i] = row
-        end
-        row:ClearAllPoints()
-        row:SetPoint("TOPLEFT", f.listChild, "TOPLEFT", 0, -(i - 1) * 22)
-        row.name:SetText(m.name)
-        local col = RAID_CLASS_COLORS and m.class and RAID_CLASS_COLORS[m.class]
-        if col then
-            row.name:SetTextColor(col.r, col.g, col.b)
-        else
-            row.name:SetTextColor(1, 1, 1)
-        end
-        row.rank:SetText(m.rankName)
-        local picked = picks[m.name] and true or false
-        row:SetBackdropColor(picked and C.BRAND_R * 0.4 or 0.03, picked and C.BRAND_G * 0.4 or 0.03, picked and C.BRAND_B * 0.4 or 0.04, 0.9)
-        row:SetScript("OnClick", function()
-            if picks[m.name] then
-                picks[m.name] = nil
-            else
-                picks[m.name] = true
-            end
-            RefreshGuildPickerList()
-            Refresh()
-        end)
-        row:Show()
-    end
-    f.listChild:SetHeight(math.max(20, #matches * 22))
-
-    local pickedCount = 0
-    for _ in pairs(picks) do
-        pickedCount = pickedCount + 1
-    end
-    f.countText:SetText(string.format(C.L.rgGuildPickedCount, pickedCount))
-end
-
-local function EnsureGuildPickerFrame(panel)
-    if guildPickerFrame then
-        return guildPickerFrame
-    end
-    local f = CreateFrame("Frame", nil, panel, "BackdropTemplate")
-    f:SetSize(320, 420)
-    f:SetPoint("CENTER", panel, "CENTER", 0, 0)
-    f:SetFrameStrata("DIALOG")
-    C.ApplyPanelSkin(f)
-    f:Hide()
-
-    local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", 10, -10)
-    title:SetText(C.L.rgGuildPickerTitle)
-    title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
-
-    f.searchBox = CreateFrame("EditBox", nil, f, "BackdropTemplate")
-    f.searchBox:SetSize(300, 22)
-    f.searchBox:SetPoint("TOPLEFT", 10, -30)
-    SkinPopupEditBox(f.searchBox)
-    f.searchBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-    f.searchBox:SetScript("OnTextChanged", RefreshGuildPickerList)
-
-    f.ranksArea = CreateFrame("Frame", nil, f)
-    f.ranksArea:SetPoint("TOPLEFT", f.searchBox, "BOTTOMLEFT", 0, -8)
-    f.ranksArea:SetPoint("RIGHT", f, "RIGHT", -10, 0)
-    f.ranksArea:SetHeight(23)
-    f.rankChips = {}
-
-    local bulkAllBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    bulkAllBtn:SetSize(145, 20)
-    bulkAllBtn:SetPoint("TOPLEFT", f.ranksArea, "BOTTOMLEFT", 0, -6)
-    bulkAllBtn:SetText(C.L.rgGuildSelectAll)
-    C.SkinButton(bulkAllBtn)
-
-    local bulkNoneBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    bulkNoneBtn:SetSize(145, 20)
-    bulkNoneBtn:SetPoint("LEFT", bulkAllBtn, "RIGHT", 4, 0)
-    bulkNoneBtn:SetText(C.L.rgGuildSelectNone)
-    C.SkinButton(bulkNoneBtn)
-
-    local scroll = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", bulkAllBtn, "BOTTOMLEFT", 0, -8)
-    scroll:SetPoint("RIGHT", f, "RIGHT", -28, 0)
-    scroll:SetPoint("BOTTOM", f, "BOTTOM", 0, 44)
-    C.SkinScrollBar(scroll)
-    local listChild = CreateFrame("Frame", nil, scroll)
-    listChild:SetSize(280, 20)
-    scroll:SetScrollChild(listChild)
-    f.listChild = listChild
-    f.memberRows = {}
-
-    -- Bulk actions apply to whatever the current search/rank filter matches.
-    bulkAllBtn:SetScript("OnClick", function()
-        EnsureDB()
-        local picks = CCRaidToolsDB.raidGroups.guildPicks
-        local rankFilter = CCRaidToolsDB.raidGroups.guildRankFilter
-        local search = (f.searchBox:GetText() or ""):lower()
-        for _, m in ipairs(f.cache) do
-            if rankFilter[m.rankIndex] ~= false and (search == "" or m.name:lower():find(search, 1, true)) then
-                picks[m.name] = true
-            end
-        end
-        RefreshGuildPickerList()
-        Refresh()
-    end)
-    bulkNoneBtn:SetScript("OnClick", function()
-        EnsureDB()
-        local picks = CCRaidToolsDB.raidGroups.guildPicks
-        local rankFilter = CCRaidToolsDB.raidGroups.guildRankFilter
-        local search = (f.searchBox:GetText() or ""):lower()
-        for _, m in ipairs(f.cache) do
-            if rankFilter[m.rankIndex] ~= false and (search == "" or m.name:lower():find(search, 1, true)) then
-                picks[m.name] = nil
-            end
-        end
-        RefreshGuildPickerList()
-        Refresh()
-    end)
-
-    f.countText = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    f.countText:SetPoint("BOTTOMLEFT", 10, 12)
-    f.countText:SetTextColor(0.8, 0.8, 0.8)
-
-    local closeBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    closeBtn:SetSize(90, 22)
-    closeBtn:SetPoint("BOTTOMRIGHT", -10, 10)
-    closeBtn:SetText(C.L.rgCloseButton)
-    C.SkinButton(closeBtn)
-    closeBtn:SetScript("OnClick", function()
-        f:Hide()
-        Refresh()
-    end)
-
-    guildPickerFrame = f
-    return f
-end
-
-local function OpenGuildPickerPopup(panel)
-    if not IsInGuild() then
-        print(C.L.rgNoGuild)
-        return
-    end
-    local f = EnsureGuildPickerFrame(panel)
-    if C_GuildInfo and C_GuildInfo.GuildRoster then
-        C_GuildInfo.GuildRoster()
-    end
-    f.cache = GetGuildMemberCache()
-    f.searchBox:SetText("")
-    RefreshGuildPickerList()
-    f:Show()
-end
 -- ===== Apply to raid (leader/assist) =====
 
 local function ApplyGroups()
@@ -1673,7 +1406,6 @@ local function BuildUI(panel)
         end
         CCRaidToolsDB.raidGroups.poolSource = "guild"
         Refresh()
-        OpenGuildPickerPopup(panel)
     end)
 
     poolContainer = CreateFrame("Frame", nil, panel)
