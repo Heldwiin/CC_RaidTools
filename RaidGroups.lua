@@ -1067,6 +1067,11 @@ end
 -- Lets the user pick a manageable subset of the guild roster (search + rank
 -- filter) instead of dumping every single guild member into the pool.
 
+-- Only these guild rank indices (0-based, as returned by GetGuildRosterInfo)
+-- are ever shown in the picker — Caelestis Concilium's raiders/applicants.
+-- Adjust this set if the guild's rank structure changes.
+local ALLOWED_GUILD_RANKS = { [1] = true, [2] = true, [5] = true, [9] = true }
+
 local function GetGuildMemberCache()
     local cache = {}
     if not IsInGuild() then
@@ -1075,7 +1080,7 @@ local function GetGuildMemberCache()
     local n = GetNumGuildMembers() or 0
     for i = 1, n do
         local name, rankName, rankIndex, _, _, _, _, _, _, _, class = GetGuildRosterInfo(i)
-        if name then
+        if name and ALLOWED_GUILD_RANKS[rankIndex or -1] then
             cache[#cache + 1] = {
                 name = C.StripRealm(name),
                 rankName = rankName or "",
