@@ -21,7 +21,7 @@ Gameplay modules:
 - `InviteTool.lua` — whisper keyword invitation system.
 - `Focus.lua` — mouse-button focus helper using secure actions.
 - `MarksBar.lua` — raid target markers and world markers, including its own throttled mouseover check (see Marks Bar section below).
-- `RaidInspect.lua` — raid/party inspection for item level, enchants and gem sockets.
+- `RaidInspect.lua` — raid/party inspection for item level, enchants and gem sockets; anyone also running CC RaidTools self-reports over an addon message instead of going through Blizzard's throttled native inspection.
 
 `DBMigration.lua` and `MarksBarPerformance.lua` no longer exist: the `AutoPromoteDB` → `CCRaidToolsDB` migration and the Marks Bar mouseover throttle were both folded into their respective modules once stabilized (see Changelog 1.2.3/1.2.4). Do not recreate them; keep this document in sync if that ever changes again.
 
@@ -251,6 +251,17 @@ When changing inspection behavior:
 
 Raid Inspect must not introduce taint or protected-frame changes.
 
+### Peer self-report (addon message, faster than native inspection)
+
+Native inspection is throttled by Blizzard to roughly one target at a time, which makes a full raid scan slow regardless of the client. To work around this, anyone running CC RaidTools skips it almost entirely:
+
+- On `StartInspectQueue()`, the local player's own entry is filled instantly from `CollectUnitData("player")` — a player always has full, non-secret access to their own gear, so there's never a reason to natively inspect yourself.
+- A `CCRT_INSQ` request is broadcast to RAID/PARTY; every other client running this addon replies on `CCRT_INSD` with its own `CollectUnitData("player")` result, encoded as compact CSV of raw numeric slot IDs (not localized text — each receiving client localizes for itself via `SlotName()`, keeping this locale-independent). Payload size was checked against a worst-case roster (every slot missing an enchant or gem) and stays well under the 255-character addon message limit, so unlike the RaidGroups share feature this never needs chunking.
+- `InspectNext()` checks `results[guid]` before calling `NotifyInspect()` and skips straight to the next queue entry if real data is already there (self, or an already-received peer report) — the throttled native path only ever runs for people who don't have the addon or haven't replied yet.
+- Peer reports never overwrite a `results[guid]` value that already exists (self and existing peer reports are set once per scan and not otherwise touched); a `StartInspectQueue()` call wipes `results` first, same as before.
+
+When touching this, re-verify `CollectUnitData`'s numeric slot IDs stay in sync with its localized `SlotName()` output (both are populated in the same loop, from the same slot constant) — they must always describe the same slot.
+
 ## UI and visual identity
 
 Keep the established CC RaidTools visual style:
@@ -352,6 +363,12 @@ For Raid Groups specifically:
 - export a composition, import it back (with and without a manual preset name) and verify the round trip;
 - test with a raid larger than 20/30 players to confirm overflow into groups outside the configured split;
 - switch the pool source to Guilde while not in a raid, drag guild members into groups, save as a preset, then switch back to Raid once people are grouped and confirm the preset still loads/applies correctly by name.
+
+For Raid Inspect specifically:
+- start an inspection with a mix of raid members running CC RaidTools and members without it, and confirm the ones running it resolve near-instantly (peer report) while the rest still go through the normal (slower) native inspect queue;
+- verify your own entry is filled instantly without ever natively inspecting yourself;
+- verify a peer report correctly reflects missing enchants/gems for a character with several empty slots, and for one with a fully enchanted/gemmed set (empty CSV fields decode cleanly);
+- verify the row's tooltip content matches whether the data came from a peer report or a native inspection.
 
 For Marks Bar specifically:
 - test raid markers;
