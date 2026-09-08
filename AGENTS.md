@@ -248,6 +248,7 @@ When changing inspection behavior:
 - surface tooltip data when required before reading structured tooltip fields;
 - do not assume localized tooltip text when structured tooltip data is available;
 - keep expansion-specific enchant-slot lists isolated and easy to update.
+- `C_PaperDollInfo.GetInspectItemLevel(unit)` only works for a unit you have actually inspected — it does **not** work on `"player"` (returns 0/uncertain). `CollectUnitData` uses `GetAverageItemLevel()` (equipped value) specifically when `unit == "player"` instead. Don't merge these two paths without re-checking this against wow-ui-source; the earlier bug where it used `GetInspectItemLevel` unconditionally silently broke both the player's own displayed item level AND the peer self-report broadcast (which refuses to send while `uncertainItemLevel` is true).
 
 Raid Inspect must not introduce taint or protected-frame changes.
 

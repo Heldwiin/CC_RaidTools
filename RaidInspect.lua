@@ -288,7 +288,14 @@ local function CollectUnitData(unit)
         uncertainGemSlotIDs = {},
     }
 
-    if C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
+    if unit == "player" and GetAverageItemLevel then
+        -- GetInspectItemLevel is for units being inspected; it doesn't work
+        -- on yourself. GetAverageItemLevel is the player-only equivalent.
+        local ok, _, equipped = pcall(GetAverageItemLevel)
+        if ok and equipped and equipped > 0 then
+            data.ilvl = math.floor(equipped + 0.5)
+        end
+    elseif C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
         local ok, ilvl = pcall(C_PaperDollInfo.GetInspectItemLevel, unit)
         if ok and ilvl and (not issecretvalue or not issecretvalue(ilvl)) and (not canaccessvalue or canaccessvalue(ilvl)) then
             data.ilvl = math.floor(ilvl + 0.5)
