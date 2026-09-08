@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.9
+
+### Raid Inspect — beaucoup plus rapide
+
+- Ajout d'un mode de rapport instantané : chaque joueur ayant CC RaidTools calcule ses propres informations d'équipement (ilvl, enchants manquants, gemmes manquantes) et les diffuse au raid, au lieu d'attendre l'inspection native de Blizzard qui est fortement limitée en fréquence (une cible à la fois environ).
+- La file d'inspection classique ne sert plus que pour les joueurs sans l'addon — le scan devient donc bien plus rapide quand la majorité du raid a CC RaidTools.
+- Votre propre ligne se remplit désormais instantanément, sans jamais passer par l'inspection native.
+- Correction d'un bug qui affichait "0" pour son propre niveau d'objet (et empêchait au passage toute diffusion du rapport à cause d'un garde-fou de sécurité) — la bonne API pour son propre ilvl n'est pas la même que celle utilisée pour inspecter les autres.
+
 ## 1.2.8
 
 ### Raid Groups — amélioration du tri automatique
