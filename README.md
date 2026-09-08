@@ -24,7 +24,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - Support du Focus sur les unit frames sécurisées, notamment Target et Boss Frames.
 - Invite Tool avec invitation sur mot-clé reçu en chuchotement.
 - Utilisation de la mécanique native Blizzard **Suggest Invite** lorsqu'un membre non-leader reçoit une demande d'invitation.
-- **Raid Inspect** : inspection du groupe/raid avec ilvl moyen, enchants manquants et gemmes non serties.
+- **Raid Inspect** : inspection du groupe/raid avec ilvl moyen, enchants manquants et gemmes non serties, accélérée par rapport instantané pour ceux qui ont l'addon.
 - **Raid Groups** : organisation des 8 groupes de raid par glisser-déposer, tri automatique configurable, presets nommés, partage en jeu et export/import texte, application directe des groupes en jeu.
 - Interface personnalisée sombre/transparente avec bordures pixel et branding Caelestis Concilium.
 - Configuration persistante après `/reload`.
@@ -35,7 +35,14 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.8**
+**1.2.9**
+
+### v1.2.9
+
+#### Raid Inspect
+
+- Rapport instantané par message d'addon pour tous ceux qui ont CC RaidTools (ilvl, enchants et gemmes manquantes), en complément de l'inspection native qui ne sert plus que pour les autres — scan beaucoup plus rapide sur un raid où la plupart des joueurs ont l'addon.
+- Correction d'un bug d'API qui affichait "0" pour son propre ilvl et empêchait la diffusion du rapport.
 
 ### v1.2.8
 
