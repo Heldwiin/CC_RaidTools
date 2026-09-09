@@ -232,7 +232,16 @@ function C.BuildMainFrame()
     close:SetScript("OnEnter", function() closeTex:SetVertexColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 1) end)
     close:SetScript("OnLeave", function() closeTex:SetVertexColor(0.851, 0.851, 0.851, 1) end)
     close:SetScript("OnClick", function() mainFrame:Hide() end)
-    local divider = mainFrame:CreateTexture(nil, "BORDER"); divider:SetPoint("TOPLEFT", 132, -29); divider:SetPoint("BOTTOMLEFT", 132, 8); divider:SetWidth(1); divider:SetColorTexture(0, 0, 0, 0.9)
+    local divider = mainFrame:CreateTexture(nil, "BORDER"); divider:SetPoint("TOPLEFT", 132, -29); divider:SetPoint("BOTTOMLEFT", 132, 8); divider:SetWidth(2)
+    do
+        local _, classToken = UnitClass("player")
+        local col = classToken and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classToken]
+        if col then
+            divider:SetColorTexture(col.r, col.g, col.b, 0.9)
+        else
+            divider:SetColorTexture(0, 0, 0, 0.9)
+        end
+    end
     local menuTitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"); menuTitle:SetPoint("TOPLEFT", 8, -37); menuTitle:SetText("Modules"); menuTitle:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
     local content = CreateFrame("Frame", nil, mainFrame); content:SetPoint("TOPLEFT", 133, -31); content:SetPoint("BOTTOMRIGHT", -5, 7); mainFrame.content = content
     local order = { "AutoPromote", "AutoLog", "ReadyCheck", "RaidGroups", "InviteTool", "Focus", "MarksBar", "RaidInspect", "VersionCheck" }
