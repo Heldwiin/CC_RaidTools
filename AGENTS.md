@@ -284,6 +284,8 @@ Keep the established CC RaidTools visual style:
 
 The guild watermark is intentionally subtle. Do not replace it with a large opaque logo unless explicitly requested.
 
+The vertical divider between the module menu and the content area (`CC_RaidTools.lua`, `BuildMainFrame`) is colored with the player's own class color (`RAID_CLASS_COLORS`), not plain black — a small personalization touch requested by the guild. Falls back to black if the class token/color table isn't available for any reason.
+
 Do not redesign the whole configuration window for a small feature request.
 
 ## Module menu icons

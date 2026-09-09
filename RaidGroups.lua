@@ -815,11 +815,23 @@ local function SortGroups()
     -- Fill each part's groups in order, to capacity, before moving to the
     -- next group of that same part (e.g. groups 1,2,3,4 fully before ever
     -- touching group 5) — never spread thin round-robin across them.
+    -- If this part is full, try the OTHER parts before the generic overflow,
+    -- so a single saturated side doesn't lopsidedly dump extra tanks/healers
+    -- onto whichever group happens to still have room (breaking the
+    -- alternation's side balance).
     local function PlaceInPart(p, name)
         local list = PARTS_LIST[p]
         for _, g in ipairs(list) do
             if TryGroup(g, name) then
                 return
+            end
+        end
+        for i = 1, parts - 1 do
+            local otherPart = ((p - 1 + i) % parts) + 1
+            for _, g in ipairs(PARTS_LIST[otherPart]) do
+                if TryGroup(g, name) then
+                    return
+                end
             end
         end
         PlaceOverflow(name)
@@ -857,6 +869,7 @@ local function SortGroups()
     currentPresetName = nil
     SaveCurrent()
     Refresh()
+    print(string.format(C.L.rgSortSummary, #buckets.TANK, #buckets.HEALER, #buckets.DAMAGER))
 end
 
 local function ResetGroups()

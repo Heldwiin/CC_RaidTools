@@ -232,7 +232,25 @@ function C.BuildMainFrame()
     close:SetScript("OnEnter", function() closeTex:SetVertexColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 1) end)
     close:SetScript("OnLeave", function() closeTex:SetVertexColor(0.851, 0.851, 0.851, 1) end)
     close:SetScript("OnClick", function() mainFrame:Hide() end)
-    local divider = mainFrame:CreateTexture(nil, "BORDER"); divider:SetPoint("TOPLEFT", 132, -29); divider:SetPoint("BOTTOMLEFT", 132, 8); divider:SetWidth(1); divider:SetColorTexture(0, 0, 0, 0.9)
+    local divider = mainFrame:CreateTexture(nil, "BORDER"); divider:SetPoint("TOPLEFT", 138, -2); divider:SetPoint("BOTTOMLEFT", 138, 2); divider:SetWidth(2)
+    do
+        local _, classToken = UnitClass("player")
+        local col = classToken and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classToken]
+        if col then
+            -- Blend the class color into a dark base instead of using it at
+            -- full saturation, which reads as neon against this addon's
+            -- otherwise muted dark theme. Keeps the class identity as a
+            -- subtle tint rather than a bright accent.
+            local mix = 0.35
+            local baseR, baseG, baseB = 0.05, 0.05, 0.06
+            local r = col.r * mix + baseR * (1 - mix)
+            local g = col.g * mix + baseG * (1 - mix)
+            local b = col.b * mix + baseB * (1 - mix)
+            divider:SetColorTexture(r, g, b, 0.85)
+        else
+            divider:SetColorTexture(0, 0, 0, 0.9)
+        end
+    end
     local menuTitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"); menuTitle:SetPoint("TOPLEFT", 8, -37); menuTitle:SetText("Modules"); menuTitle:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
     local content = CreateFrame("Frame", nil, mainFrame); content:SetPoint("TOPLEFT", 133, -31); content:SetPoint("BOTTOMRIGHT", -5, 7); mainFrame.content = content
     local order = { "AutoPromote", "AutoLog", "ReadyCheck", "RaidGroups", "InviteTool", "Focus", "MarksBar", "RaidInspect", "VersionCheck" }
