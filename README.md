@@ -36,7 +36,12 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.11**
+**1.2.12**
+
+### v1.2.12
+
+- Raid Groups : meilleure répartition tanks/heals du Tri auto en cas de saturation d'un côté, ajout d'un message récapitulatif des rôles détectés.
+- Interface : barre de séparation du menu sur toute la hauteur, teintée de la couleur de classe.
 
 ### v1.2.11
 

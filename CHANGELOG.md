@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.12
+
+### Raid Groups
+
+- Amélioration de la répartition tanks/heals lors du Tri auto quand un des deux côtés du split est saturé (le repli essaie désormais l'autre côté en priorité, au lieu de partir n'importe où).
+- Ajout d'un message récapitulatif après chaque Tri auto indiquant le nombre de tanks/heals/dps réellement détectés — utile pour diagnostiquer un déséquilibre inattendu.
+
+### Interface
+
+- La barre verticale séparant le menu des modules et le contenu s'étend maintenant sur toute la hauteur de la fenêtre, et affiche une teinte discrète de la couleur de votre classe au lieu d'un simple trait noir.
+
 ## 1.2.11
 
 ### Nouveau module : Version Check
