@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.10
+
+### Correctif urgent — Raid Inspect
+
+- Correction d'un crash (`attempt to call a nil value`) survenant à chaque réception d'un rapport d'équipement d'un autre joueur, introduit par la 1.2.9. La diffusion et la réception des données fonctionnent maintenant normalement.
+
 ## 1.2.9
 
 ### Raid Inspect — beaucoup plus rapide

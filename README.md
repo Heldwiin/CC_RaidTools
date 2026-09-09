@@ -35,7 +35,11 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.9**
+**1.2.10**
+
+### v1.2.10
+
+- Correctif urgent : crash à la réception d'un rapport d'équipement d'un autre joueur (introduit en 1.2.9), désormais résolu.
 
 ### v1.2.9
 
