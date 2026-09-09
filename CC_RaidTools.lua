@@ -26,7 +26,10 @@ function C.InitDB()
     CCRaidToolsDB.raidGroups.presets = CCRaidToolsDB.raidGroups.presets or {}
     CCRaidToolsDB.raidGroups.current = CCRaidToolsDB.raidGroups.current or {}
     if CCRaidToolsDB.focus.enabled == nil then
-        CCRaidToolsDB.focus.enabled = true
+        CCRaidToolsDB.focus.enabled = false
+    end
+    if CCRaidToolsDB.raidCheckEnabled == nil then
+        CCRaidToolsDB.raidCheckEnabled = true
     end
     local logging = CCRaidToolsDB.logging
     if logging.lfr == nil then logging.lfr = false end

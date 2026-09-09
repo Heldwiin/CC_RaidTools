@@ -9,7 +9,7 @@ local C = CCRT
 local enabledCheck
 local keywordEdit
 
-local DEFAULT_KEYWORD = "inv"
+local DEFAULT_KEYWORD = "+1, inv, 123"
 
 local function InitDB()
     C.InitDB()

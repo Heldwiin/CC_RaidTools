@@ -59,8 +59,10 @@ Existing settings include, among others:
 - `focus`
 - `marksBar`
 - `logging`
-- `raidCheckEnabled`
+- `raidCheckEnabled` (defaults to `true` for a fresh install — set in `C.InitDB()`)
 - `raidGroups` (`presets`, `current`, `sortSettings`)
+
+Module enable-by-default state (all set only when `nil`, in `C.InitDB()` or the module's own init — never overwrites an existing choice): Ready Check (`raidCheckEnabled`) and Invite Tool (`inviteTool.enabled`, in `InviteTool.lua`) default to **on**; Focus (`focus.enabled`) defaults to **off**. Invite Tool's default keyword list (`inviteTool.keyword`, comma/semicolon-separated, `InviteTool.lua`) is `"+1, inv, 123"`.
 
 When adding settings:
 1. Initialize the parent table defensively.
