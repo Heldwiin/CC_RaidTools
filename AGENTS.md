@@ -254,6 +254,8 @@ When changing inspection behavior:
 
 Raid Inspect must not introduce taint or protected-frame changes.
 
+A **Réinitialiser** button next to Inspecter le raid always stays clickable (including in combat) and just calls `StopInspectQueue()` + `RefreshList()` — a manual escape hatch for if a scan ever gets stuck (Lua error mid-queue, a native inspect that never resolves, etc.) leaving the main button disabled with no other way to recover short of `/reload`. Since it only clears local state/timers, not a protected call, there's no reason to gate it on combat like the main button.
+
 ### Peer self-report (addon message, faster than native inspection)
 
 Native inspection is throttled by Blizzard to roughly one target at a time, which makes a full raid scan slow regardless of the client. To work around this, anyone running CC RaidTools skips it almost entirely:

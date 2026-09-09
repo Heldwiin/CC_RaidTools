@@ -947,8 +947,27 @@ local function BuildUI(frame)
         inspectButton:Disable()
     end
 
+    -- Safety valve: if a scan ever gets stuck (a Lua error mid-queue, or a
+    -- native inspect that never resolves) the button above stays disabled
+    -- forever with no other way to recover short of /reload. This always
+    -- stays clickable — including in combat, since it only clears local
+    -- state and pending timers, no protected/combat-restricted calls — and
+    -- reuses the exact same cleanup as a normal stop.
+    local resetButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    resetButton:SetSize(110, 24)
+    resetButton:SetPoint("LEFT", inspectButton, "RIGHT", 6, 0)
+    resetButton:SetText(C.L.riResetButton)
+    C.SkinButton(resetButton)
+    resetButton:SetScript("OnClick", function()
+        StopInspectQueue()
+        RefreshList()
+        if statusText then
+            statusText:SetText(C.L.riResetDone)
+        end
+    end)
+
     statusText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    statusText:SetPoint("LEFT", inspectButton, "RIGHT", 10, 0)
+    statusText:SetPoint("LEFT", resetButton, "RIGHT", 10, 0)
 
     local header = CreateFrame("Frame", nil, frame)
     header:SetPoint("TOPLEFT", inspectButton, "BOTTOMLEFT", -6, -14)
