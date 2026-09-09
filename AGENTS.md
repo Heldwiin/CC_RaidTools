@@ -22,6 +22,7 @@ Gameplay modules:
 - `Focus.lua` — mouse-button focus helper using secure actions.
 - `MarksBar.lua` — raid target markers and world markers, including its own throttled mouseover check (see Marks Bar section below).
 - `RaidInspect.lua` — raid/party inspection for item level, enchants and gem sockets; anyone also running CC RaidTools self-reports over an addon message instead of going through Blizzard's throttled native inspection.
+- `VersionCheck.lua` — broadcasts the local addon version to raid/party and guild; warns locally (once per session) if a newer version is seen in the wild, and shows an officer-facing list of who's running which version.
 
 `DBMigration.lua` and `MarksBarPerformance.lua` no longer exist: the `AutoPromoteDB` → `CCRaidToolsDB` migration and the Marks Bar mouseover throttle were both folded into their respective modules once stabilized (see Changelog 1.2.3/1.2.4). Do not recreate them; keep this document in sync if that ever changes again.
 
@@ -263,6 +264,14 @@ Native inspection is throttled by Blizzard to roughly one target at a time, whic
 
 When touching this, re-verify `CollectUnitData`'s numeric slot IDs stay in sync with its localized `SlotName()` output (both are populated in the same loop, from the same slot constant) — they must always describe the same slot.
 
+## Version Check
+
+`VersionCheck.lua` broadcasts the local `.toc` version (`C_AddOns.GetAddOnMetadata("CC_RaidTools", "Version")` — the global `GetAddOnMetadata` is deprecated and kept only as a fallback) on a dedicated prefix (`CCRT_VER`) to RAID/PARTY and, separately, GUILD (so it also catches guild members who aren't currently grouped). Broadcasts happen on login/reload and on `GROUP_ROSTER_UPDATE`, throttled to once every 60s so a flurry of roster events doesn't spam the channel.
+
+- Version strings are compared numerically per dot-separated segment (`VersionGreater`), not as plain strings — `"1.2.10"` must compare greater than `"1.2.9"`, which a naive string comparison would get wrong.
+- If a peer's broadcast version is newer than the local one, the local client prints a one-time-per-session reminder (`warnedThisSession`) rather than nagging on every single broadcast received.
+- The module's own panel lists everyone seen (self included, tagged), colored by whether they're outdated, current, or ahead — this is the officer-facing view; the reminder above is the self-diagnostic one. Both read from the same `known` table.
+
 ## UI and visual identity
 
 Keep the established CC RaidTools visual style:
@@ -287,6 +296,7 @@ Current visual intent:
 - Marks Bar → raid marker icon.
 - Raid Inspect → raid inspection / character inspection icon.
 - Raid Groups → dedicated custom crest icon (`TexturesGUI/RaidGroups.png`), commissioned specifically for this module.
+- Version Check → no icon (renders as a plain text menu button); add one if/when custom art is commissioned for it.
 
 Use actual WoW UI textures where possible rather than emoji or text glyphs. Raid Groups is the one deliberate exception (custom commissioned art rather than a repurposed Blizzard texture); keep using a real icon asset for any future module rather than emoji/text glyphs.
 
@@ -369,7 +379,17 @@ For Raid Inspect specifically:
 - start an inspection with a mix of raid members running CC RaidTools and members without it, and confirm the ones running it resolve near-instantly (peer report) while the rest still go through the normal (slower) native inspect queue;
 - verify your own entry is filled instantly without ever natively inspecting yourself;
 - verify a peer report correctly reflects missing enchants/gems for a character with several empty slots, and for one with a fully enchanted/gemmed set (empty CSV fields decode cleanly);
-- verify the row's tooltip content matches whether the data came from a peer report or a native inspection.
+- verify the row's tooltip content matches whether the data came from a peer report or a native inspection;
+- test in a 5-player group;
+- test in a raid;
+- test players in and out of inspect range;
+- test a normal successful inspection;
+- test an inspection timeout;
+- verify a late `INSPECT_READY` does not corrupt the queue;
+- verify the queue advances exactly once per player;
+- verify item level, enchant and socket results;
+- test after `/reload`;
+- verify the UI remains usable with large raids.
 
 For Marks Bar specifically:
 - test raid markers;
@@ -393,17 +413,11 @@ For Invite Tool specifically:
 - verify Secret Value handling does not produce Lua errors;
 - compare changed invite API behavior with `wow-ui-source` and the relevant Blizzard implementation.
 
-For Raid Inspect specifically:
-- test in a 5-player group;
-- test in a raid;
-- test players in and out of inspect range;
-- test a normal successful inspection;
-- test an inspection timeout;
-- verify a late `INSPECT_READY` does not corrupt the queue;
-- verify the queue advances exactly once per player;
-- verify item level, enchant and socket results;
-- test after `/reload`;
-- verify the UI remains usable with large raids.
+For Version Check specifically:
+- verify the local version matches the `.toc`;
+- fake/observe a peer broadcasting a newer version and confirm the one-time local reminder prints (and does not repeat every broadcast);
+- verify the officer list correctly tags self, outdated, current, and newer peers;
+- confirm broadcasts reach both RAID/PARTY and GUILD, and that a non-grouped, in-guild player still gets detected.
 
 ## Debugging principles
 

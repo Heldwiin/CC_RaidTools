@@ -16,5 +16,6 @@ InviteTool.lua
 Focus.lua
 MarksBar.lua
 RaidInspect.lua
+VersionCheck.lua
 GuildBranding.lua
 ModuleIcons.lua
