@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.11
+
+### Nouveau module : Version Check
+
+- Ajout du module **Version Check** : chaque joueur ayant CC RaidTools diffuse sa version au raid/groupe et à la guilde entière (comme le fait DBM).
+- Auto-diagnostic : si une version plus récente que la vôtre est détectée, un message local (une seule fois par session) vous prévient qu'une mise à jour est disponible.
+- Vue officier : liste de tous les joueurs vus, avec leur version et un statut coloré (à jour / en retard / plus récent).
+
+### Raid Groups
+
+- **Correctif important** : le bouton Appliquer envoyait tous les déplacements de groupe d'un coup, ce qui pouvait déclencher le message serveur "Vous avez tenté trop d'actions de groupe". Les déplacements sont désormais espacés dans le temps, un par un.
+- Possibilité de **réordonner les joueurs à l'intérieur d'un même groupe** en les glissant l'un sur l'autre (l'ordre affiché dans CC RaidTools est désormais respecté, au lieu d'être toujours trié alphabétiquement). Cet ordre reste propre à l'affichage de l'addon : WoW ne permet pas de contrôler la position exacte sur les frames de raid natives.
+
 ## 1.2.10
 
 ### Correctif urgent — Raid Inspect

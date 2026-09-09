@@ -185,6 +185,18 @@ local frFR = {
     riSlotTrinket2 = "Babiole 2",
     riMissingEnchantTooltip = "Enchant manquant sur :",
     riMissingGemTooltip = "Socket(s) vide(s) sur :",
+
+    -- VersionCheck
+    vcLabel = "Version Check :",
+    vcYourVersion = "Votre version : %s",
+    vcRefreshButton = "Rafraîchir",
+    vcListHeader = "Membre                  Version    Statut",
+    vcCount = "%d/%d à jour ou plus récents",
+    vcYouTag = "(vous)",
+    vcOutdatedTag = "En retard",
+    vcNewerTag = "Plus récent",
+    vcUpToDateTag = "À jour",
+    vcOutdatedWarning = "|cffffcc00[CC RaidTools]|r Une nouvelle version est disponible : %s (vous avez %s). Demandez à quelqu'un de vous l'envoyer ou récupérez-la sur GitHub.",
 }
 
 -- ===== English overrides =====
@@ -308,6 +320,18 @@ local enUS = {
     riSlotTrinket2 = "Trinket 2",
     riMissingEnchantTooltip = "Missing enchant on:",
     riMissingGemTooltip = "Empty socket(s) on:",
+
+    -- VersionCheck
+    vcLabel = "Version Check:",
+    vcYourVersion = "Your version: %s",
+    vcRefreshButton = "Refresh",
+    vcListHeader = "Member                  Version    Status",
+    vcCount = "%d/%d up to date or newer",
+    vcYouTag = "(you)",
+    vcOutdatedTag = "Outdated",
+    vcNewerTag = "Newer",
+    vcUpToDateTag = "Up to date",
+    vcOutdatedWarning = "|cffffcc00[CC RaidTools]|r A newer version is available: %s (you have %s). Ask someone to send it to you or grab it from GitHub.",
 
     rgLabel = "Raid Groups:",
     rgSaveButton = "Save",

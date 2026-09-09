@@ -25,7 +25,8 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - Invite Tool avec invitation sur mot-clé reçu en chuchotement.
 - Utilisation de la mécanique native Blizzard **Suggest Invite** lorsqu'un membre non-leader reçoit une demande d'invitation.
 - **Raid Inspect** : inspection du groupe/raid avec ilvl moyen, enchants manquants et gemmes non serties, accélérée par rapport instantané pour ceux qui ont l'addon.
-- **Raid Groups** : organisation des 8 groupes de raid par glisser-déposer, tri automatique configurable, presets nommés, partage en jeu et export/import texte, application directe des groupes en jeu.
+- **Raid Groups** : organisation des 8 groupes de raid par glisser-déposer (avec réordonnancement à l'intérieur d'un groupe), tri automatique configurable, presets nommés, partage en jeu et export/import texte, application directe des groupes en jeu.
+- **Version Check** : diffusion et suivi des versions de l'addon dans le raid et la guilde.
 - Interface personnalisée sombre/transparente avec bordures pixel et branding Caelestis Concilium.
 - Configuration persistante après `/reload`.
 
@@ -35,7 +36,19 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.10**
+**1.2.11**
+
+### v1.2.11
+
+#### Version Check (nouveau module)
+
+- Diffusion de version au raid/groupe et à la guilde, avec avertissement local automatique si une version plus récente circule.
+- Vue officier listant tous les joueurs vus et leur statut de version.
+
+#### Raid Groups
+
+- Correctif : espacement des déplacements de groupe lors d'Appliquer, pour éviter le message serveur "trop d'actions de groupe".
+- Réordonnancement des joueurs à l'intérieur d'un même groupe par glisser-déposer.
 
 ### v1.2.10
 

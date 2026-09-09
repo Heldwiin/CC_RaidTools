@@ -10,6 +10,7 @@ local MODULE_ICONS = {
     Focus = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\Focus.png",
     MarksBar = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\MarksBar.png",
     RaidInspect = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\RaidInspect.png",
+    VersionCheck = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\VersionCheck.png",
 }
 
 local MENU_ICON_OVERRIDES = {

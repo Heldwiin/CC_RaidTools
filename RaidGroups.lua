@@ -35,6 +35,16 @@ local incomingShares = {} -- ["sender#msgId"] = { total, chunks, count }
 local shareSeq = 0
 local currentPresetName -- name of the last preset loaded/saved, used as a hint when sharing
 
+-- Position within a group (lower = higher up in the slot list). Only tracks
+-- explicit placements (drag & drop, typed edits, auto sort); anyone without
+-- a key just falls back to alphabetical, after everyone who has one.
+local sortKey = {}
+local orderCounter = 0
+local function Touch(name)
+    orderCounter = orderCounter + 1
+    sortKey[name] = orderCounter
+end
+
 local dragGhost
 local dragging -- { member = name, fromGroup = number|nil }
 
@@ -71,6 +81,11 @@ local function SaveCurrent()
     for name, g in pairs(assign) do
         CCRaidToolsDB.raidGroups.current[name] = g
     end
+    CCRaidToolsDB.raidGroups.order = CCRaidToolsDB.raidGroups.order or {}
+    wipe(CCRaidToolsDB.raidGroups.order)
+    for name, k in pairs(sortKey) do
+        CCRaidToolsDB.raidGroups.order[name] = k
+    end
 end
 
 local function LoadCurrent()
@@ -78,6 +93,14 @@ local function LoadCurrent()
     wipe(assign)
     for name, g in pairs(CCRaidToolsDB.raidGroups.current) do
         assign[name] = g
+    end
+    wipe(sortKey)
+    orderCounter = 0
+    for name, k in pairs(CCRaidToolsDB.raidGroups.order or {}) do
+        sortKey[name] = k
+        if k and k > orderCounter then
+            orderCounter = k
+        end
     end
 end
 
@@ -260,11 +283,27 @@ end
 local function ApplyDrop(member, fromGroup, target)
     if target == "pool" then
         assign[member] = nil
+        sortKey[member] = nil
     elseif type(target) == "table" then
         local targetGroup = target.group
         local targetMember = target.member
         if targetMember == member then
             return
+        end
+        if targetMember and targetGroup == fromGroup then
+            -- Dropped onto someone else within the SAME group: this is a
+            -- pure reorder, swap their positions instead of touching group
+            -- membership at all.
+            sortKey[member], sortKey[targetMember] = sortKey[targetMember], sortKey[member]
+        else
+            Touch(member)
+            if targetMember then
+                if fromGroup then
+                    Touch(targetMember)
+                else
+                    sortKey[targetMember] = nil
+                end
+            end
         end
         assign[member] = targetGroup
         if targetMember then
@@ -742,6 +781,7 @@ local function SortGroups()
     local function TryGroup(g, name)
         if counts[g] < NUM_SLOTS then
             assign[name] = g
+            Touch(name)
             counts[g] = counts[g] + 1
             return true
         end
@@ -946,10 +986,18 @@ local function EnsureSlotEditBox()
         text = text ~= "" and C.StripRealm(text) or text
         local oldMember = target.member
         if oldMember and oldMember ~= text then
+            local oldKey = sortKey[oldMember]
             assign[oldMember] = nil
+            sortKey[oldMember] = nil
+            if text ~= "" and oldKey and not sortKey[text] then
+                sortKey[text] = oldKey
+            end
         end
         if text ~= "" then
             assign[text] = target.group
+            if not sortKey[text] then
+                Touch(text)
+            end
         end
         e:Hide()
         SaveCurrent()
@@ -1132,7 +1180,12 @@ end
 
 -- ===== Apply to raid (leader/assist) =====
 
+local applyInProgress = false
+
 local function ApplyGroups()
+    if applyInProgress then
+        return
+    end
     if not IsInRaid() then
         print(C.L.rgNeedRaid)
         return
@@ -1167,58 +1220,102 @@ local function ApplyGroups()
         end
     end
 
-    local moved, attempts = 0, 0
-    local changed = true
-    while changed and attempts < 60 do
-        changed = false
-        attempts = attempts + 1
+    -- Server-side throttle: firing SetRaidSubgroup/SwapRaidSubgroup back to
+    -- back triggers "You have attempted too many group actions in a short
+    -- period of time." No official documented threshold, so this spaces
+    -- moves out at a conservative, community-tested pace rather than
+    -- guessing at a tighter one.
+    local MOVE_DELAY = 0.4
+    local MAX_STEPS = 300
+
+    local moved, steps = 0, 0
+    applyInProgress = true
+    if applyButton then
+        applyButton:Disable()
+    end
+
+    -- Finds one mismatched player and how to fix them: a direct move if the
+    -- target group has room, or a swap with someone already there if not.
+    -- Returns nil once nothing is left to fix.
+    local function FindNextMove()
         for name, wantGroup in pairs(assign) do
             local idx = nameToIndex[name]
             if idx and indexToGroup[idx] ~= wantGroup then
                 if (subgroupCount[wantGroup] or 0) < NUM_SLOTS then
-                    -- Target group has room: plain move, no swap needed.
-                    local curGroup = indexToGroup[idx]
-                    local ok = pcall(SetSubgroupFn, idx, wantGroup)
-                    if ok then
-                        subgroupCount[curGroup] = subgroupCount[curGroup] - 1
-                        subgroupCount[wantGroup] = subgroupCount[wantGroup] + 1
-                        indexToGroup[idx] = wantGroup
-                        moved = moved + 1
-                        changed = true
+                    return { kind = "move", idx = idx, wantGroup = wantGroup }
+                end
+                local partnerIdx
+                for oname, oidx in pairs(nameToIndex) do
+                    if oidx ~= idx and indexToGroup[oidx] == wantGroup and assign[oname] and assign[oname] ~= wantGroup then
+                        partnerIdx = oidx
+                        break
                     end
-                else
-                    -- Target group is full: swap with someone in it (prefer
-                    -- someone who also wants to leave that group).
-                    local partnerIdx
+                end
+                if not partnerIdx then
                     for oname, oidx in pairs(nameToIndex) do
-                        if oidx ~= idx and indexToGroup[oidx] == wantGroup and assign[oname] and assign[oname] ~= wantGroup then
+                        if oidx ~= idx and indexToGroup[oidx] == wantGroup then
                             partnerIdx = oidx
                             break
                         end
                     end
-                    if not partnerIdx then
-                        for oname, oidx in pairs(nameToIndex) do
-                            if oidx ~= idx and indexToGroup[oidx] == wantGroup then
-                                partnerIdx = oidx
-                                break
-                            end
-                        end
-                    end
-                    if partnerIdx then
-                        local curGroup = indexToGroup[idx]
-                        local ok = pcall(SwapFn, idx, partnerIdx)
-                        if ok then
-                            indexToGroup[idx] = wantGroup
-                            indexToGroup[partnerIdx] = curGroup
-                            moved = moved + 1
-                            changed = true
-                        end
-                    end
                 end
+                if partnerIdx then
+                    return { kind = "swap", idx = idx, partnerIdx = partnerIdx, wantGroup = wantGroup }
+                end
+                -- No usable move for this one yet (e.g. its swap partner
+                -- isn't resolved this pass); keep scanning the rest.
             end
         end
+        return nil
     end
-    print(string.format(C.L.rgApplyDone, moved))
+
+    local function Finish()
+        applyInProgress = false
+        if applyButton and not InCombatLockdown() then
+            applyButton:Enable()
+        end
+        print(string.format(C.L.rgApplyDone, moved))
+    end
+
+    local function Step()
+        if InCombatLockdown() then
+            applyInProgress = false
+            if applyButton then
+                applyButton:Disable()
+            end
+            print(C.L.rgCombatBlocked)
+            return
+        end
+        steps = steps + 1
+        if steps > MAX_STEPS then
+            Finish()
+            return
+        end
+        local action = FindNextMove()
+        if not action then
+            Finish()
+            return
+        end
+        if action.kind == "move" then
+            local curGroup = indexToGroup[action.idx]
+            if pcall(SetSubgroupFn, action.idx, action.wantGroup) then
+                subgroupCount[curGroup] = subgroupCount[curGroup] - 1
+                subgroupCount[action.wantGroup] = (subgroupCount[action.wantGroup] or 0) + 1
+                indexToGroup[action.idx] = action.wantGroup
+                moved = moved + 1
+            end
+        else
+            local curGroup = indexToGroup[action.idx]
+            if pcall(SwapFn, action.idx, action.partnerIdx) then
+                indexToGroup[action.idx] = action.wantGroup
+                indexToGroup[action.partnerIdx] = curGroup
+                moved = moved + 1
+            end
+        end
+        C_Timer.After(MOVE_DELAY, Step)
+    end
+
+    Step()
 end
 
 -- ===== Refresh (render) =====
@@ -1256,7 +1353,20 @@ function Refresh()
                 members[#members + 1] = name
             end
         end
-        table.sort(members)
+        table.sort(members, function(a, b)
+            local ka, kb = sortKey[a], sortKey[b]
+            if ka and kb then
+                if ka ~= kb then
+                    return ka < kb
+                end
+                return a < b
+            elseif ka then
+                return true
+            elseif kb then
+                return false
+            end
+            return a < b
+        end)
         for s = 1, NUM_SLOTS do
             local slot = slotFrames[g][s]
             local m = members[s]
