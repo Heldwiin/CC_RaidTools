@@ -237,7 +237,16 @@ function C.BuildMainFrame()
         local _, classToken = UnitClass("player")
         local col = classToken and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classToken]
         if col then
-            divider:SetColorTexture(col.r, col.g, col.b, 0.9)
+            -- Blend the class color into a dark base instead of using it at
+            -- full saturation, which reads as neon against this addon's
+            -- otherwise muted dark theme. Keeps the class identity as a
+            -- subtle tint rather than a bright accent.
+            local mix = 0.35
+            local baseR, baseG, baseB = 0.05, 0.05, 0.06
+            local r = col.r * mix + baseR * (1 - mix)
+            local g = col.g * mix + baseG * (1 - mix)
+            local b = col.b * mix + baseB * (1 - mix)
+            divider:SetColorTexture(r, g, b, 0.85)
         else
             divider:SetColorTexture(0, 0, 0, 0.9)
         end
