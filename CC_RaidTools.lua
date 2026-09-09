@@ -232,7 +232,7 @@ function C.BuildMainFrame()
     close:SetScript("OnEnter", function() closeTex:SetVertexColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 1) end)
     close:SetScript("OnLeave", function() closeTex:SetVertexColor(0.851, 0.851, 0.851, 1) end)
     close:SetScript("OnClick", function() mainFrame:Hide() end)
-    local divider = mainFrame:CreateTexture(nil, "BORDER"); divider:SetPoint("TOPLEFT", 132, -29); divider:SetPoint("BOTTOMLEFT", 132, 8); divider:SetWidth(2)
+    local divider = mainFrame:CreateTexture(nil, "BORDER"); divider:SetPoint("TOPLEFT", 138, -2); divider:SetPoint("BOTTOMLEFT", 138, 2); divider:SetWidth(2)
     do
         local _, classToken = UnitClass("player")
         local col = classToken and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classToken]
