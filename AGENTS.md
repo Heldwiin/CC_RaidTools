@@ -297,7 +297,7 @@ Current visual intent:
 - Marks Bar → raid marker icon.
 - Raid Inspect → raid inspection / character inspection icon.
 - Raid Groups → dedicated custom crest icon (`TexturesGUI/RaidGroups.png`), commissioned specifically for this module.
-- Version Check → no icon (renders as a plain text menu button); add one if/when custom art is commissioned for it.
+- Version Check → dedicated custom crest icon (`TexturesGUI/VersionCheck.png`), commissioned specifically for this module.
 
 Use actual WoW UI textures where possible rather than emoji or text glyphs. Raid Groups is the one deliberate exception (custom commissioned art rather than a repurposed Blizzard texture); keep using a real icon asset for any future module rather than emoji/text glyphs.
 
