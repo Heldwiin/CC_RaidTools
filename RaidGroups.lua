@@ -1180,7 +1180,12 @@ end
 
 -- ===== Apply to raid (leader/assist) =====
 
+local applyInProgress = false
+
 local function ApplyGroups()
+    if applyInProgress then
+        return
+    end
     if not IsInRaid() then
         print(C.L.rgNeedRaid)
         return
@@ -1215,58 +1220,102 @@ local function ApplyGroups()
         end
     end
 
-    local moved, attempts = 0, 0
-    local changed = true
-    while changed and attempts < 60 do
-        changed = false
-        attempts = attempts + 1
+    -- Server-side throttle: firing SetRaidSubgroup/SwapRaidSubgroup back to
+    -- back triggers "You have attempted too many group actions in a short
+    -- period of time." No official documented threshold, so this spaces
+    -- moves out at a conservative, community-tested pace rather than
+    -- guessing at a tighter one.
+    local MOVE_DELAY = 0.4
+    local MAX_STEPS = 300
+
+    local moved, steps = 0, 0
+    applyInProgress = true
+    if applyButton then
+        applyButton:Disable()
+    end
+
+    -- Finds one mismatched player and how to fix them: a direct move if the
+    -- target group has room, or a swap with someone already there if not.
+    -- Returns nil once nothing is left to fix.
+    local function FindNextMove()
         for name, wantGroup in pairs(assign) do
             local idx = nameToIndex[name]
             if idx and indexToGroup[idx] ~= wantGroup then
                 if (subgroupCount[wantGroup] or 0) < NUM_SLOTS then
-                    -- Target group has room: plain move, no swap needed.
-                    local curGroup = indexToGroup[idx]
-                    local ok = pcall(SetSubgroupFn, idx, wantGroup)
-                    if ok then
-                        subgroupCount[curGroup] = subgroupCount[curGroup] - 1
-                        subgroupCount[wantGroup] = subgroupCount[wantGroup] + 1
-                        indexToGroup[idx] = wantGroup
-                        moved = moved + 1
-                        changed = true
+                    return { kind = "move", idx = idx, wantGroup = wantGroup }
+                end
+                local partnerIdx
+                for oname, oidx in pairs(nameToIndex) do
+                    if oidx ~= idx and indexToGroup[oidx] == wantGroup and assign[oname] and assign[oname] ~= wantGroup then
+                        partnerIdx = oidx
+                        break
                     end
-                else
-                    -- Target group is full: swap with someone in it (prefer
-                    -- someone who also wants to leave that group).
-                    local partnerIdx
+                end
+                if not partnerIdx then
                     for oname, oidx in pairs(nameToIndex) do
-                        if oidx ~= idx and indexToGroup[oidx] == wantGroup and assign[oname] and assign[oname] ~= wantGroup then
+                        if oidx ~= idx and indexToGroup[oidx] == wantGroup then
                             partnerIdx = oidx
                             break
                         end
                     end
-                    if not partnerIdx then
-                        for oname, oidx in pairs(nameToIndex) do
-                            if oidx ~= idx and indexToGroup[oidx] == wantGroup then
-                                partnerIdx = oidx
-                                break
-                            end
-                        end
-                    end
-                    if partnerIdx then
-                        local curGroup = indexToGroup[idx]
-                        local ok = pcall(SwapFn, idx, partnerIdx)
-                        if ok then
-                            indexToGroup[idx] = wantGroup
-                            indexToGroup[partnerIdx] = curGroup
-                            moved = moved + 1
-                            changed = true
-                        end
-                    end
                 end
+                if partnerIdx then
+                    return { kind = "swap", idx = idx, partnerIdx = partnerIdx, wantGroup = wantGroup }
+                end
+                -- No usable move for this one yet (e.g. its swap partner
+                -- isn't resolved this pass); keep scanning the rest.
             end
         end
+        return nil
     end
-    print(string.format(C.L.rgApplyDone, moved))
+
+    local function Finish()
+        applyInProgress = false
+        if applyButton and not InCombatLockdown() then
+            applyButton:Enable()
+        end
+        print(string.format(C.L.rgApplyDone, moved))
+    end
+
+    local function Step()
+        if InCombatLockdown() then
+            applyInProgress = false
+            if applyButton then
+                applyButton:Disable()
+            end
+            print(C.L.rgCombatBlocked)
+            return
+        end
+        steps = steps + 1
+        if steps > MAX_STEPS then
+            Finish()
+            return
+        end
+        local action = FindNextMove()
+        if not action then
+            Finish()
+            return
+        end
+        if action.kind == "move" then
+            local curGroup = indexToGroup[action.idx]
+            if pcall(SetSubgroupFn, action.idx, action.wantGroup) then
+                subgroupCount[curGroup] = subgroupCount[curGroup] - 1
+                subgroupCount[action.wantGroup] = (subgroupCount[action.wantGroup] or 0) + 1
+                indexToGroup[action.idx] = action.wantGroup
+                moved = moved + 1
+            end
+        else
+            local curGroup = indexToGroup[action.idx]
+            if pcall(SwapFn, action.idx, action.partnerIdx) then
+                indexToGroup[action.idx] = action.wantGroup
+                indexToGroup[action.partnerIdx] = curGroup
+                moved = moved + 1
+            end
+        end
+        C_Timer.After(MOVE_DELAY, Step)
+    end
+
+    Step()
 end
 
 -- ===== Refresh (render) =====
