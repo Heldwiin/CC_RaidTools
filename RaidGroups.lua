@@ -35,6 +35,16 @@ local incomingShares = {} -- ["sender#msgId"] = { total, chunks, count }
 local shareSeq = 0
 local currentPresetName -- name of the last preset loaded/saved, used as a hint when sharing
 
+-- Position within a group (lower = higher up in the slot list). Only tracks
+-- explicit placements (drag & drop, typed edits, auto sort); anyone without
+-- a key just falls back to alphabetical, after everyone who has one.
+local sortKey = {}
+local orderCounter = 0
+local function Touch(name)
+    orderCounter = orderCounter + 1
+    sortKey[name] = orderCounter
+end
+
 local dragGhost
 local dragging -- { member = name, fromGroup = number|nil }
 
@@ -71,6 +81,11 @@ local function SaveCurrent()
     for name, g in pairs(assign) do
         CCRaidToolsDB.raidGroups.current[name] = g
     end
+    CCRaidToolsDB.raidGroups.order = CCRaidToolsDB.raidGroups.order or {}
+    wipe(CCRaidToolsDB.raidGroups.order)
+    for name, k in pairs(sortKey) do
+        CCRaidToolsDB.raidGroups.order[name] = k
+    end
 end
 
 local function LoadCurrent()
@@ -78,6 +93,14 @@ local function LoadCurrent()
     wipe(assign)
     for name, g in pairs(CCRaidToolsDB.raidGroups.current) do
         assign[name] = g
+    end
+    wipe(sortKey)
+    orderCounter = 0
+    for name, k in pairs(CCRaidToolsDB.raidGroups.order or {}) do
+        sortKey[name] = k
+        if k and k > orderCounter then
+            orderCounter = k
+        end
     end
 end
 
@@ -260,11 +283,27 @@ end
 local function ApplyDrop(member, fromGroup, target)
     if target == "pool" then
         assign[member] = nil
+        sortKey[member] = nil
     elseif type(target) == "table" then
         local targetGroup = target.group
         local targetMember = target.member
         if targetMember == member then
             return
+        end
+        if targetMember and targetGroup == fromGroup then
+            -- Dropped onto someone else within the SAME group: this is a
+            -- pure reorder, swap their positions instead of touching group
+            -- membership at all.
+            sortKey[member], sortKey[targetMember] = sortKey[targetMember], sortKey[member]
+        else
+            Touch(member)
+            if targetMember then
+                if fromGroup then
+                    Touch(targetMember)
+                else
+                    sortKey[targetMember] = nil
+                end
+            end
         end
         assign[member] = targetGroup
         if targetMember then
@@ -742,6 +781,7 @@ local function SortGroups()
     local function TryGroup(g, name)
         if counts[g] < NUM_SLOTS then
             assign[name] = g
+            Touch(name)
             counts[g] = counts[g] + 1
             return true
         end
@@ -946,10 +986,18 @@ local function EnsureSlotEditBox()
         text = text ~= "" and C.StripRealm(text) or text
         local oldMember = target.member
         if oldMember and oldMember ~= text then
+            local oldKey = sortKey[oldMember]
             assign[oldMember] = nil
+            sortKey[oldMember] = nil
+            if text ~= "" and oldKey and not sortKey[text] then
+                sortKey[text] = oldKey
+            end
         end
         if text ~= "" then
             assign[text] = target.group
+            if not sortKey[text] then
+                Touch(text)
+            end
         end
         e:Hide()
         SaveCurrent()
@@ -1256,7 +1304,20 @@ function Refresh()
                 members[#members + 1] = name
             end
         end
-        table.sort(members)
+        table.sort(members, function(a, b)
+            local ka, kb = sortKey[a], sortKey[b]
+            if ka and kb then
+                if ka ~= kb then
+                    return ka < kb
+                end
+                return a < b
+            elseif ka then
+                return true
+            elseif kb then
+                return false
+            end
+            return a < b
+        end)
         for s = 1, NUM_SLOTS do
             local slot = slotFrames[g][s]
             local m = members[s]
