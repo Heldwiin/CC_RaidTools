@@ -105,17 +105,32 @@ local function RefreshList()
     end
 end
 
-local function BroadcastVersion()
+local function BroadcastVersion(manual)
     if not C_ChatInfo or not C_ChatInfo.SendAddonMessage then
+        if manual then
+            print(C.L.vcNoApi)
+        end
         return
     end
+    local sentSomewhere = false
     if IsInRaid() then
         C_ChatInfo.SendAddonMessage(VERSION_PREFIX, localVersion, "RAID")
+        sentSomewhere = true
     elseif IsInGroup() then
         C_ChatInfo.SendAddonMessage(VERSION_PREFIX, localVersion, "PARTY")
+        sentSomewhere = true
     end
     if IsInGuild() then
         C_ChatInfo.SendAddonMessage(VERSION_PREFIX, localVersion, "GUILD")
+        sentSomewhere = true
+    end
+    if manual then
+        if sentSomewhere then
+            print(C.L.vcBroadcastSent)
+        else
+            print(C.L.vcNoChannel)
+        end
+        RefreshList()
     end
 end
 
@@ -153,7 +168,7 @@ local function BuildUI(panel)
     refreshBtn:SetPoint("TOPLEFT", localLabel, "BOTTOMLEFT", 0, -8)
     refreshBtn:SetText(C.L.vcRefreshButton)
     C.SkinButton(refreshBtn)
-    refreshBtn:SetScript("OnClick", BroadcastVersion)
+    refreshBtn:SetScript("OnClick", function() BroadcastVersion(true) end)
 
     countText = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     countText:SetPoint("LEFT", refreshBtn, "RIGHT", 10, 0)
