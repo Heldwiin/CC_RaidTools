@@ -137,6 +137,7 @@ local frFR = {
     rgImportDefaultName = "Import",
     rgImportDone = "|cff33ff99[CC RaidTools]|r Preset '%s' importé.",
     rgApplyDone = "|cff33ff99[CC RaidTools]|r %d joueur(s) déplacé(s).",
+    rgSortSummary = "|cff7381FF[CC RaidTools]|r Tri auto : %d tank(s), %d heal(s), %d dps détecté(s).",
 
     rgSortSettingsTitle = "Options du tri auto",
     rgSortGroupsLabel = "Groupes concernés par le tri :",
@@ -352,6 +353,7 @@ local enUS = {
     rgNoApi = "|cffff6666[CC RaidTools]|r Unable to move players (API unavailable).",
     rgCombatBlocked = "|cffff6666[CC RaidTools]|r Cannot apply groups while in combat.",
     rgApplyDone = "|cff33ff99[CC RaidTools]|r %d player(s) moved.",
+    rgSortSummary = "|cff7381FF[CC RaidTools]|r Auto sort: %d tank(s), %d healer(s), %d dps detected.",
 
     rgSortSettingsTitle = "Auto sort options",
     rgSortGroupsLabel = "Groups affected by sort:",
