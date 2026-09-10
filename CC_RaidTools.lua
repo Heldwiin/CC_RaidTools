@@ -257,7 +257,8 @@ function C.BuildMainFrame()
     end
     local menuTitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"); menuTitle:SetPoint("TOPLEFT", 8, -37); menuTitle:SetText("Modules"); menuTitle:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
     local content = CreateFrame("Frame", nil, mainFrame); content:SetPoint("TOPLEFT", 133, -31); content:SetPoint("BOTTOMRIGHT", -5, 7); mainFrame.content = content
-    local order = { "AutoPromote", "AutoLog", "ReadyCheck", "RaidGroups", "InviteTool", "Focus", "MarksBar", "RaidInspect", "VersionCheck", "BonusRoll" }
+    -- VersionCheck stays last, always — add future modules before it.
+    local order = { "AutoPromote", "AutoLog", "ReadyCheck", "RaidGroups", "InviteTool", "Focus", "MarksBar", "RaidInspect", "BonusRoll", "VersionCheck" }
     local labels = { AutoPromote="Auto Promote", AutoLog="AutoLog", ReadyCheck="Ready Check", RaidGroups="Raid Groups", InviteTool="Invite Tool", Focus="Focus", MarksBar="Marks Bar", RaidInspect="Raid Inspect", VersionCheck="Version Check", BonusRoll="Bonus Roll" }
     local buttons, panels = {}, {}
     local function Select(name)

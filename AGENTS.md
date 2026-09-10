@@ -305,6 +305,8 @@ The vertical divider between the module menu and the content area (`CC_RaidTools
 
 Do not redesign the whole configuration window for a small feature request.
 
+**Version Check always stays last in the module menu** (`order` table in `BuildMainFrame`, `CC_RaidTools.lua`). When adding a new module, insert it before `VersionCheck` in that list, not after.
+
 ## Module menu icons
 
 Current visual intent:
