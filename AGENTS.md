@@ -12,17 +12,20 @@ The addon is intentionally lightweight and modular, with no external library dep
 
 Core:
 - `CC_RaidTools.lua` — addon core, SavedVariables, `/ccrt`, main configuration window and shared UI helpers.
-- `DBMigration.lua` — one-release compatibility migration from the legacy `AutoPromoteDB` SavedVariable to `CCRaidToolsDB`.
 
 Gameplay modules:
 - `AutoPromote.lua` — automatic raid-assistant promotion.
 - `AutoLog.lua` — automatic combat logging for configured raid/dungeon difficulties.
-- `ReadyCheck.lua` — custom Ready Check display, readiness state and raid buff/consumable checks.
+- `ReadyCheck.lua` — custom Ready Check display, readiness state, raid buff/consumable checks and player durability (shared between raid members via addon message).
+- `RaidGroups.lua` — raid group organizer: drag & drop between the 8 groups, configurable auto sort (affected groups, number of splits, consecutive/alternating split rule), named presets, in-game sharing and text export/import, and applying the layout to the live raid (leader/assistant only, outside combat).
 - `InviteTool.lua` — whisper keyword invitation system.
 - `Focus.lua` — mouse-button focus helper using secure actions.
-- `MarksBar.lua` — raid target markers and world markers.
-- `MarksBarPerformance.lua` — lightweight mouseover update throttle for the Marks Bar, applied on addon load.
-- `RaidInspect.lua` — raid/party inspection for item level, enchants and gem sockets.
+- `MarksBar.lua` — raid target markers and world markers, including its own throttled mouseover check (see Marks Bar section below).
+- `RaidInspect.lua` — raid/party inspection for item level, enchants and gem sockets; anyone also running CC RaidTools self-reports over an addon message instead of going through Blizzard's throttled native inspection.
+- `VersionCheck.lua` — broadcasts the local addon version to raid/party and guild; warns locally (once per session) if a newer version is seen in the wild, and shows an officer-facing list of who's running which version.
+- `BonusRoll.lua` — adds a confirmation step before a bonus roll (Roll or Pass) goes through, showing the loot specialization it will award for, so a mis-click doesn't burn a roll by accident. Cannot click the native buttons for the player (protected action, see the module's own header comment); disables them until confirmed instead.
+
+`DBMigration.lua` and `MarksBarPerformance.lua` no longer exist: the `AutoPromoteDB` → `CCRaidToolsDB` migration and the Marks Bar mouseover throttle were both folded into their respective modules once stabilized (see Changelog 1.2.3/1.2.4). Do not recreate them; keep this document in sync if that ever changes again.
 
 UI/branding:
 - `GuildBranding.lua` — Caelestis Concilium watermark.
@@ -47,13 +50,7 @@ The canonical SavedVariable is:
 
 `CCRaidToolsDB`
 
-Existing installations may still provide the legacy:
-
-`AutoPromoteDB`
-
-During the 1.2.3 migration period, `CC_RaidTools.toc` declares both names so WoW loads the legacy data before `DBMigration.lua` runs. `DBMigration.lua` copies the legacy table to `CCRaidToolsDB` when needed and then aliases `AutoPromoteDB` to the canonical table so existing modules can continue using their current references without a risky rewrite.
-
-**Migration TODO:** after 1.2.3 has been deployed and compatibility is confirmed, remove `AutoPromoteDB` from the `.toc` and remove the compatibility migration/alias. Do not do this before the migration window is intentionally closed.
+`.toc` only declares `CCRaidToolsDB`; the legacy `AutoPromoteDB` migration (introduced in 1.2.3) is complete and was removed in 1.2.4. `CC_RaidTools.lua` still sets `AutoPromoteDB = CCRaidToolsDB` as a permanent in-memory Lua alias (not a SavedVariable) so existing modules can keep referencing `AutoPromoteDB.xxx` internally without a risky rewrite. Do not reintroduce `AutoPromoteDB` as a `.toc` SavedVariable, and do not remove the in-memory alias without first migrating every module that still reads/writes `AutoPromoteDB.*` to `CCRaidToolsDB.*`.
 
 Existing settings include, among others:
 - `names`
@@ -63,7 +60,10 @@ Existing settings include, among others:
 - `focus`
 - `marksBar`
 - `logging`
-- `raidCheckEnabled`
+- `raidCheckEnabled` (defaults to `true` for a fresh install — set in `C.InitDB()`)
+- `raidGroups` (`presets`, `current`, `sortSettings`)
+
+Module enable-by-default state (all set only when `nil`, in `C.InitDB()` or the module's own init — never overwrites an existing choice): Ready Check (`raidCheckEnabled`) and Invite Tool (`inviteTool.enabled`, in `InviteTool.lua`) default to **on**; Focus (`focus.enabled`) defaults to **off**. Invite Tool's default keyword list (`inviteTool.keyword`, comma/semicolon-separated, `InviteTool.lua`) is `"+1, inv, 123"`.
 
 When adding settings:
 1. Initialize the parent table defensively.
@@ -153,7 +153,7 @@ The bar supports:
 - mouseover display
 - saved position
 
-The mouseover display check is throttled by `MarksBarPerformance.lua` and must be applied during `ADDON_LOADED`; it must not depend on opening `/ccrt`.
+The mouseover display check is throttled directly inside `MarksBar.lua` and must be applied during `ADDON_LOADED`; it must not depend on opening `/ccrt`.
 
 Any layout change affecting secure buttons must be deferred outside combat.
 
@@ -176,6 +176,24 @@ If a ticker is used:
 Aura scanning can be expensive. Avoid repeatedly scanning unnecessary aura slots at very high frequency. Prefer event-driven refreshes (`UNIT_AURA`) and a modest fallback ticker when necessary.
 
 Do not assume all aura values are readable; respect WoW secret/protected values.
+
+### Durability
+
+Ready Check also shows each raid/party member's average equipment durability. Each client computes its own percentage from `GetInventoryItemDurability` and broadcasts it via `C_ChatInfo.SendAddonMessage` on a dedicated prefix (`CCRT_DUR`), registered with `C_ChatInfo.RegisterAddonMessagePrefix`. The broadcast is sent as soon as the `READY_CHECK` event fires, not only when the local Ready Check window is shown, so a player who has disabled their own window (`raidCheckEnabled = false`) still reports their durability to everyone else. Received values are read on `CHAT_MSG_ADDON` and kept keyed by both the full and realm-stripped sender name.
+
+## Raid Groups
+
+`RaidGroups.lua` lets the raid leader (or anyone browsing) organize the 8 raid subgroups without leaving `/ccrt`.
+
+- Layout state (`assign[name] = groupNumber`) is drag & drop **or direct typing** (click a slot to edit it inline); it never touches the live raid until **Appliquer** is clicked. Group rendering no longer filters by the current roster (`rosterSet`), so a name stays visible in its slot even if that person isn't currently in the raid/guild pool — this is what lets typing in an arbitrary name work at all, and also means someone who leaves the raid keeps their spot until manually cleared, edited, or the composition is re-sorted/reset.
+- Members within a group are ordered by `sortKey[name]` (a monotonically increasing counter touched on placement), not alphabetically — dropping one member of a group directly onto another member of the *same* group swaps their `sortKey` (pure reorder, doesn't touch `assign`); dropping across groups or from the pool always `Touch()`es the mover into a fresh, later position instead. `sortKey` persists in `CCRaidToolsDB.raidGroups.order`, mirroring `current`. This only controls the order shown inside this addon's own UI — WoW's raid API has no concept of a stable position within a subgroup, so **Appliquer** cannot enforce this order on Blizzard's actual raid frames, only which of the 8 subgroups someone is in. Don't imply otherwise in UI copy.
+- **Appliquer** requires raid leader/assistant and is blocked in combat (`InCombatLockdown()`); it moves players via `SetRaidSubgroup` when the target group has room, and falls back to `SwapRaidSubgroup` when it doesn't. Both are global Blizzard functions (not namespaced under `C_PartyInfo`) and are `#nocombat`. Moves are dispatched one at a time via `C_Timer.After` (0.4s apart, no official documented threshold — chosen conservatively) rather than fired back to back, since doing so triggers the server-side "You have attempted too many group actions" throttle on anything beyond a handful of moves. `applyInProgress` guards against re-entrancy while a run is in flight; combat starting mid-apply aborts the remaining steps.
+- **Tri auto** is configurable (gear icon): which of the 8 groups participate, how many splits to divide them into (1-8, where 1 means no split at all — the default), and whether the split is consecutive (`1,2,3 vs 4,5,6`) or alternating (`1,3,5 vs 2,4,6`). Tanks and healers alternate between the splits for balance; DPS ignore the split and simply top up the concerned groups in ascending order, so low-numbered groups fill to capacity before higher ones are touched. Groups excluded from the sort keep their current occupants untouched. Settings persist in `CCRaidToolsDB.raidGroups.sortSettings`.
+- Presets are saved/loaded/deleted by name in `CCRaidToolsDB.raidGroups.presets`; the working layout persists across sessions in `CCRaidToolsDB.raidGroups.current`.
+- The unassigned pool can be sourced from the current raid/party (default) or from the guild roster (`CCRaidToolsDB.raidGroups.poolSource`), so a composition can be prepped ahead of a raid night before anyone has even invited/zoned in. Guild roster data comes from `GetGuildRosterInfo`/`GetNumGuildMembers` (still global, not under `C_GuildInfo`) after requesting a refresh via `C_GuildInfo.GuildRoster()` (throttled ~10s server-side); `GUILD_ROSTER_UPDATE` triggers a re-render. Since guild members outside your group have no unit token, Tri auto treats everyone as DPS (no role awareness) while in guild-source mode. Presets/export/import/share all just store names, so a comp prepped from the guild list loads and applies fine later once people are actually in the raid.
+- The pool never dumps the whole guild roster directly. Instead it's hard-filtered to a fixed, small set of guild rank indices (`ALLOWED_GUILD_RANKS` at the top of the guild-source section) matching this guild's raiders/officers/applicants ranks — everyone in one of those ranks shows up automatically as soon as Guilde is selected, no manual per-member picking. Adjust `ALLOWED_GUILD_RANKS` if the guild's rank structure changes (remember `GetGuildRosterInfo`'s `rankIndex` is 0-based, while the in-game guild UI shows "Grade 1".."Grade 9" 1-based).
+- **Partager** broadcasts the current layout to the raid/party via a dedicated addon message prefix (`CCRT_RG`), chunked to stay under the ~255 character addon message limit and reassembled on receipt. **Exporter**/**Importer** do the same as a copy-pasteable text string, usable outside of a raid. Both paths always land as a new preset on the receiving end — never applied automatically — named after whatever preset name the sender had active.
+- When changing sort/apply logic, re-check `SetRaidSubgroup` / `SwapRaidSubgroup` / `GetRaidRosterInfo` against `wow-ui-source`; their signatures and combat restrictions matter here.
 
 ## AutoLog
 
@@ -235,8 +253,43 @@ When changing inspection behavior:
 - surface tooltip data when required before reading structured tooltip fields;
 - do not assume localized tooltip text when structured tooltip data is available;
 - keep expansion-specific enchant-slot lists isolated and easy to update.
+- `C_PaperDollInfo.GetInspectItemLevel(unit)` only works for a unit you have actually inspected — it does **not** work on `"player"` (returns 0/uncertain). `CollectUnitData` uses `GetAverageItemLevel()` (equipped value) specifically when `unit == "player"` instead. Don't merge these two paths without re-checking this against wow-ui-source; the earlier bug where it used `GetInspectItemLevel` unconditionally silently broke both the player's own displayed item level AND the peer self-report broadcast (which refuses to send while `uncertainItemLevel` is true).
 
 Raid Inspect must not introduce taint or protected-frame changes.
+
+A **Réinitialiser** button next to Inspecter le raid always stays clickable (including in combat) and just calls `StopInspectQueue()` + `RefreshList()` — a manual escape hatch for if a scan ever gets stuck (Lua error mid-queue, a native inspect that never resolves, etc.) leaving the main button disabled with no other way to recover short of `/reload`. Since it only clears local state/timers, not a protected call, there's no reason to gate it on combat like the main button.
+
+### Peer self-report (addon message, faster than native inspection)
+
+Native inspection is throttled by Blizzard to roughly one target at a time, which makes a full raid scan slow regardless of the client. To work around this, anyone running CC RaidTools skips it almost entirely:
+
+- On `StartInspectQueue()`, the local player's own entry is filled instantly from `CollectUnitData("player")` — a player always has full, non-secret access to their own gear, so there's never a reason to natively inspect yourself.
+- A `CCRT_INSQ` request is broadcast to RAID/PARTY; every other client running this addon replies on `CCRT_INSD` with its own `CollectUnitData("player")` result, encoded as compact CSV of raw numeric slot IDs (not localized text — each receiving client localizes for itself via `SlotName()`, keeping this locale-independent). Payload size was checked against a worst-case roster (every slot missing an enchant or gem) and stays well under the 255-character addon message limit, so unlike the RaidGroups share feature this never needs chunking.
+- `InspectNext()` checks `results[guid]` before calling `NotifyInspect()` and skips straight to the next queue entry if real data is already there (self, or an already-received peer report) — the throttled native path only ever runs for people who don't have the addon or haven't replied yet.
+- Peer reports never overwrite a `results[guid]` value that already exists (self and existing peer reports are set once per scan and not otherwise touched); a `StartInspectQueue()` call wipes `results` first, same as before.
+
+When touching this, re-verify `CollectUnitData`'s numeric slot IDs stay in sync with its localized `SlotName()` output (both are populated in the same loop, from the same slot constant) — they must always describe the same slot.
+
+## Version Check
+
+`VersionCheck.lua` broadcasts the local `.toc` version (`C_AddOns.GetAddOnMetadata("CC_RaidTools", "Version")` — the global `GetAddOnMetadata` is deprecated and kept only as a fallback) on a dedicated prefix (`CCRT_VER`) to the current RAID or PARTY only — scoped to the current group/raid on purpose, no GUILD channel. Passive self-announcements happen on login/reload and on `GROUP_ROSTER_UPDATE`, throttled to once every 60s so a flurry of roster events doesn't spam the channel.
+
+- Passive announcements alone made the list very slow to fill in (reported by the guild) — you'd only see someone once *their* own login or roster-change broadcast happened to reach you. A second prefix (`CCRT_VERQ`) actively asks everyone to check in right now: opening the panel and clicking **Rafraîchir** both send this request (throttled separately, `REQUEST_COOLDOWN` = 15s, so rapid tab-switching/clicking can't spam the channel), and any client that receives it replies immediately with a normal, silent `BroadcastVersion()`. Only the requester's own click prints a confirmation; replying to someone else's request never does.
+- Version strings are compared numerically per dot-separated segment (`VersionGreater`), not as plain strings — `"1.2.10"` must compare greater than `"1.2.9"`, which a naive string comparison would get wrong.
+- If a peer's broadcast version is newer than the local one, the local client prints a one-time-per-session reminder (`warnedThisSession`) rather than nagging on every single broadcast received.
+- The module's own panel lists everyone seen (self included, tagged), colored by whether they're outdated, current, or ahead — this is the officer-facing view; the reminder above is the self-diagnostic one. Both read from the same `known` table.
+
+## Bonus Roll Confirm
+
+`BonusRoll.lua` prompts for confirmation before a bonus roll (Roll or Pass) actually goes through, and shows the loot specialization it will be awarded for. Inspired by a small standalone addon the guild uses (feature described to Claude via its README/CHANGELOG only — never read its source, this is an independent implementation).
+
+**Hard constraint, verified against current Blizzard forum reports before building this**: the bonus roll Roll button is tied to a protected action (rolling casts a real spell under the hood). Redirecting a secure button's `clickbutton` attribute at `BonusRollFrame.PromptFrame.RollButton` to simulate the click throws `ADDON_ACTION_BLOCKED` — an addon cannot click it for the player, full stop. Do not attempt this again without re-verifying Blizzard hasn't changed that restriction.
+
+Given that constraint, the module works by disabling instead of clicking:
+- On `BONUS_ROLL_STARTED`, it disables the native `RollButton` (always) and `PassButton` (only if `db.confirmPass`), then shows its own popup with the loot spec and two buttons ("Confirmer : Lancer" / "Confirmer : Passer") plus a neutral close.
+- Confirming an action re-enables only that native button — the player still has to click the real Blizzard button themselves to actually roll or pass; this module only gates *when* that click becomes possible, never performs the action itself.
+- A `C_Timer.NewTimer(45, ...)` safety net always re-enables both buttons and hides the popup no matter what, so a missed `BONUS_ROLL_RESULT` or any other edge case can't leave the real buttons stuck disabled (the same class of bug reported for Raid Inspect's scan getting stuck — this module is built to never repeat that).
+- Loot spec lookup falls back through the deprecated-but-still-present globals (`GetSpecialization`/`GetSpecializationInfo`) if the newer `C_SpecializationInfo.*` equivalents aren't available, same defensive pattern used elsewhere in this addon for API that's mid-migration.
 
 ## UI and visual identity
 
@@ -249,20 +302,19 @@ Keep the established CC RaidTools visual style:
 
 The guild watermark is intentionally subtle. Do not replace it with a large opaque logo unless explicitly requested.
 
+The vertical divider between the module menu and the content area (`CC_RaidTools.lua`, `BuildMainFrame`) is colored with the player's own class color (`RAID_CLASS_COLORS`), not plain black — a small personalization touch requested by the guild. Falls back to black if the class token/color table isn't available for any reason.
+
 Do not redesign the whole configuration window for a small feature request.
+
+**Version Check always stays last in the module menu** (`order` table in `BuildMainFrame`, `CC_RaidTools.lua`). When adding a new module, insert it before `VersionCheck` in that list, not after.
 
 ## Module menu icons
 
-Current visual intent:
-- Auto Promote → group/leader crown icon.
-- AutoLog → white parchment/log icon with writing.
-- Ready Check → green ready-check tick.
-- Invite Tool → group/invite icon.
-- Focus → target icon.
-- Marks Bar → raid marker icon.
-- Raid Inspect → raid inspection / character inspection icon.
+All 10 modules now use commissioned custom artwork (`TexturesGUI/<Module>.png` for the 72px panel-header icon, `TexturesGUI/<Module>Menu.png` for the ~24px menu button) in a shared "epic CC RaidTools" style: radiant purple/gold glow, beveled gold ring border, bold clean silhouette per module (crown, scroll+quill, checkmark, three raid-group figures, envelope+arrow, crosshair, raid-marker cluster, armored knight+gear, shield+checkmark, two dice).
 
-Use actual WoW UI textures where possible rather than emoji or text glyphs.
+The `<Module>Menu.png` variant is **not** just a smaller copy of `<Module>.png` — it's cropped tighter (central ~62%, discarding most of the outer glow ring) so the core symbol dominates the frame and survives the drastic downscale to menu-button size. Using the full image at that size looked "muddy"/pixelated in-game even though it previewed fine outside the game (WoW's own texture scaling doesn't match an offline PIL preview) — reported and confirmed by the guild before this split was introduced for every module (it already existed for Raid Inspect alone; now all 10 follow the same pattern via `MENU_ICON_OVERRIDES` in `ModuleIcons.lua`). When commissioning new icon art, always generate/derive both a full and a tightly-cropped menu variant, and verify the menu variant in an actual in-game screenshot at real size before considering it done — an offline resize preview is not sufficient evidence of legibility.
+
+All module icons are custom commissioned art now, not repurposed Blizzard textures — keep using a real icon asset (commissioned or otherwise) for any future module rather than emoji/text glyphs.
 
 ## Commands
 
@@ -325,7 +377,35 @@ For Ready Check specifically:
 - verify the window width adapts immediately after group composition changes;
 - close it manually;
 - verify no refresh ticker continues running;
-- start another Ready Check.
+- start another Ready Check;
+- verify each raid member's durability column populates, including a member who has disabled their own Ready Check window.
+
+For Raid Groups specifically:
+- drag a player between two slots and between a slot and the unassigned pool;
+- run Tri auto with default settings and with a custom split (fewer splits, groups excluded, alternating rule);
+- save, load and delete a preset;
+- click Appliquer as leader/assistant outside of combat and verify the live raid subgroups update, including moving into an empty group (no swap partner available);
+- verify Appliquer is refused/disabled in combat and outside of raid/without lead;
+- share a composition in-game and verify it lands as a new preset on another client, named after the sender's active preset name;
+- export a composition, import it back (with and without a manual preset name) and verify the round trip;
+- test with a raid larger than 20/30 players to confirm overflow into groups outside the configured split;
+- switch the pool source to Guilde while not in a raid, drag guild members into groups, save as a preset, then switch back to Raid once people are grouped and confirm the preset still loads/applies correctly by name.
+
+For Raid Inspect specifically:
+- start an inspection with a mix of raid members running CC RaidTools and members without it, and confirm the ones running it resolve near-instantly (peer report) while the rest still go through the normal (slower) native inspect queue;
+- verify your own entry is filled instantly without ever natively inspecting yourself;
+- verify a peer report correctly reflects missing enchants/gems for a character with several empty slots, and for one with a fully enchanted/gemmed set (empty CSV fields decode cleanly);
+- verify the row's tooltip content matches whether the data came from a peer report or a native inspection;
+- test in a 5-player group;
+- test in a raid;
+- test players in and out of inspect range;
+- test a normal successful inspection;
+- test an inspection timeout;
+- verify a late `INSPECT_READY` does not corrupt the queue;
+- verify the queue advances exactly once per player;
+- verify item level, enchant and socket results;
+- test after `/reload`;
+- verify the UI remains usable with large raids.
 
 For Marks Bar specifically:
 - test raid markers;
@@ -349,17 +429,20 @@ For Invite Tool specifically:
 - verify Secret Value handling does not produce Lua errors;
 - compare changed invite API behavior with `wow-ui-source` and the relevant Blizzard implementation.
 
-For Raid Inspect specifically:
-- test in a 5-player group;
-- test in a raid;
-- test players in and out of inspect range;
-- test a normal successful inspection;
-- test an inspection timeout;
-- verify a late `INSPECT_READY` does not corrupt the queue;
-- verify the queue advances exactly once per player;
-- verify item level, enchant and socket results;
-- test after `/reload`;
-- verify the UI remains usable with large raids.
+For Version Check specifically:
+- verify the local version matches the `.toc`;
+- fake/observe a peer broadcasting a newer version and confirm the one-time local reminder prints (and does not repeat every broadcast);
+- verify the officer list correctly tags self, outdated, current, and newer peers;
+- confirm broadcasts/requests reach both RAID and PARTY groups, and that nothing is sent/expected while ungrouped (no GUILD fallback — scoped to the current group/raid on purpose);
+- verify opening the panel and clicking Rafraîchir both trigger a request that gets prompt replies, and that the 15s request cooldown prevents spamming the channel from rapid tab-switching.
+
+For Bonus Roll Confirm specifically:
+- trigger a real bonus roll and verify the native Roll button is disabled until confirmed, then a real click on it after confirming actually rolls;
+- with "confirm pass" enabled, verify Pass is also gated and its own confirm button releases only Pass, not Roll;
+- with "confirm pass" disabled, verify Pass stays natively clickable the whole time and no pass confirmation is offered;
+- verify the loot spec shown matches an explicit loot spec when one is set, and the current active spec when it isn't;
+- let the 45s safety timer elapse (or close the game's own bonus roll window) without confirming, and verify both native buttons end up enabled again, not stuck;
+- use the Tester button outside of any real bonus roll and confirm it doesn't touch the real buttons (none exist to disable) and doesn't error.
 
 ## Debugging principles
 

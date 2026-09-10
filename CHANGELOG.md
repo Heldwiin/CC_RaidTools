@@ -1,5 +1,121 @@
 # Changelog
 
+## 1.2.15
+
+### Interface
+
+- Toutes les icônes des modules ont été refaites dans un nouveau style "épique" (lueur violet/or, bordure biseautée dorée), cohérent avec l'identité visuelle CC RaidTools.
+- Chaque module dispose maintenant de deux versions de son icône : l'image complète avec bordure pour la grande icône d'en-tête, et une version recadrée spécialement pour rester lisible dans le petit menu de gauche.
+- La grande icône d'en-tête est agrandie (72px → 100px).
+
+## 1.2.14
+
+### Version Check
+
+- Ajout d'un mécanisme de demande active : ouvrir l'onglet ou cliquer sur "Rafraîchir" demande maintenant à tout le monde de répondre immédiatement, au lieu d'attendre passivement que chacun diffuse sa version de son côté (à sa connexion ou à un changement de composition). La liste se remplit beaucoup plus vite.
+- Recentré sur le raid/groupe actuel uniquement : le canal guilde n'est plus utilisé, ni pour diffuser ni pour demander.
+
+## 1.2.13
+
+### Nouveau module : Bonus Roll Confirm
+
+- Ajout du module **Bonus Roll Confirm** : dès qu'un bonus roll apparaît, une confirmation s'affiche avec votre spécialisation de butin avant de pouvoir cliquer sur Lancer ou Passer — pour éviter de brûler un bonus roll par erreur ou dans la mauvaise spécialisation.
+- Réglages : activation, confirmation optionnelle aussi pour "Passer", et un bouton de test pour prévisualiser la popup sans avoir besoin d'un vrai bonus roll.
+
+### Réglages par défaut
+
+- Invite Tool : mots-clés par défaut passés à `+1, inv, 123` (ne remplace pas un réglage déjà personnalisé).
+- Focus : désactivé par défaut sur une nouvelle installation.
+- Ready Check : activé par défaut sur une nouvelle installation (aucun défaut n'était défini auparavant).
+
+### Raid Inspect
+
+- Ajout d'un bouton **Réinitialiser**, toujours cliquable même en combat, pour débloquer manuellement une inspection qui resterait grisée après un souci.
+
+### Interface
+
+- Toutes les icônes des modules ont été retravaillées dans un style cohérent et beaucoup plus lisible en petite taille (menu de gauche).
+- Le module **Version Check** reste désormais toujours en dernière position dans le menu, quels que soient les futurs modules ajoutés.
+
+## 1.2.12
+
+### Raid Groups
+
+- Amélioration de la répartition tanks/heals lors du Tri auto quand un des deux côtés du split est saturé (le repli essaie désormais l'autre côté en priorité, au lieu de partir n'importe où).
+- Ajout d'un message récapitulatif après chaque Tri auto indiquant le nombre de tanks/heals/dps réellement détectés — utile pour diagnostiquer un déséquilibre inattendu.
+
+### Interface
+
+- La barre verticale séparant le menu des modules et le contenu s'étend maintenant sur toute la hauteur de la fenêtre, et affiche une teinte discrète de la couleur de votre classe au lieu d'un simple trait noir.
+
+## 1.2.11
+
+### Nouveau module : Version Check
+
+- Ajout du module **Version Check** : chaque joueur ayant CC RaidTools diffuse sa version au raid/groupe et à la guilde entière (comme le fait DBM).
+- Auto-diagnostic : si une version plus récente que la vôtre est détectée, un message local (une seule fois par session) vous prévient qu'une mise à jour est disponible.
+- Vue officier : liste de tous les joueurs vus, avec leur version et un statut coloré (à jour / en retard / plus récent).
+
+### Raid Groups
+
+- **Correctif important** : le bouton Appliquer envoyait tous les déplacements de groupe d'un coup, ce qui pouvait déclencher le message serveur "Vous avez tenté trop d'actions de groupe". Les déplacements sont désormais espacés dans le temps, un par un.
+- Possibilité de **réordonner les joueurs à l'intérieur d'un même groupe** en les glissant l'un sur l'autre (l'ordre affiché dans CC RaidTools est désormais respecté, au lieu d'être toujours trié alphabétiquement). Cet ordre reste propre à l'affichage de l'addon : WoW ne permet pas de contrôler la position exacte sur les frames de raid natives.
+
+## 1.2.10
+
+### Correctif urgent — Raid Inspect
+
+- Correction d'un crash (`attempt to call a nil value`) survenant à chaque réception d'un rapport d'équipement d'un autre joueur, introduit par la 1.2.9. La diffusion et la réception des données fonctionnent maintenant normalement.
+
+## 1.2.9
+
+### Raid Inspect — beaucoup plus rapide
+
+- Ajout d'un mode de rapport instantané : chaque joueur ayant CC RaidTools calcule ses propres informations d'équipement (ilvl, enchants manquants, gemmes manquantes) et les diffuse au raid, au lieu d'attendre l'inspection native de Blizzard qui est fortement limitée en fréquence (une cible à la fois environ).
+- La file d'inspection classique ne sert plus que pour les joueurs sans l'addon — le scan devient donc bien plus rapide quand la majorité du raid a CC RaidTools.
+- Votre propre ligne se remplit désormais instantanément, sans jamais passer par l'inspection native.
+- Correction d'un bug qui affichait "0" pour son propre niveau d'objet (et empêchait au passage toute diffusion du rapport à cause d'un garde-fou de sécurité) — la bonne API pour son propre ilvl n'est pas la même que celle utilisée pour inspecter les autres.
+
+## 1.2.8
+
+### Raid Groups — amélioration du tri automatique
+
+- Le tri auto remplit maintenant les groupes **complètement dans l'ordre** (1, 2, 3, 4...) au lieu de les étaler en éventail sur tous les groupes concernés — les groupes 1-4 se remplissent à fond avant que le surplus ne parte dans les suivants.
+- Les dps ne suivent plus l'alternance entre les côtés d'un split (seuls tanks et heals continuent d'alterner pour l'équilibrage) : ça évite de se retrouver avec deux groupes à moitié pleins en même temps de chaque côté.
+- Renommage de "Nombre de parts" en **"Nombre de splits"**, et la valeur 1 (aucun split) est maintenant possible et devient la valeur par défaut.
+- Correction d'un chevauchement visuel entre la grille des groupes et la liste des non-assignés quand celle-ci comptait beaucoup de monde.
+
+### Raid Groups — préparation depuis la liste de guilde
+
+- Nouveau bouton **Guilde** à côté de **Raid** : bascule la source des non-assignés pour permettre de préparer une composition à l'avance, avant même d'inviter qui que ce soit.
+- La liste de guilde est automatiquement filtrée sur les grades pertinents (Tyran, Séraphins, Souk de Barbès, Archanges, Dévots) — pas besoin de sélectionner un par un.
+- Les compositions préparées depuis la guilde se comportent comme les autres : sauvegarde en preset, export/partage, puis application normale une fois tout le monde effectivement en raid.
+
+### Raid Groups — saisie directe
+
+- Il est maintenant possible de **cliquer sur une case d'un groupe et taper un nom directement**, sans passer par le glisser-déposer. Pratique pour placer quelqu'un qui n'est pas encore dans le pool.
+- Effet de bord : un joueur qui quitte le raid garde désormais sa place affichée dans son groupe (au lieu de disparaître) jusqu'à ce qu'elle soit modifiée manuellement ou qu'un tri auto/réinitialisation soit relancé.
+
+### Robustesse
+
+- Le bouton **Appliquer** est maintenant protégé contre les erreurs inattendues lors du déplacement des joueurs, sans risque de désynchroniser l'affichage si un déplacement échoue.
+- Nettoyage d'un ancien mécanisme de détection de fin de Ready Check devenu redondant (le comptage réel des réponses fait déjà ce travail, de façon fiable quelle que soit la langue du client).
+
+## 1.2.7
+
+### Nouveau module : Raid Groups
+
+- Ajout du module **Raid Groups** : organisation des 8 groupes de raid par glisser-déposer, directement depuis `/ccrt`.
+- Tri automatique configurable (icône ⚙️) : groupes concernés par le tri, nombre de splits (1 à 8) et règle de split consécutive (`1,2,3 vs 4,5,6`) ou alternée (`1,3,5 vs 2,4,6`). Les groupes exclus du tri conservent leurs occupants actuels.
+- Presets de composition nommés : sauvegarde, chargement et suppression, persistants après `/reload`.
+- Partage en jeu de la composition active à tout le raid/groupe via message d'addon, ainsi qu'export/import sous forme de texte copiable (utilisable hors raid). Dans les deux cas, la composition reçue est toujours enregistrée comme un nouveau preset, jamais appliquée automatiquement, et reprend le nom du preset actif chez l'expéditeur.
+- Bouton **Appliquer** : déplace réellement les joueurs dans les groupes du raid (chef de raid ou assistant uniquement, bloqué en combat), avec déplacement direct si le groupe cible a de la place ou échange sinon.
+
+### Ready Check — durabilité de l'équipement
+
+- Ajout d'une colonne **Durabilité** dans le Ready Check, affichant le pourcentage moyen de durabilité de chaque membre du raid/groupe, coloré selon le seuil (vert / orange / rouge).
+- La durabilité est diffusée aux autres membres dès le déclenchement du Ready Check, y compris pour un joueur ayant désactivé sa propre fenêtre de Ready Check.
+
 ## 1.2.6
 
 ### Raid Inspect — stabilité et combat

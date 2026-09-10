@@ -108,14 +108,24 @@ jobs:
           PY
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           target_commitish: ${{ github.sha }}
           name: CC RaidTools ${{ env.RELEASE_TAG }}
           body_path: CHANGELOG.md
-          files: CC_RaidTools-${{ env.VERSION }}.zip
+          files: |
+            CC_RaidTools-${{ env.VERSION }}.zip
           fail_on_unmatched_files: true
+
+      - name: Verify release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          expected="CC_RaidTools-${VERSION}.zip"
+          gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | grep -Fxq "$expected"
+          echo "Release asset verified: $expected"
 
       - name: Remove temporary release branch
         if: startsWith(github.ref_name, 'release/')

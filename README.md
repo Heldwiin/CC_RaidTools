@@ -9,6 +9,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - AutoLog configurable pour LFR, Normal, Héroïque, Mythique et Donjons (M0 / M+).
 - Fenêtre Ready Check automatique lors d'un appel.
 - Statut dynamique OK / KO / WAIT.
+- Colonne **Durabilité** de l'équipement, partagée entre les membres du raid/groupe.
 - Vérification des consommables : repas, flacon, rune et rune de Vantus.
 - Affichage des buffs de raid Mage (Intel), Guerrier (PA), Druide, Prêtre (Endu), Chaman et Évocateur (Bronze).
 - En groupe 5 joueurs, affichage dynamique uniquement des buffs correspondant aux classes présentes et suppression du check Vantus.
@@ -23,7 +24,10 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - Support du Focus sur les unit frames sécurisées, notamment Target et Boss Frames.
 - Invite Tool avec invitation sur mot-clé reçu en chuchotement.
 - Utilisation de la mécanique native Blizzard **Suggest Invite** lorsqu'un membre non-leader reçoit une demande d'invitation.
-- **Raid Inspect** : inspection du groupe/raid avec ilvl moyen, enchants manquants et gemmes non serties.
+- **Raid Inspect** : inspection du groupe/raid avec ilvl moyen, enchants manquants et gemmes non serties, accélérée par rapport instantané pour ceux qui ont l'addon.
+- **Raid Groups** : organisation des 8 groupes de raid par glisser-déposer (avec réordonnancement à l'intérieur d'un groupe), tri automatique configurable, presets nommés, partage en jeu et export/import texte, application directe des groupes en jeu.
+- **Version Check** : diffusion et suivi des versions de l'addon dans le raid et la guilde.
+- **Bonus Roll Confirm** : confirmation avant un bonus roll, avec affichage de la spécialisation de butin.
 - Interface personnalisée sombre/transparente avec bordures pixel et branding Caelestis Concilium.
 - Configuration persistante après `/reload`.
 
@@ -33,7 +37,99 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.6**
+**1.2.15**
+
+### v1.2.15
+
+#### Interface
+
+- Nouveau style "épique" pour toutes les icônes de modules (lueur violet/or, bordure dorée).
+- Icônes dédiées et recadrées pour le petit menu (lisibilité), image complète conservée pour la grande icône d'en-tête (agrandie à 100px).
+
+### v1.2.14
+
+#### Version Check
+
+- Demande active (ouverture de l'onglet / bouton Rafraîchir) pour un remplissage beaucoup plus rapide de la liste.
+- Recentré sur le raid/groupe actuel, canal guilde retiré.
+
+### v1.2.13
+
+#### Bonus Roll Confirm (nouveau module)
+
+- Confirmation avant un bonus roll (Lancer/Passer), avec affichage de la spécialisation de butin.
+- Réglages : activation, confirmation optionnelle pour Passer, bouton de test.
+
+#### Réglages par défaut
+
+- Invite Tool : mots-clés par défaut `+1, inv, 123`.
+- Focus : désactivé par défaut. Ready Check : activé par défaut.
+
+#### Raid Inspect
+
+- Bouton Réinitialiser toujours cliquable pour débloquer une inspection restée grisée.
+
+#### Interface
+
+- Icônes de tous les modules harmonisées, plus lisibles en petit format.
+- Version Check reste toujours en dernière position dans le menu.
+
+### v1.2.12
+
+- Raid Groups : meilleure répartition tanks/heals du Tri auto en cas de saturation d'un côté, ajout d'un message récapitulatif des rôles détectés.
+- Interface : barre de séparation du menu sur toute la hauteur, teintée de la couleur de classe.
+
+### v1.2.11
+
+#### Version Check (nouveau module)
+
+- Diffusion de version au raid/groupe et à la guilde, avec avertissement local automatique si une version plus récente circule.
+- Vue officier listant tous les joueurs vus et leur statut de version.
+
+#### Raid Groups
+
+- Correctif : espacement des déplacements de groupe lors d'Appliquer, pour éviter le message serveur "trop d'actions de groupe".
+- Réordonnancement des joueurs à l'intérieur d'un même groupe par glisser-déposer.
+
+### v1.2.10
+
+- Correctif urgent : crash à la réception d'un rapport d'équipement d'un autre joueur (introduit en 1.2.9), désormais résolu.
+
+### v1.2.9
+
+#### Raid Inspect
+
+- Rapport instantané par message d'addon pour tous ceux qui ont CC RaidTools (ilvl, enchants et gemmes manquantes), en complément de l'inspection native qui ne sert plus que pour les autres — scan beaucoup plus rapide sur un raid où la plupart des joueurs ont l'addon.
+- Correction d'un bug d'API qui affichait "0" pour son propre ilvl et empêchait la diffusion du rapport.
+
+### v1.2.8
+
+#### Raid Groups
+
+- Tri auto : remplissage séquentiel des groupes (1,2,3,4 complets avant de déborder sur les suivants), dps qui ne suivent plus l'alternance des côtés d'un split.
+- Renommage "Nombre de parts" → "Nombre de splits", valeur 1 (pas de split) possible et par défaut.
+- Correction du chevauchement visuel grille/liste des non-assignés.
+- Nouvelle source **Guilde** pour préparer une composition à l'avance (filtrée sur les grades raiders/officers/applys).
+- Saisie directe d'un nom dans une case, en plus du glisser-déposer.
+
+#### Robustesse
+
+- Protection du bouton Appliquer contre les erreurs de déplacement.
+- Nettoyage d'un mécanisme redondant de détection de fin de Ready Check.
+
+### v1.2.7
+
+#### Raid Groups (nouveau module)
+
+- Organisation des 8 groupes de raid par glisser-déposer.
+- Tri automatique configurable : groupes concernés, nombre de splits (1 à 8), règle de split consécutive ou alternée.
+- Presets de composition nommés, persistants après `/reload`.
+- Partage en jeu et export/import texte, toujours enregistrés comme un nouveau preset côté réception.
+- Bouton **Appliquer** pour déplacer réellement les joueurs dans les groupes du raid (chef de raid/assistant, bloqué en combat).
+
+#### Ready Check
+
+- Ajout d'une colonne **Durabilité** de l'équipement, colorée selon le seuil et partagée entre les membres du raid/groupe.
 
 ### v1.2.6
 

@@ -279,9 +279,23 @@ local function CollectUnitData(unit)
         uncertainEnchantSlots = {},
         uncertainGemSlots = {},
         uncertainItemLevel = false,
+        -- Raw numeric slot IDs alongside the localized names above, used to
+        -- serialize a self-report for the CCRT_INSD addon message (locale-
+        -- independent; each receiving client localizes for itself).
+        missingEnchantSlotIDs = {},
+        missingGemSlotIDs = {},
+        uncertainEnchantSlotIDs = {},
+        uncertainGemSlotIDs = {},
     }
 
-    if C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
+    if unit == "player" and GetAverageItemLevel then
+        -- GetInspectItemLevel is for units being inspected; it doesn't work
+        -- on yourself. GetAverageItemLevel is the player-only equivalent.
+        local ok, _, equipped = pcall(GetAverageItemLevel)
+        if ok and equipped and equipped > 0 then
+            data.ilvl = math.floor(equipped + 0.5)
+        end
+    elseif C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
         local ok, ilvl = pcall(C_PaperDollInfo.GetInspectItemLevel, unit)
         if ok and ilvl and (not issecretvalue or not issecretvalue(ilvl)) and (not canaccessvalue or canaccessvalue(ilvl)) then
             data.ilvl = math.floor(ilvl + 0.5)
@@ -298,8 +312,10 @@ local function CollectUnitData(unit)
             if enchantState == false then
                 data.missingEnchants = data.missingEnchants + 1
                 data.missingEnchantSlots[#data.missingEnchantSlots + 1] = SlotName(slot)
+                data.missingEnchantSlotIDs[#data.missingEnchantSlotIDs + 1] = slot
             elseif enchantState == nil then
                 data.uncertainEnchantSlots[#data.uncertainEnchantSlots + 1] = SlotName(slot)
+                data.uncertainEnchantSlotIDs[#data.uncertainEnchantSlotIDs + 1] = slot
             end
         end
     end
@@ -309,9 +325,11 @@ local function CollectUnitData(unit)
             local missing = CountEmptySocketsOnSlot(unit, slot)
             if missing == nil then
                 data.uncertainGemSlots[#data.uncertainGemSlots + 1] = SlotName(slot)
+                data.uncertainGemSlotIDs[#data.uncertainGemSlotIDs + 1] = slot
             elseif missing > 0 then
                 data.missingGems = data.missingGems + missing
                 data.missingGemSlots[#data.missingGemSlots + 1] = SlotName(slot)
+                data.missingGemSlotIDs[#data.missingGemSlotIDs + 1] = slot
             end
         end
     end
@@ -556,6 +574,116 @@ local function StopInspectQueue()
     end
 end
 
+-- ===== Peer self-report over addon message =====
+-- Native inspection (NotifyInspect/INSPECT_READY) is throttled by Blizzard
+-- to roughly one target at a time, which is why a full raid scan is slow.
+-- Anyone who also has CC RaidTools can skip that entirely: each client
+-- already has instant, reliable access to its OWN gear (no secret-value or
+-- throttling issues), so it just computes CollectUnitData("player") locally
+-- and broadcasts the result. InspectNext() below skips natively inspecting
+-- anyone whose GUID already has real data by the time their turn comes up.
+local INSPECT_REQUEST_PREFIX = "CCRT_INSQ"
+local INSPECT_DATA_PREFIX = "CCRT_INSD"
+
+local function EncodeSelfReport()
+    local guid = UnitGUID("player")
+    if not guid then
+        return nil
+    end
+    local data = CollectUnitData("player")
+    if data.uncertainItemLevel then
+        -- Our own item level should never actually be uncertain, but don't
+        -- broadcast a half-known snapshot just in case.
+        return nil
+    end
+    local function csv(list)
+        return table.concat(list, ",")
+    end
+    return table.concat({
+        guid,
+        tostring(data.ilvl or 0),
+        tostring(data.missingGems or 0),
+        csv(data.missingEnchantSlotIDs),
+        csv(data.missingGemSlotIDs),
+        csv(data.uncertainEnchantSlotIDs),
+        csv(data.uncertainGemSlotIDs),
+    }, "|")
+end
+
+local function SendSelfReport()
+    if not C_ChatInfo or not C_ChatInfo.SendAddonMessage then
+        return
+    end
+    local channel = IsInRaid() and "RAID" or (IsInGroup() and "PARTY" or nil)
+    if not channel then
+        return
+    end
+    local payload = EncodeSelfReport()
+    if payload then
+        C_ChatInfo.SendAddonMessage(INSPECT_DATA_PREFIX, payload, channel)
+    end
+end
+
+local function RequestPeerReports()
+    if not C_ChatInfo or not C_ChatInfo.SendAddonMessage then
+        return
+    end
+    local channel = IsInRaid() and "RAID" or (IsInGroup() and "PARTY" or nil)
+    if not channel then
+        return
+    end
+    C_ChatInfo.SendAddonMessage(INSPECT_REQUEST_PREFIX, "1", channel)
+end
+
+local function ParseSlotIDs(csv)
+    local out = {}
+    for numStr in (csv or ""):gmatch("[^,]+") do
+        local n = tonumber(numStr)
+        if n then
+            out[#out + 1] = n
+        end
+    end
+    return out
+end
+
+local function ApplyPeerReport(payload)
+    local guid, ilvl, missingGems, enchantCSV, gemCSV, uEnchantCSV, uGemCSV =
+        payload:match("^([^|]+)|(%-?%d+)|(%d+)|([^|]*)|([^|]*)|([^|]*)|([^|]*)$")
+    if not guid then
+        return
+    end
+    local enchantIDs = ParseSlotIDs(enchantCSV)
+    local gemIDs = ParseSlotIDs(gemCSV)
+    local uEnchantIDs = ParseSlotIDs(uEnchantCSV)
+    local uGemIDs = ParseSlotIDs(uGemCSV)
+
+    local data = {
+        ilvl = tonumber(ilvl) or 0,
+        missingGems = tonumber(missingGems) or 0,
+        missingEnchants = #enchantIDs,
+        missingEnchantSlots = {},
+        missingGemSlots = {},
+        uncertainEnchantSlots = {},
+        uncertainGemSlots = {},
+        uncertainItemLevel = false,
+    }
+    for _, id in ipairs(enchantIDs) do
+        data.missingEnchantSlots[#data.missingEnchantSlots + 1] = SlotName(id)
+    end
+    for _, id in ipairs(gemIDs) do
+        data.missingGemSlots[#data.missingGemSlots + 1] = SlotName(id)
+    end
+    for _, id in ipairs(uEnchantIDs) do
+        data.uncertainEnchantSlots[#data.uncertainEnchantSlots + 1] = SlotName(id)
+    end
+    for _, id in ipairs(uGemIDs) do
+        data.uncertainGemSlots[#data.uncertainGemSlots + 1] = SlotName(id)
+    end
+
+    results[guid] = data
+    RefreshList()
+end
+
 local function InspectNext()
     if not inspecting or combatBlocked or InCombatLockdown() then
         return
@@ -579,6 +707,16 @@ local function InspectNext()
         if statusText then
             statusText:SetText(C.L.riDone:format(inspected, total))
         end
+        return
+    end
+
+    -- Already have real data for this one (self, or a peer who already
+    -- broadcast their own gear via CC RaidTools) — no need to natively
+    -- inspect them at all, move straight to the next.
+    local skipGUID = GetUnitGUID(unit)
+    if skipGUID and results[skipGUID] and not results[skipGUID].status then
+        RefreshList()
+        C_Timer.After(0, InspectNext)
         return
     end
 
@@ -760,6 +898,16 @@ local function StartInspectQueue()
     wipe(results)
     inspecting = true
 
+    -- We always have instant, reliable access to our own gear — no need to
+    -- ever natively inspect ourselves. Also ask anyone else running CC
+    -- RaidTools to self-report, which InspectNext() will pick up and use to
+    -- skip them in the native (slow, throttled) inspect queue entirely.
+    local selfGUID = UnitGUID("player")
+    if selfGUID then
+        results[selfGUID] = CollectUnitData("player")
+    end
+    RequestPeerReports()
+
     if inspectButton then
         inspectButton:SetText(C.L.riInspectingButton)
         inspectButton:Disable()
@@ -799,8 +947,27 @@ local function BuildUI(frame)
         inspectButton:Disable()
     end
 
+    -- Safety valve: if a scan ever gets stuck (a Lua error mid-queue, or a
+    -- native inspect that never resolves) the button above stays disabled
+    -- forever with no other way to recover short of /reload. This always
+    -- stays clickable — including in combat, since it only clears local
+    -- state and pending timers, no protected/combat-restricted calls — and
+    -- reuses the exact same cleanup as a normal stop.
+    local resetButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    resetButton:SetSize(110, 24)
+    resetButton:SetPoint("LEFT", inspectButton, "RIGHT", 6, 0)
+    resetButton:SetText(C.L.riResetButton)
+    C.SkinButton(resetButton)
+    resetButton:SetScript("OnClick", function()
+        StopInspectQueue()
+        RefreshList()
+        if statusText then
+            statusText:SetText(C.L.riResetDone)
+        end
+    end)
+
     statusText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    statusText:SetPoint("LEFT", inspectButton, "RIGHT", 10, 0)
+    statusText:SetPoint("LEFT", resetButton, "RIGHT", 10, 0)
 
     local header = CreateFrame("Frame", nil, frame)
     header:SetPoint("TOPLEFT", inspectButton, "BOTTOMLEFT", -6, -14)
@@ -844,13 +1011,28 @@ end)
 
 combatBlocked = InCombatLockdown() and true or false
 
+if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
+    C_ChatInfo.RegisterAddonMessagePrefix(INSPECT_REQUEST_PREFIX)
+    C_ChatInfo.RegisterAddonMessagePrefix(INSPECT_DATA_PREFIX)
+end
+
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("INSPECT_READY")
 eventFrame:RegisterEvent("UNIT_INVENTORY_CHANGED")
 eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
 eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-eventFrame:SetScript("OnEvent", function(_, event, arg1)
+eventFrame:RegisterEvent("CHAT_MSG_ADDON")
+eventFrame:SetScript("OnEvent", function(_, event, arg1, arg2)
+    if event == "CHAT_MSG_ADDON" then
+        local prefix, msg = arg1, arg2
+        if prefix == INSPECT_REQUEST_PREFIX then
+            SendSelfReport()
+        elseif prefix == INSPECT_DATA_PREFIX and type(msg) == "string" then
+            ApplyPeerReport(msg)
+        end
+        return
+    end
     if event == "PLAYER_REGEN_DISABLED" then
         combatBlocked = true
         if inspecting then

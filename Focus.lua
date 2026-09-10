@@ -10,7 +10,7 @@ local modifier
 local mouseButton
 local previousModifier
 local previousMouseButton
-local enabled = true
+local enabled = false
 
 local function GetBindingKey()
     if not modifier or not mouseButton then
@@ -356,7 +356,7 @@ events:SetScript("OnEvent", function(_, event, arg1)
         focusDB = AutoPromoteDB.focus
         enabled = focusDB.enabled
         if enabled == nil then
-            enabled = true
+            enabled = false
         end
 
         modifier = focusDB.modifier or "shift"
