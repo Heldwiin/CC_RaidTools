@@ -310,19 +310,11 @@ Do not redesign the whole configuration window for a small feature request.
 
 ## Module menu icons
 
-Current visual intent:
-- Auto Promote → group/leader crown icon.
-- AutoLog → white parchment/log icon with writing.
-- Ready Check → green ready-check tick.
-- Invite Tool → group/invite icon.
-- Focus → target icon.
-- Marks Bar → raid marker icon.
-- Raid Inspect → raid inspection / character inspection icon.
-- Raid Groups → dedicated custom crest icon (`TexturesGUI/RaidGroups.png`), commissioned specifically for this module.
-- Version Check → dedicated custom crest icon (`TexturesGUI/VersionCheck.png`), commissioned specifically for this module.
-- Bonus Roll Confirm → dedicated custom crest icon (`TexturesGUI/BonusRoll.png`), commissioned specifically for this module.
+All 10 modules now use commissioned custom artwork (`TexturesGUI/<Module>.png` for the 72px panel-header icon, `TexturesGUI/<Module>Menu.png` for the ~24px menu button) in a shared "epic CC RaidTools" style: radiant purple/gold glow, beveled gold ring border, bold clean silhouette per module (crown, scroll+quill, checkmark, three raid-group figures, envelope+arrow, crosshair, raid-marker cluster, armored knight+gear, shield+checkmark, two dice).
 
-Use actual WoW UI textures where possible rather than emoji or text glyphs. Raid Groups is the one deliberate exception (custom commissioned art rather than a repurposed Blizzard texture); keep using a real icon asset for any future module rather than emoji/text glyphs.
+The `<Module>Menu.png` variant is **not** just a smaller copy of `<Module>.png` — it's cropped tighter (central ~62%, discarding most of the outer glow ring) so the core symbol dominates the frame and survives the drastic downscale to menu-button size. Using the full image at that size looked "muddy"/pixelated in-game even though it previewed fine outside the game (WoW's own texture scaling doesn't match an offline PIL preview) — reported and confirmed by the guild before this split was introduced for every module (it already existed for Raid Inspect alone; now all 10 follow the same pattern via `MENU_ICON_OVERRIDES` in `ModuleIcons.lua`). When commissioning new icon art, always generate/derive both a full and a tightly-cropped menu variant, and verify the menu variant in an actual in-game screenshot at real size before considering it done — an offline resize preview is not sufficient evidence of legibility.
+
+All module icons are custom commissioned art now, not repurposed Blizzard textures — keep using a real icon asset (commissioned or otherwise) for any future module rather than emoji/text glyphs.
 
 ## Commands
 

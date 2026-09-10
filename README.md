@@ -37,7 +37,14 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.14**
+**1.2.15**
+
+### v1.2.15
+
+#### Interface
+
+- Nouveau style "épique" pour toutes les icônes de modules (lueur violet/or, bordure dorée).
+- Icônes dédiées et recadrées pour le petit menu (lisibilité), image complète conservée pour la grande icône d'en-tête (agrandie à 100px).
 
 ### v1.2.14
 
