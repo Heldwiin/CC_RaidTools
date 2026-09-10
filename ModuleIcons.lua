@@ -105,7 +105,7 @@ local function ApplyPanelIcon(panel, texturePath)
         panel._ccrtModuleHeaderIcon = icon
     end
 
-    icon:SetSize(72, 72)
+    icon:SetSize(100, 100)
     icon:ClearAllPoints()
     icon:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -5, -3)
     icon:SetTexture(texturePath)
