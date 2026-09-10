@@ -14,8 +14,21 @@ local MODULE_ICONS = {
     BonusRoll = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\BonusRoll.png",
 }
 
+-- Menu buttons render at a much smaller size than the panel header icon, so
+-- they use a separate, more tightly-cropped variant of the same artwork
+-- (discarding most of the outer glow/ring, which just turns to mud at that
+-- size) instead of the full image. The panel header keeps the full artwork.
 local MENU_ICON_OVERRIDES = {
+    AutoPromote = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\AutoPromoteMenu.png",
+    AutoLog = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\AutoLogMenu.png",
+    ReadyCheck = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\ReadyCheckMenu.png",
+    RaidGroups = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\RaidGroupsMenu.png",
+    InviteTool = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\InviteToolMenu.png",
+    Focus = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\FocusMenu.png",
+    MarksBar = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\MarksBarMenu.png",
     RaidInspect = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\RaidInspectMenu.png",
+    VersionCheck = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\VersionCheckMenu.png",
+    BonusRoll = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\BonusRollMenu.png",
 }
 
 local function StyleModuleButton(button)
