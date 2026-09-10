@@ -272,8 +272,9 @@ When touching this, re-verify `CollectUnitData`'s numeric slot IDs stay in sync 
 
 ## Version Check
 
-`VersionCheck.lua` broadcasts the local `.toc` version (`C_AddOns.GetAddOnMetadata("CC_RaidTools", "Version")` — the global `GetAddOnMetadata` is deprecated and kept only as a fallback) on a dedicated prefix (`CCRT_VER`) to RAID/PARTY and, separately, GUILD (so it also catches guild members who aren't currently grouped). Broadcasts happen on login/reload and on `GROUP_ROSTER_UPDATE`, throttled to once every 60s so a flurry of roster events doesn't spam the channel.
+`VersionCheck.lua` broadcasts the local `.toc` version (`C_AddOns.GetAddOnMetadata("CC_RaidTools", "Version")` — the global `GetAddOnMetadata` is deprecated and kept only as a fallback) on a dedicated prefix (`CCRT_VER`) to the current RAID or PARTY only — scoped to the current group/raid on purpose, no GUILD channel. Passive self-announcements happen on login/reload and on `GROUP_ROSTER_UPDATE`, throttled to once every 60s so a flurry of roster events doesn't spam the channel.
 
+- Passive announcements alone made the list very slow to fill in (reported by the guild) — you'd only see someone once *their* own login or roster-change broadcast happened to reach you. A second prefix (`CCRT_VERQ`) actively asks everyone to check in right now: opening the panel and clicking **Rafraîchir** both send this request (throttled separately, `REQUEST_COOLDOWN` = 15s, so rapid tab-switching/clicking can't spam the channel), and any client that receives it replies immediately with a normal, silent `BroadcastVersion()`. Only the requester's own click prints a confirmation; replying to someone else's request never does.
 - Version strings are compared numerically per dot-separated segment (`VersionGreater`), not as plain strings — `"1.2.10"` must compare greater than `"1.2.9"`, which a naive string comparison would get wrong.
 - If a peer's broadcast version is newer than the local one, the local client prints a one-time-per-session reminder (`warnedThisSession`) rather than nagging on every single broadcast received.
 - The module's own panel lists everyone seen (self included, tagged), colored by whether they're outdated, current, or ahead — this is the officer-facing view; the reminder above is the self-diagnostic one. Both read from the same `known` table.
@@ -440,7 +441,8 @@ For Version Check specifically:
 - verify the local version matches the `.toc`;
 - fake/observe a peer broadcasting a newer version and confirm the one-time local reminder prints (and does not repeat every broadcast);
 - verify the officer list correctly tags self, outdated, current, and newer peers;
-- confirm broadcasts reach both RAID/PARTY and GUILD, and that a non-grouped, in-guild player still gets detected.
+- confirm broadcasts/requests reach both RAID and PARTY groups, and that nothing is sent/expected while ungrouped (no GUILD fallback — scoped to the current group/raid on purpose);
+- verify opening the panel and clicking Rafraîchir both trigger a request that gets prompt replies, and that the 15s request cooldown prevents spamming the channel from rapid tab-switching.
 
 For Bonus Roll Confirm specifically:
 - trigger a real bonus roll and verify the native Roll button is disabled until confirmed, then a real click on it after confirming actually rolls;

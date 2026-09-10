@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.14
+
+### Version Check
+
+- Ajout d'un mécanisme de demande active : ouvrir l'onglet ou cliquer sur "Rafraîchir" demande maintenant à tout le monde de répondre immédiatement, au lieu d'attendre passivement que chacun diffuse sa version de son côté (à sa connexion ou à un changement de composition). La liste se remplit beaucoup plus vite.
+- Recentré sur le raid/groupe actuel uniquement : le canal guilde n'est plus utilisé, ni pour diffuser ni pour demander.
+
 ## 1.2.13
 
 ### Nouveau module : Bonus Roll Confirm

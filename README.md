@@ -37,7 +37,14 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.13**
+**1.2.14**
+
+### v1.2.14
+
+#### Version Check
+
+- Demande active (ouverture de l'onglet / bouton Rafraîchir) pour un remplissage beaucoup plus rapide de la liste.
+- Recentré sur le raid/groupe actuel, canal guilde retiré.
 
 ### v1.2.13
 

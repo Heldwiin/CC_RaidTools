@@ -201,7 +201,7 @@ local frFR = {
     vcUpToDateTag = "À jour",
     vcOutdatedWarning = "|cffffcc00[CC RaidTools]|r Une nouvelle version est disponible : %s (vous avez %s). Demandez à quelqu'un de vous l'envoyer ou récupérez-la sur GitHub.",
     vcBroadcastSent = "|cff33ff99[CC RaidTools]|r Version diffusée. Les réponses des autres joueurs arrivent au fur et à mesure.",
-    vcNoChannel = "|cffffcc00[CC RaidTools]|r Rien à diffuser : vous n'êtes ni en groupe/raid, ni dans une guilde.",
+    vcNoChannel = "|cffffcc00[CC RaidTools]|r Rien à diffuser : vous n'êtes ni en groupe, ni en raid.",
     vcNoApi = "|cffff6666[CC RaidTools]|r Impossible de diffuser (API indisponible).",
 
     -- BonusRoll
@@ -357,7 +357,7 @@ local enUS = {
     vcUpToDateTag = "Up to date",
     vcOutdatedWarning = "|cffffcc00[CC RaidTools]|r A newer version is available: %s (you have %s). Ask someone to send it to you or grab it from GitHub.",
     vcBroadcastSent = "|cff33ff99[CC RaidTools]|r Version broadcast sent. Replies from other players will trickle in.",
-    vcNoChannel = "|cffffcc00[CC RaidTools]|r Nothing to broadcast to: you're not in a group/raid or a guild.",
+    vcNoChannel = "|cffffcc00[CC RaidTools]|r Nothing to broadcast to: you're not in a group or raid.",
     vcNoApi = "|cffff6666[CC RaidTools]|r Unable to broadcast (API unavailable).",
 
     -- BonusRoll
