@@ -1,5 +1,5 @@
 -- CC RaidTools - Version Check
--- Broadcasts the local addon version to raid/party and guild, so outdated
+-- Broadcasts the local addon version to the current raid/party, so outdated
 -- clients find out on their own (like DBM's version check), and shows an
 -- officer-facing list of who's running which version.
 local C = CCRT
@@ -123,10 +123,6 @@ local function BroadcastVersion(manual)
         C_ChatInfo.SendAddonMessage(VERSION_PREFIX, localVersion, "PARTY")
         sentSomewhere = true
     end
-    if IsInGuild() then
-        C_ChatInfo.SendAddonMessage(VERSION_PREFIX, localVersion, "GUILD")
-        sentSomewhere = true
-    end
     if manual then
         if sentSomewhere then
             print(C.L.vcBroadcastSent)
@@ -155,9 +151,6 @@ local function RequestVersions()
         C_ChatInfo.SendAddonMessage(VERSION_REQUEST_PREFIX, "1", "RAID")
     elseif IsInGroup() then
         C_ChatInfo.SendAddonMessage(VERSION_REQUEST_PREFIX, "1", "PARTY")
-    end
-    if IsInGuild() then
-        C_ChatInfo.SendAddonMessage(VERSION_REQUEST_PREFIX, "1", "GUILD")
     end
 end
 
@@ -247,7 +240,7 @@ e:SetScript("OnEvent", function(_, event, a, b, c, d)
         if prefix == VERSION_PREFIX then
             HandleReceived(sender, msg)
         elseif prefix == VERSION_REQUEST_PREFIX then
-            -- Someone asked the raid/guild to check in; reply right away
+            -- Someone asked the raid/party to check in; reply right away
             -- (silently — only the requester's own click prints anything).
             BroadcastVersion()
         end
