@@ -203,6 +203,22 @@ local frFR = {
     vcBroadcastSent = "|cff33ff99[CC RaidTools]|r Version diffusée. Les réponses des autres joueurs arrivent au fur et à mesure.",
     vcNoChannel = "|cffffcc00[CC RaidTools]|r Rien à diffuser : vous n'êtes ni en groupe/raid, ni dans une guilde.",
     vcNoApi = "|cffff6666[CC RaidTools]|r Impossible de diffuser (API indisponible).",
+
+    -- BonusRoll
+    brLabel = "Bonus Roll Confirm :",
+    brEnableLabel = "Activer la confirmation avant un bonus roll",
+    brConfirmPassLabel = "Demander confirmation aussi pour Passer",
+    brTestButton = "Tester la popup",
+    brHint = "Bloque temporairement les boutons Lancer/Passer natifs dès qu'un bonus roll apparaît, le temps de confirmer — impossible de cliquer à votre place (Blizzard bloque ça), donc après confirmation il faut cliquer une dernière fois sur le vrai bouton.",
+    brTitle = "Bonus roll disponible",
+    brBodyExplicit = "Ce bonus roll sera attribué selon votre spécialisation de butin choisie : |cffffcc00%s|r.",
+    brBodyCurrent = "Aucune spécialisation de butin définie : ce bonus roll sera attribué selon votre spécialisation actuelle : |cffffcc00%s|r.",
+    brUnknownSpec = "inconnue",
+    brConfirmRollButton = "Confirmer : Lancer",
+    brConfirmPassButton = "Confirmer : Passer",
+    brCloseButton = "Fermer sans choisir",
+    brRollConfirmed = "|cff33ff99[CC RaidTools]|r Bonus roll débloqué — cliquez sur Lancer pour valider.",
+    brPassConfirmed = "|cff33ff99[CC RaidTools]|r Passer débloqué — cliquez sur Passer pour valider.",
 }
 
 -- ===== English overrides =====
@@ -343,6 +359,22 @@ local enUS = {
     vcBroadcastSent = "|cff33ff99[CC RaidTools]|r Version broadcast sent. Replies from other players will trickle in.",
     vcNoChannel = "|cffffcc00[CC RaidTools]|r Nothing to broadcast to: you're not in a group/raid or a guild.",
     vcNoApi = "|cffff6666[CC RaidTools]|r Unable to broadcast (API unavailable).",
+
+    -- BonusRoll
+    brLabel = "Bonus Roll Confirm:",
+    brEnableLabel = "Enable confirmation before a bonus roll",
+    brConfirmPassLabel = "Also confirm before Pass",
+    brTestButton = "Test the popup",
+    brHint = "Temporarily disables the native Roll/Pass buttons the moment a bonus roll appears, until you confirm — an addon cannot click them for you (Blizzard blocks that), so after confirming you still need one last click on the real button.",
+    brTitle = "Bonus roll available",
+    brBodyExplicit = "This bonus roll will be awarded based on your chosen loot specialization: |cffffcc00%s|r.",
+    brBodyCurrent = "No loot specialization set: this bonus roll will be awarded based on your current specialization: |cffffcc00%s|r.",
+    brUnknownSpec = "unknown",
+    brConfirmRollButton = "Confirm: Roll",
+    brConfirmPassButton = "Confirm: Pass",
+    brCloseButton = "Close without choosing",
+    brRollConfirmed = "|cff33ff99[CC RaidTools]|r Bonus roll unlocked — click Roll to confirm.",
+    brPassConfirmed = "|cff33ff99[CC RaidTools]|r Pass unlocked — click Pass to confirm.",
 
     rgLabel = "Raid Groups:",
     rgSaveButton = "Save",

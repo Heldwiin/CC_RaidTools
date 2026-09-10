@@ -17,5 +17,6 @@ Focus.lua
 MarksBar.lua
 RaidInspect.lua
 VersionCheck.lua
+BonusRoll.lua
 GuildBranding.lua
 ModuleIcons.lua

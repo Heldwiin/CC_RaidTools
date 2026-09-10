@@ -23,6 +23,7 @@ Gameplay modules:
 - `MarksBar.lua` — raid target markers and world markers, including its own throttled mouseover check (see Marks Bar section below).
 - `RaidInspect.lua` — raid/party inspection for item level, enchants and gem sockets; anyone also running CC RaidTools self-reports over an addon message instead of going through Blizzard's throttled native inspection.
 - `VersionCheck.lua` — broadcasts the local addon version to raid/party and guild; warns locally (once per session) if a newer version is seen in the wild, and shows an officer-facing list of who's running which version.
+- `BonusRoll.lua` — adds a confirmation step before a bonus roll (Roll or Pass) goes through, showing the loot specialization it will award for, so a mis-click doesn't burn a roll by accident. Cannot click the native buttons for the player (protected action, see the module's own header comment); disables them until confirmed instead.
 
 `DBMigration.lua` and `MarksBarPerformance.lua` no longer exist: the `AutoPromoteDB` → `CCRaidToolsDB` migration and the Marks Bar mouseover throttle were both folded into their respective modules once stabilized (see Changelog 1.2.3/1.2.4). Do not recreate them; keep this document in sync if that ever changes again.
 
@@ -277,6 +278,18 @@ When touching this, re-verify `CollectUnitData`'s numeric slot IDs stay in sync 
 - If a peer's broadcast version is newer than the local one, the local client prints a one-time-per-session reminder (`warnedThisSession`) rather than nagging on every single broadcast received.
 - The module's own panel lists everyone seen (self included, tagged), colored by whether they're outdated, current, or ahead — this is the officer-facing view; the reminder above is the self-diagnostic one. Both read from the same `known` table.
 
+## Bonus Roll Confirm
+
+`BonusRoll.lua` prompts for confirmation before a bonus roll (Roll or Pass) actually goes through, and shows the loot specialization it will be awarded for. Inspired by a small standalone addon the guild uses (feature described to Claude via its README/CHANGELOG only — never read its source, this is an independent implementation).
+
+**Hard constraint, verified against current Blizzard forum reports before building this**: the bonus roll Roll button is tied to a protected action (rolling casts a real spell under the hood). Redirecting a secure button's `clickbutton` attribute at `BonusRollFrame.PromptFrame.RollButton` to simulate the click throws `ADDON_ACTION_BLOCKED` — an addon cannot click it for the player, full stop. Do not attempt this again without re-verifying Blizzard hasn't changed that restriction.
+
+Given that constraint, the module works by disabling instead of clicking:
+- On `BONUS_ROLL_STARTED`, it disables the native `RollButton` (always) and `PassButton` (only if `db.confirmPass`), then shows its own popup with the loot spec and two buttons ("Confirmer : Lancer" / "Confirmer : Passer") plus a neutral close.
+- Confirming an action re-enables only that native button — the player still has to click the real Blizzard button themselves to actually roll or pass; this module only gates *when* that click becomes possible, never performs the action itself.
+- A `C_Timer.NewTimer(45, ...)` safety net always re-enables both buttons and hides the popup no matter what, so a missed `BONUS_ROLL_RESULT` or any other edge case can't leave the real buttons stuck disabled (the same class of bug reported for Raid Inspect's scan getting stuck — this module is built to never repeat that).
+- Loot spec lookup falls back through the deprecated-but-still-present globals (`GetSpecialization`/`GetSpecializationInfo`) if the newer `C_SpecializationInfo.*` equivalents aren't available, same defensive pattern used elsewhere in this addon for API that's mid-migration.
+
 ## UI and visual identity
 
 Keep the established CC RaidTools visual style:
@@ -425,6 +438,14 @@ For Version Check specifically:
 - fake/observe a peer broadcasting a newer version and confirm the one-time local reminder prints (and does not repeat every broadcast);
 - verify the officer list correctly tags self, outdated, current, and newer peers;
 - confirm broadcasts reach both RAID/PARTY and GUILD, and that a non-grouped, in-guild player still gets detected.
+
+For Bonus Roll Confirm specifically:
+- trigger a real bonus roll and verify the native Roll button is disabled until confirmed, then a real click on it after confirming actually rolls;
+- with "confirm pass" enabled, verify Pass is also gated and its own confirm button releases only Pass, not Roll;
+- with "confirm pass" disabled, verify Pass stays natively clickable the whole time and no pass confirmation is offered;
+- verify the loot spec shown matches an explicit loot spec when one is set, and the current active spec when it isn't;
+- let the 45s safety timer elapse (or close the game's own bonus roll window) without confirming, and verify both native buttons end up enabled again, not stuck;
+- use the Tester button outside of any real bonus roll and confirm it doesn't touch the real buttons (none exist to disable) and doesn't error.
 
 ## Debugging principles
 
