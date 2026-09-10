@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.2.13
+
+### Nouveau module : Bonus Roll Confirm
+
+- Ajout du module **Bonus Roll Confirm** : dès qu'un bonus roll apparaît, une confirmation s'affiche avec votre spécialisation de butin avant de pouvoir cliquer sur Lancer ou Passer — pour éviter de brûler un bonus roll par erreur ou dans la mauvaise spécialisation.
+- Réglages : activation, confirmation optionnelle aussi pour "Passer", et un bouton de test pour prévisualiser la popup sans avoir besoin d'un vrai bonus roll.
+
+### Réglages par défaut
+
+- Invite Tool : mots-clés par défaut passés à `+1, inv, 123` (ne remplace pas un réglage déjà personnalisé).
+- Focus : désactivé par défaut sur une nouvelle installation.
+- Ready Check : activé par défaut sur une nouvelle installation (aucun défaut n'était défini auparavant).
+
+### Raid Inspect
+
+- Ajout d'un bouton **Réinitialiser**, toujours cliquable même en combat, pour débloquer manuellement une inspection qui resterait grisée après un souci.
+
+### Interface
+
+- Toutes les icônes des modules ont été retravaillées dans un style cohérent et beaucoup plus lisible en petite taille (menu de gauche).
+- Le module **Version Check** reste désormais toujours en dernière position dans le menu, quels que soient les futurs modules ajoutés.
+
 ## 1.2.12
 
 ### Raid Groups
