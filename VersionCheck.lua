@@ -6,6 +6,7 @@ local C = CCRT
 
 local ADDON_NAME = "CC_RaidTools"
 local VERSION_PREFIX = "CCRT_VER"
+local VERSION_REQUEST_PREFIX = "CCRT_VERQ"
 local BROADCAST_COOLDOWN = 60 -- seconds between roster-triggered rebroadcasts
 
 local function GetLocalVersion()
@@ -18,6 +19,8 @@ local localVersion = GetLocalVersion()
 local known = {} -- known[name] = { version = "1.2.10", ts = epoch }
 local warnedThisSession = false
 local lastBroadcast = 0
+local lastRequest = 0
+local REQUEST_COOLDOWN = 15 -- seconds, so rapid tab-switching or clicking doesn't spam the channel
 
 local function ParseVersion(v)
     local parts = {}
@@ -134,6 +137,30 @@ local function BroadcastVersion(manual)
     end
 end
 
+-- Unlike the passive self-announcements above (which only happen on login or
+-- a throttled roster-change tick), this actively asks everyone else running
+-- the addon to reply right now — without it, the list only fills in as
+-- other people's own independent broadcasts happen to reach you, which can
+-- take a long time. Every reply is itself just a normal BroadcastVersion().
+local function RequestVersions()
+    local now = GetTime()
+    if now - lastRequest < REQUEST_COOLDOWN then
+        return
+    end
+    lastRequest = now
+    if not C_ChatInfo or not C_ChatInfo.SendAddonMessage then
+        return
+    end
+    if IsInRaid() then
+        C_ChatInfo.SendAddonMessage(VERSION_REQUEST_PREFIX, "1", "RAID")
+    elseif IsInGroup() then
+        C_ChatInfo.SendAddonMessage(VERSION_REQUEST_PREFIX, "1", "PARTY")
+    end
+    if IsInGuild() then
+        C_ChatInfo.SendAddonMessage(VERSION_REQUEST_PREFIX, "1", "GUILD")
+    end
+end
+
 local function HandleReceived(sender, version)
     if not sender or not version or version == "" then
         return
@@ -168,7 +195,10 @@ local function BuildUI(panel)
     refreshBtn:SetPoint("TOPLEFT", localLabel, "BOTTOMLEFT", 0, -8)
     refreshBtn:SetText(C.L.vcRefreshButton)
     C.SkinButton(refreshBtn)
-    refreshBtn:SetScript("OnClick", function() BroadcastVersion(true) end)
+    refreshBtn:SetScript("OnClick", function()
+        BroadcastVersion(true)
+        RequestVersions()
+    end)
 
     countText = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     countText:SetPoint("LEFT", refreshBtn, "RIGHT", 10, 0)
@@ -191,17 +221,20 @@ local function BuildUI(panel)
     frame = panel
     RefreshList()
     BroadcastVersion()
+    RequestVersions()
 end
 
 local function RefreshUI()
     RefreshList()
     BroadcastVersion()
+    RequestVersions()
 end
 
 C.RegisterModule("VersionCheck", BuildUI, RefreshUI)
 
 if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
     C_ChatInfo.RegisterAddonMessagePrefix(VERSION_PREFIX)
+    C_ChatInfo.RegisterAddonMessagePrefix(VERSION_REQUEST_PREFIX)
 end
 
 local e = CreateFrame("Frame")
@@ -213,6 +246,10 @@ e:SetScript("OnEvent", function(_, event, a, b, c, d)
         local prefix, msg, sender = a, b, d
         if prefix == VERSION_PREFIX then
             HandleReceived(sender, msg)
+        elseif prefix == VERSION_REQUEST_PREFIX then
+            -- Someone asked the raid/guild to check in; reply right away
+            -- (silently — only the requester's own click prints anything).
+            BroadcastVersion()
         end
         return
     end
