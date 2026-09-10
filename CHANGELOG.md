@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.15
+
+### Interface
+
+- Toutes les icônes des modules ont été refaites dans un nouveau style "épique" (lueur violet/or, bordure biseautée dorée), cohérent avec l'identité visuelle CC RaidTools.
+- Chaque module dispose maintenant de deux versions de son icône : l'image complète avec bordure pour la grande icône d'en-tête, et une version recadrée spécialement pour rester lisible dans le petit menu de gauche.
+- La grande icône d'en-tête est agrandie (72px → 100px).
+
 ## 1.2.14
 
 ### Version Check
