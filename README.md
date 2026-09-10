@@ -27,6 +27,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - **Raid Inspect** : inspection du groupe/raid avec ilvl moyen, enchants manquants et gemmes non serties, accélérée par rapport instantané pour ceux qui ont l'addon.
 - **Raid Groups** : organisation des 8 groupes de raid par glisser-déposer (avec réordonnancement à l'intérieur d'un groupe), tri automatique configurable, presets nommés, partage en jeu et export/import texte, application directe des groupes en jeu.
 - **Version Check** : diffusion et suivi des versions de l'addon dans le raid et la guilde.
+- **Bonus Roll Confirm** : confirmation avant un bonus roll, avec affichage de la spécialisation de butin.
 - Interface personnalisée sombre/transparente avec bordures pixel et branding Caelestis Concilium.
 - Configuration persistante après `/reload`.
 
@@ -36,7 +37,28 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.12**
+**1.2.13**
+
+### v1.2.13
+
+#### Bonus Roll Confirm (nouveau module)
+
+- Confirmation avant un bonus roll (Lancer/Passer), avec affichage de la spécialisation de butin.
+- Réglages : activation, confirmation optionnelle pour Passer, bouton de test.
+
+#### Réglages par défaut
+
+- Invite Tool : mots-clés par défaut `+1, inv, 123`.
+- Focus : désactivé par défaut. Ready Check : activé par défaut.
+
+#### Raid Inspect
+
+- Bouton Réinitialiser toujours cliquable pour débloquer une inspection restée grisée.
+
+#### Interface
+
+- Icônes de tous les modules harmonisées, plus lisibles en petit format.
+- Version Check reste toujours en dernière position dans le menu.
 
 ### v1.2.12
 
