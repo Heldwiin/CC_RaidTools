@@ -37,7 +37,15 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.15**
+**1.2.16**
+
+### v1.2.16
+
+#### Interface
+
+- Icônes de modules simplifiées pour une meilleure lisibilité, même identité visuelle CC RaidTools conservée.
+- Une seule image par module (menu + en-tête), fini le système à deux fichiers.
+- Correction d'un artefact de fond noir carré sur les icônes du menu.
 
 ### v1.2.15
 

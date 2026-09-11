@@ -14,30 +14,13 @@ local MODULE_ICONS = {
     BonusRoll = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\BonusRoll.png",
 }
 
--- Menu buttons render at a much smaller size than the panel header icon, so
--- they use a separate, more tightly-cropped variant of the same artwork
--- (discarding most of the outer glow/ring, which just turns to mud at that
--- size) instead of the full image. The panel header keeps the full artwork.
-local MENU_ICON_OVERRIDES = {
-    AutoPromote = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\AutoPromoteMenu.png",
-    AutoLog = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\AutoLogMenu.png",
-    ReadyCheck = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\ReadyCheckMenu.png",
-    RaidGroups = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\RaidGroupsMenu.png",
-    InviteTool = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\InviteToolMenu.png",
-    Focus = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\FocusMenu.png",
-    MarksBar = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\MarksBarMenu.png",
-    RaidInspect = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\RaidInspectMenu.png",
-    VersionCheck = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\VersionCheckMenu.png",
-    BonusRoll = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\BonusRollMenu.png",
-}
-
 local function StyleModuleButton(button)
     if not button or button._ccrtModuleStyled then
         return
     end
 
     button._ccrtModuleStyled = true
-    button:SetSize(128, 34)
+    button:SetSize(128, 40)
 
     local background = button:CreateTexture(nil, "BACKGROUND")
     background:SetAllPoints()
@@ -139,7 +122,7 @@ local function ApplyModuleIcons(frame)
     if frame.menuButtons then
         for moduleName, button in pairs(frame.menuButtons) do
             local texturePath = MODULE_ICONS[moduleName]
-            local menuTexturePath = MENU_ICON_OVERRIDES[moduleName] or texturePath
+            local menuTexturePath = texturePath
 
             if texturePath then
                 StyleModuleButton(button)
@@ -150,9 +133,14 @@ local function ApplyModuleIcons(frame)
                     button._ccrtModuleIconBg = iconBackground
                 end
 
-                iconBackground:SetSize(31, 31)
+                -- Purely a positioning anchor now (icon centers on it, text
+                -- anchors to its right) — no visible fill. The icon art
+                -- already has its own opaque circular background baked in;
+                -- a solid square behind it peeked out past the circle's
+                -- edges as visible black corners.
+                iconBackground:SetSize(37, 37)
                 iconBackground:SetPoint("LEFT", button, "LEFT", 1, 0)
-                iconBackground:SetColorTexture(0.008, 0.008, 0.012, 0.90)
+                iconBackground:SetColorTexture(0, 0, 0, 0)
 
                 local icon = button._ccrtModuleIcon
                 if not icon then
@@ -160,7 +148,7 @@ local function ApplyModuleIcons(frame)
                     button._ccrtModuleIcon = icon
                 end
 
-                icon:SetSize(30, 30)
+                icon:SetSize(36, 36)
                 icon:SetPoint("CENTER", iconBackground, "CENTER")
                 icon:SetTexture(menuTexturePath)
                 icon:SetTexCoord(0, 1, 0, 1)

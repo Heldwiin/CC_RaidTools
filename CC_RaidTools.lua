@@ -206,10 +206,11 @@ local function ResizeMainFrame(name)
     local minimums = { AutoPromote = 690, MarksBar = 350, RaidInspect = 520, RaidGroups = 620 }
     if minimums[name] and height < minimums[name] then height = minimums[name] end
     -- Floor tall enough that the left-hand module menu (currently 10
-    -- buttons, last one anchored at -62 - 9*32 = -350, +28 tall) never gets
-    -- clipped by a module whose own content is short. Bump this if more
-    -- modules are added.
-    if height < 404 then height = 404 end
+    -- buttons at 40px tall with 44px spacing, last one anchored at
+    -- -62 - 9*44 = -458, +40 tall) never gets clipped by a module whose own
+    -- content is short. Bump this if more modules are added or the button
+    -- size/spacing changes again.
+    if height < 522 then height = 522 end
     if height > 705 then height = 705 end
     mainFrame:SetHeight(height)
     mainFrame._ccrtLastHeight = height
@@ -271,7 +272,7 @@ function C.BuildMainFrame()
         if C_Timer and C_Timer.After then C_Timer.After(0, function() if mainFrame and mainFrame:IsShown() then ResizeMainFrame(name) end end) else ResizeMainFrame(name) end
     end
     for i, name in ipairs(order) do
-        local b = CreateFrame("Button", nil, mainFrame); b:SetSize(116, 28); b:SetPoint("TOPLEFT", 8, -62 - (i - 1) * 32)
+        local b = CreateFrame("Button", nil, mainFrame); b:SetSize(128, 40); b:SetPoint("TOPLEFT", 8, -62 - (i - 1) * 44)
         local bg = b:CreateTexture(nil, "BACKGROUND"); bg:SetAllPoints(); b.bg = bg
         local t = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); t:SetPoint("LEFT", 8, 0); t:SetText(labels[name]); b.text = t
         b:SetScript("OnEnter", function(self) if not self.selected then self.bg:SetColorTexture(0.09,0.09,0.12,0.96) end end)
