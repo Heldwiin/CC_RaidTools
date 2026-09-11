@@ -7,7 +7,6 @@
 ## SavedVariables: CCRaidToolsDB
 
 Locales.lua
-UITheme.lua
 CC_RaidTools.lua
 AutoPromote.lua
 AutoLog.lua

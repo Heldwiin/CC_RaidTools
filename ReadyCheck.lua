@@ -1039,7 +1039,6 @@ for _, ev in ipairs({
     "READY_CHECK_FINISHED",
     "UNIT_AURA",
     "GROUP_ROSTER_UPDATE",
-    "CHAT_MSG_SYSTEM",
     "CHAT_MSG_ADDON",
 }) do
     e:RegisterEvent(ev)
@@ -1059,15 +1058,12 @@ e:SetScript("OnEvent", function(_, ev, a, b, c, d)
         end
         return
     end
-    if ev == "CHAT_MSG_SYSTEM" and frame and frame:IsShown() and type(a) == "string" then
-        local msg = string.lower(a)
-        if msg:find("tout le monde") and msg:find("prêt") or msg:find("everyone") and msg:find("ready") then
-            ScheduleClose(2, C.L.rcEveryoneReady)
-            return
-        end
-    end
     if ev == "READY_CHECK" then
         readyCheckDuration = (tonumber(b) and tonumber(b) > 0) and tonumber(b) or 30
+        -- Always broadcast our own durability, even if this player has disabled
+        -- the local Ready Check window (raidCheckEnabled = false), so everyone
+        -- else's durability column stays accurate.
+        SendDurability()
         Show(a)
     elseif ev == "READY_CHECK_CONFIRM" then
         Update(a, b)
