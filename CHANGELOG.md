@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.16
+
+### Interface
+
+- Toutes les icônes des modules ont été retravaillées une nouvelle fois : symboles plus simples et audacieux, en gardant l'identité visuelle CC RaidTools (lueur violet/or, bordure dorée avec accents en diamant). Nettement plus lisibles dans le menu, testé et validé.
+- Le système de recadrage séparé pour le petit menu (fichiers "Menu") est retiré : une seule image par module désormais, utilisée à la fois pour le menu et pour la grande icône d'en-tête.
+- Correction d'un fond carré presque noir qui dépassait derrière certaines icônes du menu.
+
 ## 1.2.15
 
 ### Interface
