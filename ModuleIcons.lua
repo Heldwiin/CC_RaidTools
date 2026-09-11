@@ -133,9 +133,14 @@ local function ApplyModuleIcons(frame)
                     button._ccrtModuleIconBg = iconBackground
                 end
 
+                -- Purely a positioning anchor now (icon centers on it, text
+                -- anchors to its right) — no visible fill. The icon art
+                -- already has its own opaque circular background baked in;
+                -- a solid square behind it peeked out past the circle's
+                -- edges as visible black corners.
                 iconBackground:SetSize(37, 37)
                 iconBackground:SetPoint("LEFT", button, "LEFT", 1, 0)
-                iconBackground:SetColorTexture(0.008, 0.008, 0.012, 0.90)
+                iconBackground:SetColorTexture(0, 0, 0, 0)
 
                 local icon = button._ccrtModuleIcon
                 if not icon then
