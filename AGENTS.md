@@ -291,7 +291,7 @@ When touching this, re-verify `CollectUnitData`'s numeric slot IDs stay in sync 
 
 Loot spec lookup falls back through the deprecated-but-still-present globals (`GetSpecialization`/`GetSpecializationInfo`) if the newer `C_SpecializationInfo.*` equivalents aren't available, same defensive pattern used elsewhere in this addon for API that's mid-migration.
 
-**Still unconfirmed**: whether `BONUS_ROLL_STARTED`/`BonusRollFrame` are even the right event/frame anymore. Web research surfaced that the classic currency-based bonus roll may have been superseded by a newer "Nebulous Voidcore"/"Voidforge" bonus-loot system in a recent expansion patch (guides describe an entirely different resource/UX, and a separate currently-maintained third-party addon, `VoidcoreAdvisor`, exists specifically for *that* system) — but the shared source of the original inspiration addon still targets `BonusRollFrame`/`BONUS_ROLL_STARTED` and is apparently maintained/functional, so the old plumbing may still be intact after all; genuinely unclear without a live occurrence to check. A `/ccrtbonusdebug` slash command sniffs every event containing ROLL/VOID/BONUS for 90s and prints matches to chat — use it next to a real bonus roll to get a definitive answer instead of guessing further. Remove that command once confirmed either way.
+**Confirmed working in live testing**: `BONUS_ROLL_STARTED`/`BonusRollFrame` are indeed still the right event/frame — no Voidforge/Nebulous Voidcore rework of the underlying plumbing after all, despite the web research suggesting otherwise. The `/ccrtbonusdebug` diagnostic slash command has been removed now that this is confirmed; don't reintroduce it unless this breaks again for a genuinely new reason.
 
 ## UI and visual identity
 
