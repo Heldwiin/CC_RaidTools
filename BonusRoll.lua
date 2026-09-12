@@ -220,13 +220,20 @@ end
 
 -- ===== Event handling =====
 
-local function OnBonusRollStarted(rollID)
-    InitDB()
-    if not db.enabled then
-        return
-    end
+local function DoBonusRollStarted(rollID)
     local prompt, rollBtn, passBtn = GetBonusRollButtons()
     if not prompt or not rollBtn then
+        -- Diagnostic only (not user-facing spam): tells us next time exactly
+        -- what was missing instead of "nothing happened" with no lead at
+        -- all. BonusRollFrame itself should always exist (base FrameXML,
+        -- not lazy-loaded); PromptFrame/RollButton missing would mean
+        -- Blizzard changed the frame hierarchy this addon assumed.
+        print(string.format(
+            "|cffff6666[CC RaidTools]|r Bonus Roll Confirm: BONUS_ROLL_STARTED reçu mais bouton natif introuvable (BonusRollFrame=%s, PromptFrame=%s, RollButton=%s). Le module n'a pas pu intercepter ce bonus roll.",
+            tostring(_G.BonusRollFrame ~= nil),
+            tostring(_G.BonusRollFrame and _G.BonusRollFrame.PromptFrame ~= nil),
+            tostring(prompt and prompt.RollButton ~= nil)
+        ))
         return
     end
 
@@ -245,6 +252,19 @@ local function OnBonusRollStarted(rollID)
         safetyTimer = nil
         ReleaseButtons()
         HideConfirm()
+    end)
+end
+
+local function OnBonusRollStarted(rollID)
+    InitDB()
+    if not db.enabled then
+        return
+    end
+    -- BONUS_ROLL_STARTED can fire a frame or two before Blizzard's own
+    -- FrameXML finishes populating BonusRollFrame.PromptFrame's buttons;
+    -- give it a brief moment before we go looking for them.
+    C_Timer.After(0.1, function()
+        DoBonusRollStarted(rollID)
     end)
 end
 
@@ -332,3 +352,53 @@ e:SetScript("OnEvent", function(_, event, a)
         OnBonusRollResult()
     end
 end)
+
+-- ===== Temporary diagnostic: /ccrtbonusdebug =====
+-- The classic BONUS_ROLL_STARTED/BonusRollFrame plumbing this module relies
+-- on may have been superseded by the newer Nebulous Voidcore/Voidforge
+-- bonus-loot system (confirmed via web research to be a genuinely different
+-- feature from the old currency-based bonus roll, not just a reskin — could
+-- not confirm the new event/frame name from available sources). Rather than
+-- guess again, this sniffs every event whose name contains ROLL/VOID/BONUS
+-- for 90s so the real event can be identified from an actual occurrence.
+-- Remove this whole block once that's confirmed and the module is wired up
+-- to the correct event.
+local debugFrame
+local debugTimer
+
+local function StopBonusDebug()
+    if debugFrame then
+        debugFrame:UnregisterAllEvents()
+    end
+    if debugTimer then
+        debugTimer:Cancel()
+        debugTimer = nil
+    end
+    print("|cff33ff99[CC RaidTools]|r Diagnostic Bonus Roll terminé.")
+end
+
+local function StartBonusDebug()
+    if not debugFrame then
+        debugFrame = CreateFrame("Frame")
+    end
+    debugFrame:UnregisterAllEvents()
+    debugFrame:RegisterAllEvents()
+    debugFrame:SetScript("OnEvent", function(_, event, ...)
+        local upper = event:upper()
+        if upper:find("ROLL") or upper:find("VOID") or upper:find("BONUS") then
+            local args = {}
+            for i = 1, select("#", ...) do
+                args[i] = tostring((select(i, ...)))
+            end
+            print(string.format("|cff7381FF[CC RaidTools debug]|r %s(%s)", event, table.concat(args, ", ")))
+        end
+    end)
+    if debugTimer then
+        debugTimer:Cancel()
+    end
+    debugTimer = C_Timer.NewTimer(90, StopBonusDebug)
+    print("|cff33ff99[CC RaidTools]|r Diagnostic Bonus Roll actif pendant 90s : va chercher ton bonus roll / Nebulous Voidcore maintenant.")
+end
+
+SLASH_CCRTBONUSDEBUG1 = "/ccrtbonusdebug"
+SlashCmdList["CCRTBONUSDEBUG"] = StartBonusDebug
