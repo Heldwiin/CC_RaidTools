@@ -18,6 +18,32 @@ end
 local localVersion = GetLocalVersion()
 local known = {} -- known[name] = { version = "1.2.10", ts = epoch }
 local warnedThisSession = false
+
+-- Names currently in the player's raid/party (self included), or nil if
+-- ungrouped. Used to keep the list scoped to who's actually with you right
+-- now instead of accumulating everyone ever seen this session.
+local function GetCurrentRosterNames()
+    local roster = {}
+    if IsInRaid() then
+        local n = GetNumGroupMembers() or 0
+        for i = 1, n do
+            local rname = GetRaidRosterInfo(i)
+            if rname then
+                roster[C.StripRealm(rname)] = true
+            end
+        end
+    elseif IsInGroup() then
+        roster[C.StripRealm(UnitName("player"))] = true
+        local n = (GetNumGroupMembers() or 1) - 1
+        for i = 1, n do
+            local unit = "party" .. i
+            if UnitExists(unit) then
+                roster[C.StripRealm(UnitName(unit))] = true
+            end
+        end
+    end
+    return roster
+end
 local lastBroadcast = 0
 local lastRequest = 0
 local REQUEST_COOLDOWN = 15 -- seconds, so rapid tab-switching or clicking doesn't spam the channel
@@ -54,8 +80,11 @@ local function RefreshList()
 
     local entries = {}
     entries[#entries + 1] = { name = C.StripRealm(UnitName("player")), version = localVersion, isSelf = true }
+    local roster = GetCurrentRosterNames()
     for name, data in pairs(known) do
-        entries[#entries + 1] = { name = name, version = data.version }
+        if roster[name] then
+            entries[#entries + 1] = { name = name, version = data.version }
+        end
     end
     table.sort(entries, function(a, b) return a.name < b.name end)
 
