@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.17
+
+### Version Check
+
+- Correctif : la liste n'affichait pas seulement les joueurs actuellement dans votre groupe/raid, mais accumulait tout le monde croisé depuis la connexion (y compris des membres de guilde ayant quitté le groupe entre-temps). La liste est maintenant filtrée sur la composition réelle et actuelle.
+
 ## 1.2.16
 
 ### Interface
