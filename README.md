@@ -37,7 +37,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.16**
+**1.2.17**
+
+### v1.2.17
+
+#### Version Check
+
+- Correctif : la liste ne montre plus que les joueurs actuellement dans votre groupe/raid, au lieu d'accumuler tout le monde croisé depuis la connexion.
 
 ### v1.2.16
 
