@@ -37,7 +37,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.17**
+**1.2.18**
+
+### v1.2.18
+
+#### Bonus Roll Confirm
+
+- Correctif : le module ne se déclenchait jamais sur un vrai bonus roll. Nouvelle technique (interception du clic natif) plus fiable et plus rapide (un seul clic de confirmation au lieu de deux).
 
 ### v1.2.17
 
