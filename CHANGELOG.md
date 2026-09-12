@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.18
+
+### Bonus Roll Confirm
+
+- Correctif important : le module ne se déclenchait jamais lors d'un vrai bonus roll (fonctionnait uniquement via le bouton de test). Changement de technique : au lieu de désactiver les boutons natifs puis attendre un second clic, le module intercepte directement le clic sur Lancer/Passer et n'exécute l'action réelle qu'après confirmation. Un seul clic sur Confirmer suffit désormais, plus besoin de recliquer sur le vrai bouton.
+
 ## 1.2.17
 
 ### Version Check

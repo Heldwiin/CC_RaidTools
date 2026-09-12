@@ -3,19 +3,19 @@
 -- through, showing the loot specialization it will award for, so a mis-click
 -- doesn't burn a roll (or waste one on the wrong spec) by accident.
 --
--- Technical note: Blizzard's bonus roll Roll/Pass buttons are tied to a
--- protected action (rolling triggers a real spell cast under the hood), so
--- an addon cannot click them programmatically — attempting to do so via a
--- secure "clickbutton" redirect throws ADDON_ACTION_BLOCKED. Instead of
--- trying to click for the player, this module briefly DISABLES the native
--- buttons the instant the bonus roll prompt appears, shows our own
--- confirmation, and re-enables them once the player confirms — the actual
--- roll/pass is still a genuine click on Blizzard's own button.
+-- Technical note: rolling triggers a real spell cast under the hood, so this
+-- cannot simulate a click on Blizzard's Roll/Pass buttons for the player —
+-- redirecting a secure button's clickbutton attribute at them to fake a
+-- click throws ADDON_ACTION_BLOCKED. Instead, this hooks each button's own
+-- OnClick handler: a real click on Roll/Pass is intercepted, shows our
+-- confirmation, and only calls the original (captured) handler once the
+-- player confirms. That still runs as a direct consequence of a genuine
+-- click (first on the native button, then on our own confirm button), just
+-- not the exact same click — no secure-template click simulation involved.
 local C = CCRT
 
 local db
 local confirmFrame
-local safetyTimer
 
 local function InitDB()
     C.InitDB()
@@ -82,53 +82,17 @@ local function GetLootSpecDisplay()
     return name, false
 end
 
--- ===== Native button access =====
-
-local function GetBonusRollButtons()
-    local f = _G.BonusRollFrame
-    local prompt = f and f.PromptFrame
-    if not prompt then
-        return nil
-    end
-    return prompt, prompt.RollButton, prompt.PassButton
-end
-
-local function CancelSafetyTimer()
-    if safetyTimer then
-        safetyTimer:Cancel()
-        safetyTimer = nil
-    end
-end
-
--- Always re-enables the native buttons, whatever happened. Called on
--- confirm, on cancel, when the prompt closes on its own, and as a last
--- resort safety timeout — never leave the player stuck with the real
--- buttons disabled.
-local function ReleaseButtons()
-    local _, rollBtn, passBtn = GetBonusRollButtons()
-    if rollBtn then
-        rollBtn:Enable()
-    end
-    if passBtn then
-        passBtn:Enable()
-    end
-    CancelSafetyTimer()
-end
-
-local function HideConfirm()
-    if confirmFrame then
-        confirmFrame:Hide()
-    end
-end
-
 -- ===== Confirmation popup =====
+-- One dynamic popup, reused for both roll and pass confirmations — shows
+-- the relevant message for whichever native button was actually clicked and
+-- calls the supplied callback (which finishes the real action) on confirm.
 
 local function EnsureConfirmFrame()
     if confirmFrame then
         return confirmFrame
     end
     local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    f:SetSize(320, 150)
+    f:SetSize(320, 140)
     f:SetPoint("CENTER", UIParent, "CENTER", 0, 120)
     f:SetFrameStrata("DIALOG")
     C.ApplyPanelSkin(f)
@@ -147,110 +111,94 @@ local function EnsureConfirmFrame()
     body:SetWordWrap(true)
     f.body = body
 
-    local rollBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    rollBtn:SetSize(130, 24)
-    rollBtn:SetPoint("BOTTOMLEFT", 12, 40)
-    rollBtn:SetText(C.L.brConfirmRollButton)
-    C.SkinButton(rollBtn)
-    rollBtn:SetScript("OnClick", function()
-        local _, nativeRollBtn = GetBonusRollButtons()
-        if nativeRollBtn then
-            nativeRollBtn:Enable()
-        end
-        CancelSafetyTimer()
-        HideConfirm()
-        print(C.L.brRollConfirmed)
-    end)
-    f.rollBtn = rollBtn
+    local confirmBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    confirmBtn:SetSize(140, 24)
+    confirmBtn:SetPoint("BOTTOMLEFT", 16, 14)
+    C.SkinButton(confirmBtn)
+    f.confirmBtn = confirmBtn
 
-    local passBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    passBtn:SetSize(130, 24)
-    passBtn:SetPoint("BOTTOMRIGHT", -12, 40)
-    passBtn:SetText(C.L.brConfirmPassButton)
-    C.SkinButton(passBtn)
-    passBtn:SetScript("OnClick", function()
-        local _, _, nativePassBtn = GetBonusRollButtons()
-        if nativePassBtn then
-            nativePassBtn:Enable()
-        end
-        CancelSafetyTimer()
-        HideConfirm()
-        print(C.L.brPassConfirmed)
+    local cancelBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    cancelBtn:SetSize(140, 24)
+    cancelBtn:SetPoint("BOTTOMRIGHT", -16, 14)
+    cancelBtn:SetText(C.L.brCancelButton)
+    C.SkinButton(cancelBtn)
+    cancelBtn:SetScript("OnClick", function()
+        f:Hide()
     end)
-    f.passBtn = passBtn
-
-    local closeBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    closeBtn:SetSize(270, 22)
-    closeBtn:SetPoint("BOTTOM", 0, 12)
-    closeBtn:SetText(C.L.brCloseButton)
-    C.SkinButton(closeBtn)
-    closeBtn:SetScript("OnClick", function()
-        -- Leave without deciding: release whatever was disabled so the
-        -- player is never stuck, without printing a roll/pass confirmation.
-        ReleaseButtons()
-        HideConfirm()
-    end)
-    f.closeBtn = closeBtn
+    f.cancelBtn = cancelBtn
 
     confirmFrame = f
     return f
 end
 
--- passOffered: whether Pass is also gated (db.confirmPass) and needs its own
--- confirm button here, or was left natively clickable and shouldn't be
--- offered redundantly.
-local function ShowConfirm(passOffered)
+-- kind: "roll" or "pass". onConfirm: called if the player confirms — this
+-- is what actually performs the real action (invokes the captured original
+-- button handler).
+local function ShowConfirm(kind, onConfirm)
     local f = EnsureConfirmFrame()
-    local specName, isExplicit = GetLootSpecDisplay()
-    local specLabel = specName or C.L.brUnknownSpec
-    f.body:SetText(string.format(isExplicit and C.L.brBodyExplicit or C.L.brBodyCurrent, specLabel))
 
-    if passOffered then
-        f.passBtn:Show()
-        f.rollBtn:ClearAllPoints()
-        f.rollBtn:SetPoint("BOTTOMLEFT", 12, 40)
+    if kind == "roll" then
+        local specName, isExplicit = GetLootSpecDisplay()
+        local specLabel = specName or C.L.brUnknownSpec
+        f.body:SetText(string.format(isExplicit and C.L.brBodyExplicit or C.L.brBodyCurrent, specLabel))
+        f.confirmBtn:SetText(C.L.brConfirmRollButton)
     else
-        f.passBtn:Hide()
-        f.rollBtn:ClearAllPoints()
-        f.rollBtn:SetPoint("BOTTOM", 0, 40)
+        f.body:SetText(C.L.brPassBody)
+        f.confirmBtn:SetText(C.L.brConfirmPassButton)
     end
+
+    f.confirmBtn:SetScript("OnClick", function()
+        f:Hide()
+        if onConfirm then
+            onConfirm()
+        end
+    end)
 
     f:Show()
 end
 
--- ===== Event handling =====
+-- ===== Native button hooking =====
 
-local function OnBonusRollStarted(rollID)
+-- Wraps btn's own OnClick so a real click shows our confirmation instead of
+-- immediately performing the action; the captured original only runs if the
+-- player confirms. Idempotent — safe to call repeatedly on the same button.
+local function HookButton(btn, kind)
+    if not btn or btn._ccrtBonusHooked then
+        return
+    end
+    local original = btn:GetScript("OnClick")
+    if not original then
+        return
+    end
+    btn._ccrtBonusHooked = true
+    btn:SetScript("OnClick", function(self, button, down)
+        if kind == "pass" and not db.confirmPass then
+            original(self, button, down)
+            return
+        end
+        ShowConfirm(kind, function()
+            original(self, button, down)
+            print(kind == "roll" and C.L.brRollConfirmed or C.L.brPassConfirmed)
+        end)
+    end)
+end
+
+local function TryHookBonusRollFrame()
     InitDB()
     if not db.enabled then
         return
     end
-    local prompt, rollBtn, passBtn = GetBonusRollButtons()
-    if not prompt or not rollBtn then
+    local f = _G.BonusRollFrame
+    local prompt = f and f.PromptFrame
+    if not prompt then
         return
     end
-
-    rollBtn:Disable()
-    local passOffered = db.confirmPass and passBtn ~= nil
-    if passOffered then
-        passBtn:Disable()
+    if prompt.RollButton then
+        HookButton(prompt.RollButton, "roll")
     end
-
-    ShowConfirm(passOffered)
-
-    -- Safety net: never leave the real buttons stuck disabled, even if
-    -- something above goes wrong or the player alt-tabs away.
-    CancelSafetyTimer()
-    safetyTimer = C_Timer.NewTimer(45, function()
-        safetyTimer = nil
-        ReleaseButtons()
-        HideConfirm()
-    end)
-end
-
-local function OnBonusRollResult()
-    HideConfirm()
-    ReleaseButtons()
+    if prompt.PassButton then
+        HookButton(prompt.PassButton, "pass")
+    end
 end
 
 -- ===== Settings UI =====
@@ -289,7 +237,7 @@ local function BuildUI(panel)
     testBtn:SetText(C.L.brTestButton)
     C.SkinButton(testBtn)
     testBtn:SetScript("OnClick", function()
-        ShowConfirm(db.confirmPass)
+        ShowConfirm("roll", function() end)
     end)
 
     local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -322,13 +270,19 @@ end
 
 C.RegisterModule("BonusRoll", BuildUI, RefreshUI)
 
+-- Hook from multiple entry points, all idempotent thanks to the
+-- _ccrtBonusHooked flag on each button — whichever fires first (or all of
+-- them) ends up hooking exactly once per button.
+if _G.BonusRollFrame_StartBonusRoll then
+    hooksecurefunc("BonusRollFrame_StartBonusRoll", TryHookBonusRollFrame)
+end
+
 local e = CreateFrame("Frame")
 e:RegisterEvent("BONUS_ROLL_STARTED")
-e:RegisterEvent("BONUS_ROLL_RESULT")
-e:SetScript("OnEvent", function(_, event, a)
+e:SetScript("OnEvent", function(_, event)
     if event == "BONUS_ROLL_STARTED" then
-        OnBonusRollStarted(a)
-    elseif event == "BONUS_ROLL_RESULT" then
-        OnBonusRollResult()
+        -- A frame or two of headroom in case BonusRollFrame.PromptFrame's
+        -- buttons aren't fully populated at the exact moment this fires.
+        C_Timer.After(0.1, TryHookBonusRollFrame)
     end
 end)
