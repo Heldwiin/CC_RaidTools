@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.19
+
+### Raid Inspect
+
+- Correctif d'affichage : le texte de statut (nombre inspecté, message "indisponible pendant le combat") débordait du cadre de la fenêtre. Il s'affiche maintenant en dessous des boutons avec retour à la ligne automatique.
+
 ## 1.2.18
 
 ### Bonus Roll Confirm

@@ -37,7 +37,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.18**
+**1.2.19**
+
+### v1.2.19
+
+#### Raid Inspect
+
+- Correctif : le texte de statut débordait du cadre de la fenêtre, il s'affiche maintenant proprement sous les boutons avec retour à la ligne.
 
 ### v1.2.18
 
