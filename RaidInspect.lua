@@ -967,10 +967,13 @@ local function BuildUI(frame)
     end)
 
     statusText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    statusText:SetPoint("LEFT", resetButton, "RIGHT", 10, 0)
+    statusText:SetPoint("TOPLEFT", inspectButton, "BOTTOMLEFT", 0, -8)
+    statusText:SetPoint("RIGHT", frame, "RIGHT", -10, 0)
+    statusText:SetJustifyH("LEFT")
+    statusText:SetWordWrap(true)
 
     local header = CreateFrame("Frame", nil, frame)
-    header:SetPoint("TOPLEFT", inspectButton, "BOTTOMLEFT", -6, -14)
+    header:SetPoint("TOPLEFT", inspectButton, "BOTTOMLEFT", -6, -46)
     header:SetSize(390, 18)
 
     local function HeaderText(text, x, width, justify)
