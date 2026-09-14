@@ -117,21 +117,21 @@ local function EnsureConfirmFrame()
     -- Mascot portrait, front and center this time (not a faint watermark).
     local mascot = f:CreateTexture(nil, "ARTWORK")
     mascot:SetSize(130, 130)
-    mascot:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -12)
+    mascot:SetPoint("TOPRIGHT", f, "TOPRIGHT", -10, -12)
     mascot:SetTexture("Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\SpecReminderMascot.png")
     mascot:SetAlpha(1)
     f.mascot = mascot
 
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", mascot, "TOPRIGHT", 14, -6)
-    title:SetPoint("RIGHT", -12, 0)
+    title:SetPoint("TOPLEFT", 12, -12)
+    title:SetPoint("RIGHT", mascot, "LEFT", -14, 0)
     title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
     title:SetText(C.L.srTitle)
     f.title = title
 
     local body = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     body:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -14)
-    body:SetPoint("RIGHT", -12, 0)
+    body:SetPoint("RIGHT", mascot, "LEFT", -14, 0)
     body:SetJustifyH("LEFT")
     body:SetWordWrap(true)
     f.body = body
