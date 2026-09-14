@@ -25,30 +25,40 @@ end
 
 -- ===== Current spec lookup (with deprecated-API fallback) =====
 
-local function GetCurrentSpecName()
-    local index
+local function GetCurrentSpecIndex()
     if C_SpecializationInfo and C_SpecializationInfo.GetSpecialization then
-        index = C_SpecializationInfo.GetSpecialization()
-    else
-        index = GetSpecialization and GetSpecialization()
+        return C_SpecializationInfo.GetSpecialization()
     end
+    return GetSpecialization and GetSpecialization()
+end
+
+-- Returns specID, specName for the given spec index.
+local function GetSpecIDAndName(index)
     if not index then
-        return nil
+        return nil, nil
     end
     if C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo then
-        local _, name = C_SpecializationInfo.GetSpecializationInfo(index)
-        return name
+        local specID, name = C_SpecializationInfo.GetSpecializationInfo(index)
+        return specID, name
     end
     if GetSpecializationInfo then
-        local _, name = GetSpecializationInfo(index)
-        return name
+        local specID, name = GetSpecializationInfo(index)
+        return specID, name
     end
-    return nil
+    return nil, nil
+end
+
+local function GetCurrentSpecName()
+    local _, name = GetSpecIDAndName(GetCurrentSpecIndex())
+    return name
 end
 
 -- The active talent loadout/config name (e.g. "Raid", "M+") — a player can
 -- be in the right specialization but the wrong saved build, which matters
--- just as much before a pull.
+-- just as much before a pull. Only worth showing if the player actually
+-- has more than one saved loadout for this spec — with just one, its name
+-- (often left as the default, which just duplicates the spec name, e.g.
+-- "Arcanes" vs "Arcane") adds nothing and reads as confusing duplication.
 local function GetActiveLoadoutName()
     if not C_ClassTalents or not C_ClassTalents.GetActiveConfigID then
         return nil
@@ -57,6 +67,17 @@ local function GetActiveLoadoutName()
     if not configID then
         return nil
     end
+
+    if C_ClassTalents.GetConfigIDsBySpecID then
+        local specID = GetSpecIDAndName(GetCurrentSpecIndex())
+        if specID then
+            local configIDs = C_ClassTalents.GetConfigIDsBySpecID(specID)
+            if configIDs and #configIDs <= 1 then
+                return nil
+            end
+        end
+    end
+
     if not C_Traits or not C_Traits.GetConfigInfo then
         return nil
     end
