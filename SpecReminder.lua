@@ -61,17 +61,24 @@ end
 -- "Arcanes" vs "Arcane") adds nothing and reads as confusing duplication.
 local function GetActiveLoadoutName()
     if not C_ClassTalents or not C_ClassTalents.GetActiveConfigID then
+        print("|cffff6666[CC RaidTools debug]|r C_ClassTalents.GetActiveConfigID indisponible")
         return nil
     end
     local configID = C_ClassTalents.GetActiveConfigID()
     if not configID then
+        print("|cffff6666[CC RaidTools debug]|r GetActiveConfigID() = nil")
         return nil
     end
 
+    local specID
     if C_ClassTalents.GetConfigIDsBySpecID then
-        local specID = GetSpecIDAndName(GetCurrentSpecIndex())
+        specID = GetSpecIDAndName(GetCurrentSpecIndex())
         if specID then
             local configIDs = C_ClassTalents.GetConfigIDsBySpecID(specID)
+            print(string.format(
+                "|cff7381FF[CC RaidTools debug]|r configID=%s specID=%s nbConfigs=%s",
+                tostring(configID), tostring(specID), tostring(configIDs and #configIDs)
+            ))
             if configIDs and #configIDs <= 1 then
                 return nil
             end
@@ -79,10 +86,12 @@ local function GetActiveLoadoutName()
     end
 
     if not C_Traits or not C_Traits.GetConfigInfo then
+        print("|cffff6666[CC RaidTools debug]|r C_Traits.GetConfigInfo indisponible")
         return nil
     end
     local configInfo = C_Traits.GetConfigInfo(configID)
     local name = configInfo and configInfo.name
+    print(string.format("|cff7381FF[CC RaidTools debug]|r configInfo.name=%s", tostring(name)))
     if name and name ~= "" then
         return name
     end
