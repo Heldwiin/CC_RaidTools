@@ -125,6 +125,7 @@ local function EnsureConfirmFrame()
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOPLEFT", 12, -12)
     title:SetPoint("RIGHT", mascot, "LEFT", -14, 0)
+    title:SetJustifyH("CENTER")
     title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
     title:SetText(C.L.srTitle)
     f.title = title
