@@ -230,6 +230,7 @@ local frFR = {
     srHint = "La spécialisation ne peut pas être changée une fois en combat — ce rappel s'affiche donc avant, pour avoir le temps de la changer si besoin.",
     srTitle = "Vérifiez votre spécialisation",
     srBody = "Spécialisation actuelle : |cffffcc00%s|r",
+    srBodyWithLoadout = "Spécialisation actuelle : |cffffcc00%s|r\nConfiguration : |cffffcc00%s|r",
     srUnknownSpec = "inconnue",
     srConfirmButton = "J'ai vérifié",
 }
@@ -399,6 +400,7 @@ local enUS = {
     srHint = "Specialization can't be changed once in combat — this reminder shows beforehand so there's still time to switch if needed.",
     srTitle = "Check your specialization",
     srBody = "Current specialization: |cffffcc00%s|r",
+    srBodyWithLoadout = "Current specialization: |cffffcc00%s|r\nLoadout: |cffffcc00%s|r",
     srUnknownSpec = "unknown",
     srConfirmButton = "Checked",
 

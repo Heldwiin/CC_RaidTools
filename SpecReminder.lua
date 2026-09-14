@@ -46,6 +46,28 @@ local function GetCurrentSpecName()
     return nil
 end
 
+-- The active talent loadout/config name (e.g. "Raid", "M+") — a player can
+-- be in the right specialization but the wrong saved build, which matters
+-- just as much before a pull.
+local function GetActiveLoadoutName()
+    if not C_ClassTalents or not C_ClassTalents.GetActiveConfigID then
+        return nil
+    end
+    local configID = C_ClassTalents.GetActiveConfigID()
+    if not configID then
+        return nil
+    end
+    if not C_Traits or not C_Traits.GetConfigInfo then
+        return nil
+    end
+    local configInfo = C_Traits.GetConfigInfo(configID)
+    local name = configInfo and configInfo.name
+    if name and name ~= "" then
+        return name
+    end
+    return nil
+end
+
 -- ===== Reminder popup =====
 
 local function EnsureConfirmFrame()
@@ -53,7 +75,7 @@ local function EnsureConfirmFrame()
         return confirmFrame
     end
     local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    f:SetSize(300, 120)
+    f:SetSize(300, 140)
     f:SetPoint("CENTER", UIParent, "CENTER", 0, 120)
     f:SetFrameStrata("DIALOG")
     C.ApplyPanelSkin(f)
@@ -89,7 +111,12 @@ end
 local function ShowReminder()
     local f = EnsureConfirmFrame()
     local specName = GetCurrentSpecName() or C.L.srUnknownSpec
-    f.body:SetText(string.format(C.L.srBody, specName))
+    local loadoutName = GetActiveLoadoutName()
+    if loadoutName then
+        f.body:SetText(string.format(C.L.srBodyWithLoadout, specName, loadoutName))
+    else
+        f.body:SetText(string.format(C.L.srBody, specName))
+    end
     f:Show()
 end
 

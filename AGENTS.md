@@ -303,6 +303,8 @@ Loot spec lookup falls back through the deprecated-but-still-present globals (`G
 
 Spec name lookup uses the *current active* spec (`GetSpecialization`/`GetSpecializationInfo`, same deprecated-API fallback pattern as `BonusRoll.lua`'s loot-spec lookup) — this is deliberately different from Bonus Roll Confirm's *loot* spec lookup (`GetLootSpecialization`), since this reminder is about which spec you're actually playing, not which spec loot gets awarded for.
 
+The reminder also shows the **active talent loadout name** (`GetActiveLoadoutName`: `C_ClassTalents.GetActiveConfigID()` → `C_Traits.GetConfigInfo(configID).name`) when available — e.g. "Raid" or "M+" as named in the in-game talent loadout dropdown. Being in the right spec but the wrong saved build (talents tuned for the other content type) matters just as much before a pull, and the guild explicitly asked for both to be shown together.
+
 The popup requires an explicit click ("J'ai vérifié"/"Checked") to dismiss — a passive chat message would be too easy to miss right before a pull.
 
 ## UI and visual identity
