@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.20
+
+### Nouveau module : Spec Reminder
+
+- Ajout du module **Spec Reminder** : un rappel s'affiche avant qu'il ne soit trop tard pour changer de spécialisation (on ne peut plus le faire une fois en combat) — à l'entrée dans un donjon Mythique (0 ou +) ou un raid, et à chaque Ready Check.
+- Affiche votre spécialisation actuelle ainsi que la configuration de talents active (par exemple "Raid" ou "M+") si vous en avez plusieurs enregistrées pour cette spécialisation.
+- Réglages : activation générale, activation indépendante des deux déclencheurs, bouton de test.
+- Popup avec mascotte dédiée, à confirmer explicitement avant de continuer.
+
 ## 1.2.19
 
 ### Raid Inspect
