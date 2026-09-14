@@ -108,7 +108,7 @@ local function EnsureConfirmFrame()
         return confirmFrame
     end
     local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    f:SetSize(400, 150)
+    f:SetSize(340, 150)
     f:SetPoint("CENTER", UIParent, "CENTER", 0, 120)
     f:SetFrameStrata("DIALOG")
     C.ApplyPanelSkin(f)
@@ -116,7 +116,7 @@ local function EnsureConfirmFrame()
 
     -- Mascot portrait, front and center this time (not a faint watermark).
     local mascot = f:CreateTexture(nil, "ARTWORK")
-    mascot:SetSize(130, 130)
+    mascot:SetSize(110, 110)
     mascot:SetPoint("TOPRIGHT", f, "TOPRIGHT", -10, -12)
     mascot:SetTexture("Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\SpecReminderMascot.png")
     mascot:SetAlpha(1)
