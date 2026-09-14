@@ -293,6 +293,24 @@ Loot spec lookup falls back through the deprecated-but-still-present globals (`G
 
 **Confirmed working in live testing**: `BONUS_ROLL_STARTED`/`BonusRollFrame` are indeed still the right event/frame — no Voidforge/Nebulous Voidcore rework of the underlying plumbing after all, despite the web research suggesting otherwise. The `/ccrtbonusdebug` diagnostic slash command has been removed now that this is confirmed; don't reintroduce it unless this breaks again for a genuinely new reason.
 
+## Spec Reminder
+
+`SpecReminder.lua` shows a popup reminding the player of their current specialization, at the two moments where it's still actionable — **specialization cannot be changed while in combat**, so the reminder has to land before a pull, not at/after it.
+
+- **Zone entry** (`CheckZoneEntry`, on `PLAYER_ENTERING_WORLD` with a 0.5s buffer for instance info to populate): fires once when actually entering a new instance (`IsInInstance()` transitioning false→true, tracked via `wasInInstance` — not on every loading-screen transition within an instance you're already in, e.g. a wipe recall) that's either any raid difficulty (`instanceType == "raid"`) or a Mythic 5-player dungeon (`difficultyID == 8` Mythic Keystone, or `23` regular Mythic/"Mythic 0" — both included deliberately: you're in difficulty 23 from the moment you zone in until the keystone is actually slotted at the font, so checking only 8 would miss the window the reminder is for; verified against Warcraft Wiki's DifficultyID list).
+- **Ready Check** (`READY_CHECK` event): fires every time, by design (the person explicitly wants a reminder at every ready check, not just the first).
+- Both toggles default on but are independently switchable in settings, plus a master enable and a Tester button.
+
+Spec name lookup uses the *current active* spec (`GetSpecialization`/`GetSpecializationInfo`, same deprecated-API fallback pattern as `BonusRoll.lua`'s loot-spec lookup) — this is deliberately different from Bonus Roll Confirm's *loot* spec lookup (`GetLootSpecialization`), since this reminder is about which spec you're actually playing, not which spec loot gets awarded for.
+
+The reminder also shows the **active talent loadout name** (`GetActiveLoadoutName`) when available — e.g. "Raid" or "M+" as named in the in-game talent loadout dropdown. Being in the right spec but the wrong saved build (talents tuned for the other content type) matters just as much before a pull, and the guild explicitly asked for both to be shown together. **But only when the player actually has more than one saved loadout for the current spec** (`C_ClassTalents.GetConfigIDsBySpecID(specID)`, suppressed if `#configIDs <= 1`) — with a single loadout, its name is often left as the default and just duplicates the spec name (reported: "Spécialisation actuelle : Arcanes" / "Configuration : Arcane" — same information shown twice, confusing rather than helpful).
+
+**`C_ClassTalents.GetActiveConfigID()` is the wrong API for finding which saved loadout is active** — confirmed via live debug output (a guild member with two saved loadouts, "M+" (configID 88416645) and "Raid" (configID 88611005), saw `GetActiveConfigID()` return a *third*, different configID (1713674) whose own `configInfo.name` was just the spec name ("Elemental"), not either saved loadout's name. `GetActiveConfigID()` returns the character's live "working" talent state — a distinct object from a saved loadout slot, even when its content matches one exactly. Use `C_ClassTalents.GetLastSelectedSavedConfigID(specID)` instead, which tracks which *saved* loadout the player actually picked from the dropdown. Per Warcraft Wiki's Dragonflight Talent System page, there is no fully authoritative API for this at all ("addons and even the default UI mistakenly think a different loadout is selected than is actually the case" on occasion) — this is Blizzard's own documented best-effort approach, not a guaranteed-correct one. If this turns out wrong again, the next step per Blizzard's own recommended fallback chain would be reading `PlayerSpellsFrame.TalentsFrame.LoadSystem:GetSelectionID()` when that frame has been opened this session, before falling back further.
+
+The popup requires an explicit click ("Ok") to dismiss — a passive chat message would be too easy to miss right before a pull.
+
+The popup features a prominent mascot portrait (`TexturesGUI/SpecReminderMascot.png`, an original character — same design language as the guild's existing `logo.png` mascot, a "pointing at temple, puzzled" pose commissioned specifically for this reminder — not a Disney/Aladdin reference, which was declined for copyright reasons when first requested). Full opacity, positioned in its own left column (`ARTWORK` layer, 130x130) with the title/body text anchored to its right — this went through an iteration where it was a faint 18%-alpha `BACKGROUND`-layer watermark behind the text, but the guild wanted it clearly visible rather than a subtle touch, so the whole popup layout was widened (300x105 → 400x150) to give the portrait its own space instead of overlapping it with text.
+
 ## UI and visual identity
 
 Keep the established CC RaidTools visual style:
@@ -312,7 +330,7 @@ Do not redesign the whole configuration window for a small feature request.
 
 ## Module menu icons
 
-All 10 modules use commissioned custom artwork (`TexturesGUI/<Module>.png`) in a shared "epic CC RaidTools" style: radiant purple/gold glow, beveled gold ring border, bold clean silhouette per module (crown, scroll+quill, checkmark, three raid-group figures, envelope+arrow, crosshair, raid-marker cluster, armored knight+gear, shield+checkmark, two dice). The panel-header icon (`ApplyPanelIcon` in `ModuleIcons.lua`) renders it at 100px.
+All 11 modules use commissioned custom artwork (`TexturesGUI/<Module>.png`) in a shared "epic CC RaidTools" style: radiant purple/gold glow, beveled gold ring border, bold clean silhouette per module (crown, scroll+quill, checkmark, three raid-group figures, envelope+arrow, crosshair, raid-marker cluster, armored knight+gear, shield+checkmark, two dice, bell for Spec Reminder). The panel-header icon (`ApplyPanelIcon` in `ModuleIcons.lua`) renders it at 100px.
 
 The menu button (`StyleModuleButton` in `ModuleIcons.lua`) uses the **same full image** as the panel header, not a separate cropped variant. An earlier attempt cropped a tighter, simplified `<Module>Menu.png` per module (discarding the outer glow ring) to fight pixelation at the small menu size, wired up via a `MENU_ICON_OVERRIDES` table — the tighter crop did read more cleanly, but the guild preferred keeping the full image (ring border included) and instead enlarged the menu button/icon itself (`StyleModuleButton`: button 116x28→128x40, icon background 31x31→37x37, icon 30x30→36x36) so the full artwork has more room to render. Both `MENU_ICON_OVERRIDES` and the `<Module>Menu.png` files were removed once that decision was made — if a menu-specific crop is ever wanted again for some module, reintroduce that lookup table rather than resurrecting it from history.
 
@@ -441,6 +459,14 @@ For Version Check specifically:
 - verify the officer list correctly tags self, outdated, current, and newer peers;
 - confirm broadcasts/requests reach both RAID and PARTY groups, and that nothing is sent/expected while ungrouped (no GUILD fallback — scoped to the current group/raid on purpose);
 - verify opening the panel and clicking Rafraîchir both trigger a request that gets prompt replies, and that the 15s request cooldown prevents spamming the channel from rapid tab-switching.
+
+For Spec Reminder specifically:
+- enter a Mythic 5-player dungeon — both before slotting a keystone (Mythic 0, difficultyID 23) and after (difficultyID 8) — and verify the popup appears once per entry, not repeatedly;
+- enter a raid at any difficulty and verify it appears;
+- trigger a wipe recall/teleport within an instance you're already in and verify it does NOT re-show;
+- trigger a Ready Check and verify it shows every time, independent of the zone-entry toggle;
+- verify each toggle (master enable, zone entry, ready check) independently gates its own trigger;
+- verify the spec name shown matches your actual current spec (not loot spec).
 
 For Bonus Roll Confirm specifically:
 - trigger a real bonus roll and verify the native Roll button is disabled until confirmed, then a real click on it after confirming actually rolls;
