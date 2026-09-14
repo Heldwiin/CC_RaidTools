@@ -79,6 +79,16 @@ local function GetActiveLoadoutName()
                 "|cff7381FF[CC RaidTools debug]|r configID=%s specID=%s nbConfigs=%s",
                 tostring(configID), tostring(specID), tostring(configIDs and #configIDs)
             ))
+            if configIDs and C_Traits and C_Traits.GetConfigInfo then
+                for _, id in ipairs(configIDs) do
+                    local info = C_Traits.GetConfigInfo(id)
+                    print(string.format(
+                        "|cff7381FF[CC RaidTools debug]|r  -> configID=%s name=%s %s",
+                        tostring(id), tostring(info and info.name),
+                        id == configID and "(ACTIVE)" or ""
+                    ))
+                end
+            end
             if configIDs and #configIDs <= 1 then
                 return nil
             end
@@ -90,8 +100,14 @@ local function GetActiveLoadoutName()
         return nil
     end
     local configInfo = C_Traits.GetConfigInfo(configID)
+    if configInfo then
+        for k, v in pairs(configInfo) do
+            print(string.format("|cff7381FF[CC RaidTools debug]|r configInfo.%s = %s", tostring(k), tostring(v)))
+        end
+    else
+        print("|cffff6666[CC RaidTools debug]|r GetConfigInfo() returned nil")
+    end
     local name = configInfo and configInfo.name
-    print(string.format("|cff7381FF[CC RaidTools debug]|r configInfo.name=%s", tostring(name)))
     if name and name ~= "" then
         return name
     end
