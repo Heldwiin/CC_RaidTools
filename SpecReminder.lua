@@ -108,29 +108,29 @@ local function EnsureConfirmFrame()
         return confirmFrame
     end
     local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    f:SetSize(300, 105)
+    f:SetSize(400, 150)
     f:SetPoint("CENTER", UIParent, "CENTER", 0, 120)
     f:SetFrameStrata("DIALOG")
     C.ApplyPanelSkin(f)
     f:Hide()
 
-    -- Discreet mascot watermark, low enough opacity to never compete with
-    -- the text sitting on top of it.
-    local mascot = f:CreateTexture(nil, "BACKGROUND")
-    mascot:SetSize(90, 90)
-    mascot:SetPoint("TOPRIGHT", f, "TOPRIGHT", -6, -2)
+    -- Mascot portrait, front and center this time (not a faint watermark).
+    local mascot = f:CreateTexture(nil, "ARTWORK")
+    mascot:SetSize(130, 130)
+    mascot:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -12)
     mascot:SetTexture("Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\SpecReminderMascot.png")
-    mascot:SetAlpha(0.18)
+    mascot:SetAlpha(1)
     f.mascot = mascot
 
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", 12, -12)
+    title:SetPoint("TOPLEFT", mascot, "TOPRIGHT", 14, -6)
+    title:SetPoint("RIGHT", -12, 0)
     title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
     title:SetText(C.L.srTitle)
     f.title = title
 
     local body = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    body:SetPoint("TOPLEFT", 12, -34)
+    body:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -14)
     body:SetPoint("RIGHT", -12, 0)
     body:SetJustifyH("LEFT")
     body:SetWordWrap(true)

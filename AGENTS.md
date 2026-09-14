@@ -309,7 +309,7 @@ The reminder also shows the **active talent loadout name** (`GetActiveLoadoutNam
 
 The popup requires an explicit click ("Ok") to dismiss — a passive chat message would be too easy to miss right before a pull.
 
-The popup carries its own small mascot watermark (`TexturesGUI/SpecReminderMascot.png`, an original character — same design language as the guild's existing `logo.png` mascot, just a new "scratching head, puzzled" pose commissioned specifically for this reminder — not a Disney/Aladdin reference, which was declined for copyright reasons when first requested). Drawn on the `BACKGROUND` layer at 18% alpha so it never competes with the title/body text sitting on top of it.
+The popup features a prominent mascot portrait (`TexturesGUI/SpecReminderMascot.png`, an original character — same design language as the guild's existing `logo.png` mascot, a "pointing at temple, puzzled" pose commissioned specifically for this reminder — not a Disney/Aladdin reference, which was declined for copyright reasons when first requested). Full opacity, positioned in its own left column (`ARTWORK` layer, 130x130) with the title/body text anchored to its right — this went through an iteration where it was a faint 18%-alpha `BACKGROUND`-layer watermark behind the text, but the guild wanted it clearly visible rather than a subtle touch, so the whole popup layout was widened (300x105 → 400x150) to give the portrait its own space instead of overlapping it with text.
 
 ## UI and visual identity
 
