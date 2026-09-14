@@ -297,7 +297,7 @@ Loot spec lookup falls back through the deprecated-but-still-present globals (`G
 
 `SpecReminder.lua` shows a popup reminding the player of their current specialization, at the two moments where it's still actionable — **specialization cannot be changed while in combat**, so the reminder has to land before a pull, not at/after it.
 
-- **Zone entry** (`CheckZoneEntry`, on `PLAYER_ENTERING_WORLD` with a 0.5s buffer for instance info to populate): fires once when actually entering a new instance (`IsInInstance()` transitioning false→true, tracked via `wasInInstance` — not on every loading-screen transition within an instance you're already in, e.g. a wipe recall) that's either any raid difficulty (`instanceType == "raid"`) or Mythic Keystone specifically (`difficultyID == 8`, verified against Warcraft Wiki's DifficultyID list — deliberately not 23/regular non-keystone Mythic, since the person asked for "Mythique+" specifically).
+- **Zone entry** (`CheckZoneEntry`, on `PLAYER_ENTERING_WORLD` with a 0.5s buffer for instance info to populate): fires once when actually entering a new instance (`IsInInstance()` transitioning false→true, tracked via `wasInInstance` — not on every loading-screen transition within an instance you're already in, e.g. a wipe recall) that's either any raid difficulty (`instanceType == "raid"`) or a Mythic 5-player dungeon (`difficultyID == 8` Mythic Keystone, or `23` regular Mythic/"Mythic 0" — both included deliberately: you're in difficulty 23 from the moment you zone in until the keystone is actually slotted at the font, so checking only 8 would miss the window the reminder is for; verified against Warcraft Wiki's DifficultyID list).
 - **Ready Check** (`READY_CHECK` event): fires every time, by design (the person explicitly wants a reminder at every ready check, not just the first).
 - Both toggles default on but are independently switchable in settings, plus a master enable and a Tester button.
 
@@ -455,7 +455,7 @@ For Version Check specifically:
 - verify opening the panel and clicking Rafraîchir both trigger a request that gets prompt replies, and that the 15s request cooldown prevents spamming the channel from rapid tab-switching.
 
 For Spec Reminder specifically:
-- enter a Mythic+ dungeon (keystone slotted, difficultyID 8) and verify the popup appears once, not repeatedly, and not on a regular (non-keystone) Mythic 5-player;
+- enter a Mythic 5-player dungeon — both before slotting a keystone (Mythic 0, difficultyID 23) and after (difficultyID 8) — and verify the popup appears once per entry, not repeatedly;
 - enter a raid at any difficulty and verify it appears;
 - trigger a wipe recall/teleport within an instance you're already in and verify it does NOT re-show;
 - trigger a Ready Check and verify it shows every time, independent of the zone-entry toggle;

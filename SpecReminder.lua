@@ -104,9 +104,13 @@ local function CheckZoneEntry()
     local inInstance, instanceType = IsInInstance()
     if inInstance and not wasInInstance then
         local _, _, difficultyID = GetInstanceInfo()
-        -- difficultyID 8 = Mythic Keystone (M+); any raid difficulty also
-        -- qualifies, not just Mythic raid, since spec matters regardless.
-        if instanceType == "raid" or difficultyID == 8 then
+        -- difficultyID 8 = Mythic Keystone (M+); 23 = regular Mythic
+        -- 5-player ("Mythic 0") — you're in this difficulty from the moment
+        -- you zone in until the keystone is actually slotted at the font,
+        -- so checking only 8 would miss the window the reminder is for.
+        -- Any raid difficulty also qualifies, not just Mythic raid, since
+        -- spec matters regardless.
+        if instanceType == "raid" or difficultyID == 8 or difficultyID == 23 then
             ShowReminder()
         end
     end
