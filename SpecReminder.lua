@@ -59,54 +59,41 @@ end
 -- has more than one saved loadout for this spec — with just one, its name
 -- (often left as the default, which just duplicates the spec name, e.g.
 -- "Arcanes" vs "Arcane") adds nothing and reads as confusing duplication.
+--
+-- Note: C_ClassTalents.GetActiveConfigID() returns the character's live
+-- "working" talent state, which is a DIFFERENT object from a saved loadout
+-- slot (their configIDs don't match even when the content is identical —
+-- confirmed via live debug output: active config had a fresh generic ID
+-- with configInfo.name just equal to the spec name, while the two actually
+-- saved loadouts "M+"/"Raid" had entirely different IDs). What the in-game
+-- loadout dropdown actually shows as "selected" is tracked separately via
+-- GetLastSelectedSavedConfigID. There's no fully authoritative API for
+-- this (per Warcraft Wiki's own Dragonflight Talent System page), so this
+-- is a best-effort match, matching Blizzard's own recommended approach.
 local function GetActiveLoadoutName()
-    if not C_ClassTalents or not C_ClassTalents.GetActiveConfigID then
-        print("|cffff6666[CC RaidTools debug]|r C_ClassTalents.GetActiveConfigID indisponible")
+    if not C_ClassTalents or not C_ClassTalents.GetLastSelectedSavedConfigID then
         return nil
     end
-    local configID = C_ClassTalents.GetActiveConfigID()
+    local specID = GetSpecIDAndName(GetCurrentSpecIndex())
+    if not specID then
+        return nil
+    end
+    local configID = C_ClassTalents.GetLastSelectedSavedConfigID(specID)
     if not configID then
-        print("|cffff6666[CC RaidTools debug]|r GetActiveConfigID() = nil")
         return nil
     end
 
-    local specID
     if C_ClassTalents.GetConfigIDsBySpecID then
-        specID = GetSpecIDAndName(GetCurrentSpecIndex())
-        if specID then
-            local configIDs = C_ClassTalents.GetConfigIDsBySpecID(specID)
-            print(string.format(
-                "|cff7381FF[CC RaidTools debug]|r configID=%s specID=%s nbConfigs=%s",
-                tostring(configID), tostring(specID), tostring(configIDs and #configIDs)
-            ))
-            if configIDs and C_Traits and C_Traits.GetConfigInfo then
-                for _, id in ipairs(configIDs) do
-                    local info = C_Traits.GetConfigInfo(id)
-                    print(string.format(
-                        "|cff7381FF[CC RaidTools debug]|r  -> configID=%s name=%s %s",
-                        tostring(id), tostring(info and info.name),
-                        id == configID and "(ACTIVE)" or ""
-                    ))
-                end
-            end
-            if configIDs and #configIDs <= 1 then
-                return nil
-            end
+        local configIDs = C_ClassTalents.GetConfigIDsBySpecID(specID)
+        if configIDs and #configIDs <= 1 then
+            return nil
         end
     end
 
     if not C_Traits or not C_Traits.GetConfigInfo then
-        print("|cffff6666[CC RaidTools debug]|r C_Traits.GetConfigInfo indisponible")
         return nil
     end
     local configInfo = C_Traits.GetConfigInfo(configID)
-    if configInfo then
-        for k, v in pairs(configInfo) do
-            print(string.format("|cff7381FF[CC RaidTools debug]|r configInfo.%s = %s", tostring(k), tostring(v)))
-        end
-    else
-        print("|cffff6666[CC RaidTools debug]|r GetConfigInfo() returned nil")
-    end
     local name = configInfo and configInfo.name
     if name and name ~= "" then
         return name
