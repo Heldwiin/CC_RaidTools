@@ -112,10 +112,14 @@ local function ShowReminder()
     local f = EnsureConfirmFrame()
     local specName = GetCurrentSpecName() or C.L.srUnknownSpec
     local loadoutName = GetActiveLoadoutName()
-    if loadoutName then
+    if loadoutName and C.L.srBodyWithLoadout then
         f.body:SetText(string.format(C.L.srBodyWithLoadout, specName, loadoutName))
-    else
+    elseif C.L.srBody then
         f.body:SetText(string.format(C.L.srBody, specName))
+    else
+        -- Defensive last resort: never hard-error just because a locale
+        -- string is missing (e.g. Locales.lua out of sync with this file).
+        f.body:SetText(specName)
     end
     f:Show()
 end
