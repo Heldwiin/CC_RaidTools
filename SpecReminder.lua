@@ -114,6 +114,15 @@ local function EnsureConfirmFrame()
     C.ApplyPanelSkin(f)
     f:Hide()
 
+    -- Discreet mascot watermark, low enough opacity to never compete with
+    -- the text sitting on top of it.
+    local mascot = f:CreateTexture(nil, "BACKGROUND")
+    mascot:SetSize(90, 90)
+    mascot:SetPoint("TOPRIGHT", f, "TOPRIGHT", -6, -2)
+    mascot:SetTexture("Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\SpecReminderMascot.png")
+    mascot:SetAlpha(0.18)
+    f.mascot = mascot
+
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOPLEFT", 12, -12)
     title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)

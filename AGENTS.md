@@ -307,7 +307,9 @@ The reminder also shows the **active talent loadout name** (`GetActiveLoadoutNam
 
 **`C_ClassTalents.GetActiveConfigID()` is the wrong API for finding which saved loadout is active** — confirmed via live debug output (a guild member with two saved loadouts, "M+" (configID 88416645) and "Raid" (configID 88611005), saw `GetActiveConfigID()` return a *third*, different configID (1713674) whose own `configInfo.name` was just the spec name ("Elemental"), not either saved loadout's name. `GetActiveConfigID()` returns the character's live "working" talent state — a distinct object from a saved loadout slot, even when its content matches one exactly. Use `C_ClassTalents.GetLastSelectedSavedConfigID(specID)` instead, which tracks which *saved* loadout the player actually picked from the dropdown. Per Warcraft Wiki's Dragonflight Talent System page, there is no fully authoritative API for this at all ("addons and even the default UI mistakenly think a different loadout is selected than is actually the case" on occasion) — this is Blizzard's own documented best-effort approach, not a guaranteed-correct one. If this turns out wrong again, the next step per Blizzard's own recommended fallback chain would be reading `PlayerSpellsFrame.TalentsFrame.LoadSystem:GetSelectionID()` when that frame has been opened this session, before falling back further.
 
-The popup requires an explicit click ("J'ai vérifié"/"Checked") to dismiss — a passive chat message would be too easy to miss right before a pull.
+The popup requires an explicit click ("Ok") to dismiss — a passive chat message would be too easy to miss right before a pull.
+
+The popup carries its own small mascot watermark (`TexturesGUI/SpecReminderMascot.png`, an original character — same design language as the guild's existing `logo.png` mascot, just a new "scratching head, puzzled" pose commissioned specifically for this reminder — not a Disney/Aladdin reference, which was declined for copyright reasons when first requested). Drawn on the `BACKGROUND` layer at 18% alpha so it never competes with the title/body text sitting on top of it.
 
 ## UI and visual identity
 
