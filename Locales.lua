@@ -232,7 +232,7 @@ local frFR = {
     srBody = "Spécialisation actuelle : |cffffcc00%s|r",
     srBodyWithLoadout = "Spécialisation actuelle : |cffffcc00%s|r\nConfiguration : |cffffcc00%s|r",
     srUnknownSpec = "inconnue",
-    srConfirmButton = "J'ai vérifié",
+    srConfirmButton = "Ok",
 }
 
 -- ===== English overrides =====
@@ -402,7 +402,7 @@ local enUS = {
     srBody = "Current specialization: |cffffcc00%s|r",
     srBodyWithLoadout = "Current specialization: |cffffcc00%s|r\nLoadout: |cffffcc00%s|r",
     srUnknownSpec = "unknown",
-    srConfirmButton = "Checked",
+    srConfirmButton = "Ok",
 
     rgLabel = "Raid Groups:",
     rgSaveButton = "Save",

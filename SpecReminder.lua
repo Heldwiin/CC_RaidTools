@@ -108,7 +108,7 @@ local function EnsureConfirmFrame()
         return confirmFrame
     end
     local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    f:SetSize(300, 140)
+    f:SetSize(300, 105)
     f:SetPoint("CENTER", UIParent, "CENTER", 0, 120)
     f:SetFrameStrata("DIALOG")
     C.ApplyPanelSkin(f)
@@ -128,7 +128,7 @@ local function EnsureConfirmFrame()
     f.body = body
 
     local confirmBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    confirmBtn:SetSize(160, 24)
+    confirmBtn:SetSize(90, 24)
     confirmBtn:SetPoint("BOTTOM", 0, 14)
     confirmBtn:SetText(C.L.srConfirmButton)
     C.SkinButton(confirmBtn)
