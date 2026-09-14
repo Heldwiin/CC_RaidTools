@@ -156,7 +156,7 @@ local function ApplyModuleIcons(frame)
 
                 if button.text then
                     button.text:ClearAllPoints()
-                    button.text:SetPoint("LEFT", iconBackground, "RIGHT", 8, 0)
+                    button.text:SetPoint("LEFT", iconBackground, "RIGHT", 4, 0)
                     button.text:SetTextColor(0.96, 0.96, 0.96)
                     button.text:SetShadowOffset(1, -1)
                     button.text:SetShadowColor(0, 0, 0, 1)
