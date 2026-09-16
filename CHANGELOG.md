@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.21
+
+### Spec Reminder
+
+- Ajout d'une ligne "Spécialisation de butin" affichée systématiquement dans le rappel, en plus de la spécialisation active et de la configuration de talents.
+
 ## 1.2.20
 
 ### Nouveau module : Spec Reminder
