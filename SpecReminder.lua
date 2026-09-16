@@ -6,6 +6,7 @@ local C = CCRT
 
 local db
 local confirmFrame
+local autoCloseTimer
 local wasInInstance = false
 
 local function InitDB()
@@ -164,6 +165,10 @@ local function EnsureConfirmFrame()
     confirmBtn:SetText(C.L.srConfirmButton)
     C.SkinButton(confirmBtn)
     confirmBtn:SetScript("OnClick", function()
+        if autoCloseTimer then
+            autoCloseTimer:Cancel()
+            autoCloseTimer = nil
+        end
         f:Hide()
     end)
     f.confirmBtn = confirmBtn
@@ -196,6 +201,18 @@ local function ShowReminder()
     end
     f.body:SetText(table.concat(lines, "\n"))
     f:Show()
+
+    -- Auto-dismiss after 15s if the player never clicks anything — this is
+    -- a reminder, not something that should block indefinitely.
+    if autoCloseTimer then
+        autoCloseTimer:Cancel()
+    end
+    autoCloseTimer = C_Timer.NewTimer(15, function()
+        autoCloseTimer = nil
+        if f:IsShown() then
+            f:Hide()
+        end
+    end)
 end
 
 -- ===== Triggers =====
