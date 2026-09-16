@@ -58,6 +58,7 @@ end
 -- pattern as BonusRoll.lua's loot-spec display.
 local function GetLootSpecDisplay()
     local lootSpecID = GetLootSpecialization and GetLootSpecialization() or 0
+    print(string.format("|cff7381FF[CC RaidTools debug]|r GetLootSpecialization()=%s", tostring(lootSpecID)))
     if lootSpecID and lootSpecID ~= 0 then
         local name
         if GetSpecializationInfoForSpecID then
@@ -67,6 +68,7 @@ local function GetLootSpecDisplay()
             local _, n = GetSpecializationInfoByID(lootSpecID)
             name = n
         end
+        print(string.format("|cff7381FF[CC RaidTools debug]|r loot spec name=%s", tostring(name)))
         if name then
             return name, true
         end
@@ -189,6 +191,10 @@ local function ShowReminder()
         table.insert(lines, string.format(C.L.srLoadoutLine, loadoutName))
     end
     local lootSpecName, lootIsExplicit = GetLootSpecDisplay()
+    print(string.format(
+        "|cff7381FF[CC RaidTools debug]|r lootSpecName=%s lootIsExplicit=%s specName=%s equal=%s",
+        tostring(lootSpecName), tostring(lootIsExplicit), tostring(specName), tostring(lootSpecName == specName)
+    ))
     -- Only worth a line when it's explicitly set AND differs from the
     -- current spec — otherwise it's just the same info as above again.
     if lootIsExplicit and lootSpecName and lootSpecName ~= specName and C.L.srLootSpecLine then
