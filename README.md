@@ -38,7 +38,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.20**
+**1.2.21**
+
+### v1.2.21
+
+#### Spec Reminder
+
+- Ajout de la spécialisation de butin dans le rappel (affichée systématiquement).
 
 ### v1.2.20
 
