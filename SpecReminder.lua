@@ -188,10 +188,10 @@ local function ShowReminder()
     if loadoutName and C.L.srLoadoutLine then
         table.insert(lines, string.format(C.L.srLoadoutLine, loadoutName))
     end
-    local lootSpecName, lootIsExplicit = GetLootSpecDisplay()
-    -- Only worth a line when it's explicitly set AND differs from the
-    -- current spec — otherwise it's just the same info as above again.
-    if lootIsExplicit and lootSpecName and lootSpecName ~= specName and C.L.srLootSpecLine then
+    local lootSpecName = GetLootSpecDisplay()
+    -- Always shown now (was previously suppressed when it matched the
+    -- current spec exactly, but the guild wants it displayed every time).
+    if lootSpecName and C.L.srLootSpecLine then
         table.insert(lines, string.format(C.L.srLootSpecLine, lootSpecName))
     end
     f.body:SetText(table.concat(lines, "\n"))
