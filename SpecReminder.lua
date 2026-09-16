@@ -53,6 +53,27 @@ local function GetCurrentSpecName()
     return name
 end
 
+-- Returns the loot spec name and whether it's an explicit loot spec (true)
+-- or just the current active spec (false, i.e. never set). Same lookup
+-- pattern as BonusRoll.lua's loot-spec display.
+local function GetLootSpecDisplay()
+    local lootSpecID = GetLootSpecialization and GetLootSpecialization() or 0
+    if lootSpecID and lootSpecID ~= 0 then
+        local name
+        if GetSpecializationInfoForSpecID then
+            local _, n = GetSpecializationInfoForSpecID(lootSpecID)
+            name = n
+        elseif GetSpecializationInfoByID then
+            local _, n = GetSpecializationInfoByID(lootSpecID)
+            name = n
+        end
+        if name then
+            return name, true
+        end
+    end
+    return GetCurrentSpecName(), false
+end
+
 -- The active talent loadout/config name (e.g. "Raid", "M+") — a player can
 -- be in the right specialization but the wrong saved build, which matters
 -- just as much before a pull. Only worth showing if the player actually
@@ -155,15 +176,25 @@ local function ShowReminder()
     local f = EnsureConfirmFrame()
     local specName = GetCurrentSpecName() or C.L.srUnknownSpec
     local loadoutName = GetActiveLoadoutName()
-    if loadoutName and C.L.srBodyWithLoadout then
-        f.body:SetText(string.format(C.L.srBodyWithLoadout, specName, loadoutName))
-    elseif C.L.srBody then
-        f.body:SetText(string.format(C.L.srBody, specName))
+
+    local lines = {}
+    if C.L.srBody then
+        table.insert(lines, string.format(C.L.srBody, specName))
     else
         -- Defensive last resort: never hard-error just because a locale
         -- string is missing (e.g. Locales.lua out of sync with this file).
-        f.body:SetText(specName)
+        table.insert(lines, specName)
     end
+    if loadoutName and C.L.srLoadoutLine then
+        table.insert(lines, string.format(C.L.srLoadoutLine, loadoutName))
+    end
+    local lootSpecName, lootIsExplicit = GetLootSpecDisplay()
+    -- Only worth a line when it's explicitly set AND differs from the
+    -- current spec — otherwise it's just the same info as above again.
+    if lootIsExplicit and lootSpecName and lootSpecName ~= specName and C.L.srLootSpecLine then
+        table.insert(lines, string.format(C.L.srLootSpecLine, lootSpecName))
+    end
+    f.body:SetText(table.concat(lines, "\n"))
     f:Show()
 end
 
