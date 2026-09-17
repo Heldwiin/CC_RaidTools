@@ -134,7 +134,7 @@ local function EnsureConfirmFrame()
         return confirmFrame
     end
     local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    f:SetSize(340, 160)
+    f:SetSize(340, 155)
     f:SetPoint("CENTER", UIParent, "CENTER", 0, 120)
     f:SetFrameStrata("DIALOG")
     C.ApplyPanelSkin(f)
@@ -165,8 +165,8 @@ local function EnsureConfirmFrame()
 
     local timerBar = CreateFrame("StatusBar", nil, f)
     timerBar:SetHeight(TIMER_H)
-    timerBar:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 16, 44)
-    timerBar:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -16, 44)
+    timerBar:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 16, 14)
+    timerBar:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -16, 14)
     timerBar:SetMinMaxValues(0, REMINDER_DURATION)
     timerBar:SetValue(REMINDER_DURATION)
     timerBar:SetStatusBarTexture(TIMER_TEXTURE)
@@ -176,17 +176,23 @@ local function EnsureConfirmFrame()
     timerBar.bg:SetColorTexture(0.08, 0.08, 0.10, 0.8)
     f.timerBar = timerBar
 
-    local confirmBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    confirmBtn:SetSize(90, 24)
-    confirmBtn:SetPoint("BOTTOM", 0, 14)
-    confirmBtn:SetText(C.L.srConfirmButton)
-    C.SkinButton(confirmBtn)
-    confirmBtn:SetScript("OnClick", function()
+    -- Same close-X pattern as the main CC RaidTools window.
+    local close = CreateFrame("Button", nil, f)
+    close:SetSize(22, 22)
+    close:SetPoint("TOPRIGHT", -4, -4)
+    local closeTex = close:CreateTexture(nil, "ARTWORK")
+    closeTex:SetPoint("CENTER")
+    closeTex:SetSize(13, 13)
+    closeTex:SetTexture("Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\Close.png")
+    closeTex:SetVertexColor(0.851, 0.851, 0.851, 1)
+    close:SetScript("OnEnter", function() closeTex:SetVertexColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 1) end)
+    close:SetScript("OnLeave", function() closeTex:SetVertexColor(0.851, 0.851, 0.851, 1) end)
+    close:SetScript("OnClick", function()
         finishAt = nil
         f:SetScript("OnUpdate", nil)
         f:Hide()
     end)
-    f.confirmBtn = confirmBtn
+    f.closeButton = close
 
     confirmFrame = f
     return f
