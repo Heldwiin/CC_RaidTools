@@ -21,7 +21,7 @@ local function StyleModuleButton(button)
     end
 
     button._ccrtModuleStyled = true
-    button:SetSize(128, 40)
+    button:SetSize(128, 30)
 
     local background = button:CreateTexture(nil, "BACKGROUND")
     background:SetAllPoints()
