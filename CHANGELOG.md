@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.22
+
+### Spec Reminder
+
+- La popup se ferme désormais via une croix (comme la fenêtre principale) au lieu d'un bouton "Ok", et affiche une barre de progression visuelle pour le délai de fermeture automatique (15 secondes).
+
+### Interface
+
+- Retrait des icônes des boutons du menu de gauche (texte seul désormais) — les grandes icônes en haut à droite de chaque module sont conservées.
+- Boutons du menu plus compacts et légèrement décalés vers la gauche.
+
 ## 1.2.21
 
 ### Spec Reminder
