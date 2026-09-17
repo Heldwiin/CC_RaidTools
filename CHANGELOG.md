@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.24
+
+### Spec Reminder
+
+- La position de la fenêtre (une fois déplacée) est maintenant mémorisée définitivement, y compris après un `/reload` ou une reconnexion.
+
 ## 1.2.23
 
 ### Spec Reminder

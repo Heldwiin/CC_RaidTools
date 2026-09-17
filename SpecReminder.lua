@@ -133,9 +133,14 @@ local function EnsureConfirmFrame()
     if confirmFrame then
         return confirmFrame
     end
+    InitDB()
     local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     f:SetSize(340, 155)
-    f:SetPoint("CENTER", UIParent, "CENTER", 0, 120)
+    if db and db.framePoint then
+        f:SetPoint(db.framePoint, UIParent, db.frameRelativePoint or db.framePoint, db.frameX or 0, db.frameY or 0)
+    else
+        f:SetPoint("CENTER", UIParent, "CENTER", 0, 120)
+    end
     f:SetFrameStrata("DIALOG")
     C.ApplyPanelSkin(f)
     f:Hide()
@@ -144,7 +149,14 @@ local function EnsureConfirmFrame()
     f:EnableMouse(true)
     f:RegisterForDrag("LeftButton")
     f:SetScript("OnDragStart", f.StartMoving)
-    f:SetScript("OnDragStop", f.StopMovingOrSizing)
+    f:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local point, _, relativePoint, x, y = self:GetPoint(1)
+        db.framePoint = point
+        db.frameRelativePoint = relativePoint
+        db.frameX = x
+        db.frameY = y
+    end)
 
     -- Mascot portrait, front and center this time (not a faint watermark).
     local mascot = f:CreateTexture(nil, "ARTWORK")
