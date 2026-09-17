@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.23
+
+### Spec Reminder
+
+- La fenêtre de rappel peut maintenant être déplacée par cliquer-glisser (sa position est mémorisée pour la session).
+
 ## 1.2.22
 
 ### Spec Reminder
