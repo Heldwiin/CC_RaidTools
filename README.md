@@ -38,7 +38,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.22**
+**1.2.23**
+
+### v1.2.23
+
+#### Spec Reminder
+
+- Fenêtre déplaçable par cliquer-glisser.
 
 ### v1.2.22
 
