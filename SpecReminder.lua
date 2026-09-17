@@ -140,6 +140,12 @@ local function EnsureConfirmFrame()
     C.ApplyPanelSkin(f)
     f:Hide()
 
+    f:SetMovable(true)
+    f:EnableMouse(true)
+    f:RegisterForDrag("LeftButton")
+    f:SetScript("OnDragStart", f.StartMoving)
+    f:SetScript("OnDragStop", f.StopMovingOrSizing)
+
     -- Mascot portrait, front and center this time (not a faint watermark).
     local mascot = f:CreateTexture(nil, "ARTWORK")
     mascot:SetSize(150, 150)
