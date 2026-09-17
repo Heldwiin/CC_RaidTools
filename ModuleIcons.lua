@@ -21,7 +21,7 @@ local function StyleModuleButton(button)
     end
 
     button._ccrtModuleStyled = true
-    button:SetSize(128, 40)
+    button:SetSize(128, 30)
 
     local background = button:CreateTexture(nil, "BACKGROUND")
     background:SetAllPoints()
@@ -123,40 +123,24 @@ local function ApplyModuleIcons(frame)
     if frame.menuButtons then
         for moduleName, button in pairs(frame.menuButtons) do
             local texturePath = MODULE_ICONS[moduleName]
-            local menuTexturePath = texturePath
 
             if texturePath then
                 StyleModuleButton(button)
 
-                local iconBackground = button._ccrtModuleIconBg
-                if not iconBackground then
-                    iconBackground = button:CreateTexture(nil, "ARTWORK")
-                    button._ccrtModuleIconBg = iconBackground
+                -- Menu buttons are text-only now (icons stay on the panel
+                -- header only, via ApplyPanelIcon below) — hide any
+                -- leftover icon/background from a previous session and
+                -- anchor the label straight to the button's left edge.
+                if button._ccrtModuleIconBg then
+                    button._ccrtModuleIconBg:Hide()
                 end
-
-                -- Purely a positioning anchor now (icon centers on it, text
-                -- anchors to its right) — no visible fill. The icon art
-                -- already has its own opaque circular background baked in;
-                -- a solid square behind it peeked out past the circle's
-                -- edges as visible black corners.
-                iconBackground:SetSize(37, 37)
-                iconBackground:SetPoint("LEFT", button, "LEFT", 1, 0)
-                iconBackground:SetColorTexture(0, 0, 0, 0)
-
-                local icon = button._ccrtModuleIcon
-                if not icon then
-                    icon = button:CreateTexture(nil, "OVERLAY")
-                    button._ccrtModuleIcon = icon
+                if button._ccrtModuleIcon then
+                    button._ccrtModuleIcon:Hide()
                 end
-
-                icon:SetSize(36, 36)
-                icon:SetPoint("CENTER", iconBackground, "CENTER")
-                icon:SetTexture(menuTexturePath)
-                icon:SetTexCoord(0, 1, 0, 1)
 
                 if button.text then
                     button.text:ClearAllPoints()
-                    button.text:SetPoint("LEFT", iconBackground, "RIGHT", 4, 0)
+                    button.text:SetPoint("LEFT", button, "LEFT", 12, 0)
                     button.text:SetTextColor(0.96, 0.96, 0.96)
                     button.text:SetShadowOffset(1, -1)
                     button.text:SetShadowColor(0, 0, 0, 1)

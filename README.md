@@ -38,7 +38,18 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.21**
+**1.2.22**
+
+### v1.2.22
+
+#### Spec Reminder
+
+- Fermeture par croix + barre de progression visuelle pour l'auto-fermeture (15s).
+
+#### Interface
+
+- Icônes retirées des boutons du menu (texte seul), conservées sur les en-têtes de modules.
+- Boutons de menu plus compacts, décalés vers la gauche.
 
 ### v1.2.21
 

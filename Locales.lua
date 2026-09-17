@@ -233,7 +233,6 @@ local frFR = {
     srLoadoutLine = "Configuration : |cffffcc00%s|r",
     srLootSpecLine = "Spécialisation de butin : |cffffcc00%s|r",
     srUnknownSpec = "inconnue",
-    srConfirmButton = "Ok",
 }
 
 -- ===== English overrides =====
@@ -404,7 +403,6 @@ local enUS = {
     srLoadoutLine = "Loadout: |cffffcc00%s|r",
     srLootSpecLine = "Loot specialization: |cffffcc00%s|r",
     srUnknownSpec = "unknown",
-    srConfirmButton = "Ok",
 
     rgLabel = "Raid Groups:",
     rgSaveButton = "Save",

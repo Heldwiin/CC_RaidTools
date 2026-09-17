@@ -6,6 +6,11 @@ local C = CCRT
 
 local db
 local confirmFrame
+local finishAt
+
+local REMINDER_DURATION = 15
+local TIMER_H = 12
+local TIMER_TEXTURE = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\atrocity.tga"
 local wasInInstance = false
 
 local function InitDB()
@@ -129,7 +134,7 @@ local function EnsureConfirmFrame()
         return confirmFrame
     end
     local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    f:SetSize(340, 160)
+    f:SetSize(340, 155)
     f:SetPoint("CENTER", UIParent, "CENTER", 0, 120)
     f:SetFrameStrata("DIALOG")
     C.ApplyPanelSkin(f)
@@ -158,18 +163,52 @@ local function EnsureConfirmFrame()
     body:SetWordWrap(true)
     f.body = body
 
-    local confirmBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    confirmBtn:SetSize(90, 24)
-    confirmBtn:SetPoint("BOTTOM", 0, 14)
-    confirmBtn:SetText(C.L.srConfirmButton)
-    C.SkinButton(confirmBtn)
-    confirmBtn:SetScript("OnClick", function()
+    local timerBar = CreateFrame("StatusBar", nil, f)
+    timerBar:SetHeight(TIMER_H)
+    timerBar:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 16, 14)
+    timerBar:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -16, 14)
+    timerBar:SetMinMaxValues(0, REMINDER_DURATION)
+    timerBar:SetValue(REMINDER_DURATION)
+    timerBar:SetStatusBarTexture(TIMER_TEXTURE)
+    timerBar:SetStatusBarColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    timerBar.bg = timerBar:CreateTexture(nil, "BACKGROUND")
+    timerBar.bg:SetAllPoints()
+    timerBar.bg:SetColorTexture(0.08, 0.08, 0.10, 0.8)
+    f.timerBar = timerBar
+
+    -- Same close-X pattern as the main CC RaidTools window.
+    local close = CreateFrame("Button", nil, f)
+    close:SetSize(22, 22)
+    close:SetPoint("TOPRIGHT", -4, -4)
+    local closeTex = close:CreateTexture(nil, "ARTWORK")
+    closeTex:SetPoint("CENTER")
+    closeTex:SetSize(13, 13)
+    closeTex:SetTexture("Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\Close.png")
+    closeTex:SetVertexColor(0.851, 0.851, 0.851, 1)
+    close:SetScript("OnEnter", function() closeTex:SetVertexColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 1) end)
+    close:SetScript("OnLeave", function() closeTex:SetVertexColor(0.851, 0.851, 0.851, 1) end)
+    close:SetScript("OnClick", function()
+        finishAt = nil
+        f:SetScript("OnUpdate", nil)
         f:Hide()
     end)
-    f.confirmBtn = confirmBtn
+    f.closeButton = close
 
     confirmFrame = f
     return f
+end
+
+local function UpdateTimerDisplay(f)
+    if not finishAt then
+        return
+    end
+    local remaining = math.max(0, finishAt - GetTime())
+    f.timerBar:SetValue(remaining)
+    if remaining <= 0 then
+        finishAt = nil
+        f:SetScript("OnUpdate", nil)
+        f:Hide()
+    end
 end
 
 local function ShowReminder()
@@ -196,6 +235,22 @@ local function ShowReminder()
     end
     f.body:SetText(table.concat(lines, "\n"))
     f:Show()
+
+    -- Auto-dismiss after REMINDER_DURATION if the player never clicks
+    -- anything — this is a reminder, not something that should block
+    -- indefinitely. Restarting on every call (rather than only when not
+    -- already running) so a fresh reminder always gets the full duration.
+    finishAt = GetTime() + REMINDER_DURATION
+    f.timerBar:SetMinMaxValues(0, REMINDER_DURATION)
+    f.timerBar:SetValue(REMINDER_DURATION)
+    f._ccrtTimerElapsed = 0
+    f:SetScript("OnUpdate", function(self, elapsed)
+        self._ccrtTimerElapsed = (self._ccrtTimerElapsed or 0) + elapsed
+        if self._ccrtTimerElapsed >= 0.03 then
+            self._ccrtTimerElapsed = 0
+            UpdateTimerDisplay(self)
+        end
+    end)
 end
 
 -- ===== Triggers =====
