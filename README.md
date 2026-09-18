@@ -38,7 +38,14 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.25**
+**1.2.26**
+
+### v1.2.26
+
+#### AutoLog
+
+- Correctif : les world bosses (type "Repaires") n'étaient jamais enregistrés, même en Mythique classique. Ajout du support de la difficulté "Mythique Flexible" et d'une détection de secours pour du contenu similaire à venir.
+- Commande `/ccrtlogdebug` pour diagnostiquer.
 
 ### v1.2.25
 

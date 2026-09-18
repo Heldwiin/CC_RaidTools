@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.26
+
+### AutoLog
+
+- Correctif : les combats des world bosses (comme les "Repaires") n'étaient jamais enregistrés, y compris en difficulté Mythique classique d'un raid où ce même contenu s'exécute normalement. Ajout de la difficulté "Mythique Flexible" (`233`), utilisée par ce nouveau type de contenu, ainsi qu'une détection de secours basée sur le type de cible pour tout futur contenu similaire.
+- Ajout d'une commande `/ccrtlogdebug` pour diagnostiquer les problèmes de démarrage automatique du log si jamais un souci similaire se reproduit.
+
 ## 1.2.25
 
 ### Spec Reminder
