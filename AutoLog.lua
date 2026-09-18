@@ -6,8 +6,26 @@ local C = CCRT
 local startedByAddon = false
 local lastStartAttempt = 0
 local lastStopAttempt = 0
+local debugMode = false
 
 local ACTION_COOLDOWN = 5
+
+-- Raid difficulty IDs.
+local DIFFICULTY_LFR = 17
+local DIFFICULTY_NORMAL = 14
+local DIFFICULTY_HEROIC = 15
+local DIFFICULTY_MYTHIC = 16
+-- "Flexible Mythic" (15-25 players), introduced patch 12.0.7 on the
+-- Sporefall raid and used by "Lair" world-boss encounters — found by the
+-- guild directly (via /ccrtlogdebug output), since it's too new/niche to
+-- have turned up in any research beforehand.
+local DIFFICULTY_MYTHIC_FLEX = 233
+
+local function DebugPrint(fmt, ...)
+    if debugMode then
+        print(string.format("|cff7381FF[CC RaidTools debug]|r " .. fmt, ...))
+    end
+end
 
 local function IsLoggingActive()
     if C_ChatInfo and C_ChatInfo.IsLoggingCombat then
@@ -74,24 +92,73 @@ local function StopLogging()
     end
 end
 
+-- World bosses aren't reliably detectable via instanceType/difficultyID —
+-- as of patch 12.1 some run in an instanced-but-not-raid/party zone type,
+-- and open-world ones aren't instanced at all. Detected instead by target
+-- classification: once the player targets a "worldboss"-classified unit,
+-- this stays true for the rest of the encounter (so tabbing off it to heal
+-- someone mid-fight doesn't immediately stop the log), reset on zone change.
+local inWorldBossEncounter = false
+
 local function IsLoggingTarget()
     C.InitDB()
 
     local _, instanceType, difficultyID = GetInstanceInfo()
     local db = AutoPromoteDB.logging
 
+    DebugPrint(
+        "IsLoggingTarget: instanceType=%s difficultyID=%s lfr=%s normal=%s heroic=%s mythic=%s dungeons=%s inWorldBossEncounter=%s",
+        tostring(instanceType), tostring(difficultyID), tostring(db.lfr), tostring(db.normal),
+        tostring(db.heroic), tostring(db.mythic), tostring(db.dungeons), tostring(inWorldBossEncounter)
+    )
+
     if instanceType == "raid" then
-        return (difficultyID == 17 and db.lfr)
-            or (difficultyID == 14 and db.normal)
-            or (difficultyID == 15 and db.heroic)
-            or (difficultyID == 16 and db.mythic)
+        if (difficultyID == DIFFICULTY_LFR and db.lfr)
+            or (difficultyID == DIFFICULTY_NORMAL and db.normal)
+            or (difficultyID == DIFFICULTY_HEROIC and db.heroic)
+            or ((difficultyID == DIFFICULTY_MYTHIC or difficultyID == DIFFICULTY_MYTHIC_FLEX) and db.mythic) then
+            DebugPrint("IsLoggingTarget: matched standard raid path (difficultyID=%s) -> true", tostring(difficultyID))
+            return true
+        end
+    elseif instanceType == "party" then
+        if (difficultyID == 23 or difficultyID == 8) and db.dungeons then
+            DebugPrint("IsLoggingTarget: matched dungeon path -> true")
+            return true
+        end
     end
 
-    if instanceType == "party" then
-        return (difficultyID == 23 or difficultyID == 8) and db.dungeons
+    -- Always checked, even when instanceType matched raid/party above but
+    -- its specific difficultyID didn't — some world-boss-style encounters
+    -- report instanceType=="raid" with an unusual difficultyID for their
+    -- Mythic tier specifically (confirmed: Normal/Heroic logged fine via
+    -- the raid path above for the same encounter, Mythic didn't), so this
+    -- classification-based fallback must never be unreachable just because
+    -- instanceType happened to match one of the blocks above.
+    --
+    -- No separate "world boss" toggle: since we can't reliably tell which
+    -- specific difficulty tier a non-standard-ID world boss encounter is
+    -- at, folded into the existing raid checkboxes instead — logs if any
+    -- of Normal/Heroic/Mythic is enabled, matching the general "I care
+    -- about this kind of content" intent those already express.
+    if inWorldBossEncounter and (db.normal or db.heroic or db.mythic) then
+        DebugPrint("IsLoggingTarget: matched world-boss classification fallback -> true")
+        return true
     end
 
+    DebugPrint("IsLoggingTarget: no match -> false")
     return false
+end
+
+local function CheckWorldBossTarget()
+    if not UnitExists("target") then
+        return
+    end
+    local classification = UnitClassification("target")
+    DebugPrint("CheckWorldBossTarget: target=%s classification=%s", tostring(UnitName("target")), tostring(classification))
+    if classification == "worldboss" then
+        inWorldBossEncounter = true
+        DebugPrint("CheckWorldBossTarget: inWorldBossEncounter set to true")
+    end
 end
 
 local function StartChallengeLogging()
@@ -107,7 +174,10 @@ end
 local function CheckAutoLog()
     C.InitDB()
 
-    if IsLoggingTarget() then
+    local shouldLog = IsLoggingTarget()
+    DebugPrint("CheckAutoLog: shouldLog=%s IsLoggingActive=%s startedByAddon=%s", tostring(shouldLog), tostring(IsLoggingActive()), tostring(startedByAddon))
+
+    if shouldLog then
         StartLogging()
         return
     end
@@ -116,6 +186,15 @@ local function CheckAutoLog()
 end
 
 C.CheckAutoLog = CheckAutoLog
+
+SLASH_CCRTLOGDEBUG1 = "/ccrtlogdebug"
+SlashCmdList["CCRTLOGDEBUG"] = function()
+    debugMode = not debugMode
+    print(string.format("|cff33ff99[CC RaidTools]|r AutoLog debug mode: %s", debugMode and "ON" or "OFF"))
+    if debugMode then
+        CheckAutoLog()
+    end
+end
 
 local checks = {}
 
@@ -190,6 +269,7 @@ for _, eventName in ipairs({
     "CHALLENGE_MODE_START",
     "PLAYER_DIFFICULTY_CHANGED",
     "UPDATE_INSTANCE_INFO",
+    "PLAYER_TARGET_CHANGED",
 }) do
     events:RegisterEvent(eventName)
 end
@@ -209,6 +289,16 @@ events:SetScript("OnEvent", function(_, event, arg1)
     if event == "CHALLENGE_MODE_START" then
         C_Timer.After(1, StartChallengeLogging)
         return
+    end
+
+    if event == "PLAYER_TARGET_CHANGED" then
+        CheckWorldBossTarget()
+        C_Timer.After(2, CheckAutoLog)
+        return
+    end
+
+    if event == "ZONE_CHANGED_NEW_AREA" then
+        inWorldBossEncounter = false
     end
 
     C_Timer.After(2, CheckAutoLog)
