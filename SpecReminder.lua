@@ -193,7 +193,7 @@ local function EnsureConfirmFrame()
     timerBar.bg:SetAllPoints()
     timerBar.bg:SetColorTexture(0.08, 0.08, 0.10, 0.8)
     timerBar.text = timerBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    timerBar.text:SetPoint("CENTER", 0, 1)
+    timerBar.text:SetPoint("CENTER", 0, 1.5)
     timerBar.text:SetText(string.format(C.L.srClosingIn, REMINDER_DURATION))
     f.timerBar = timerBar
 
