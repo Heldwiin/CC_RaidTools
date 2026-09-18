@@ -192,6 +192,9 @@ local function EnsureConfirmFrame()
     timerBar.bg = timerBar:CreateTexture(nil, "BACKGROUND")
     timerBar.bg:SetAllPoints()
     timerBar.bg:SetColorTexture(0.08, 0.08, 0.10, 0.8)
+    timerBar.text = timerBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    timerBar.text:SetPoint("CENTER")
+    timerBar.text:SetText(string.format(C.L.srClosingIn, REMINDER_DURATION))
     f.timerBar = timerBar
 
     -- Same close-X pattern as the main CC RaidTools window.
@@ -222,6 +225,7 @@ local function UpdateTimerDisplay(f)
     end
     local remaining = math.max(0, finishAt - GetTime())
     f.timerBar:SetValue(remaining)
+    f.timerBar.text:SetText(string.format(C.L.srClosingIn, math.ceil(remaining)))
     if remaining <= 0 then
         finishAt = nil
         f:SetScript("OnUpdate", nil)
@@ -261,6 +265,7 @@ local function ShowReminder()
     finishAt = GetTime() + REMINDER_DURATION
     f.timerBar:SetMinMaxValues(0, REMINDER_DURATION)
     f.timerBar:SetValue(REMINDER_DURATION)
+    f.timerBar.text:SetText(string.format(C.L.srClosingIn, REMINDER_DURATION))
     f._ccrtTimerElapsed = 0
     f:SetScript("OnUpdate", function(self, elapsed)
         self._ccrtTimerElapsed = (self._ccrtTimerElapsed or 0) + elapsed

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.25
+
+### Spec Reminder
+
+- Ajout du texte "Fermeture dans X secondes" directement sur la barre de progression de fermeture automatique.
+
 ## 1.2.24
 
 ### Spec Reminder
