@@ -10,6 +10,17 @@ local debugMode = false
 
 local ACTION_COOLDOWN = 5
 
+-- Raid difficulty IDs.
+local DIFFICULTY_LFR = 17
+local DIFFICULTY_NORMAL = 14
+local DIFFICULTY_HEROIC = 15
+local DIFFICULTY_MYTHIC = 16
+-- "Flexible Mythic" (15-25 players), introduced patch 12.0.7 on the
+-- Sporefall raid and used by "Lair" world-boss encounters — found by the
+-- guild directly (via /ccrtlogdebug output), since it's too new/niche to
+-- have turned up in any research beforehand.
+local DIFFICULTY_MYTHIC_FLEX = 233
+
 local function DebugPrint(fmt, ...)
     if debugMode then
         print(string.format("|cff7381FF[CC RaidTools debug]|r " .. fmt, ...))
@@ -102,11 +113,11 @@ local function IsLoggingTarget()
     )
 
     if instanceType == "raid" then
-        if (difficultyID == 17 and db.lfr)
-            or (difficultyID == 14 and db.normal)
-            or (difficultyID == 15 and db.heroic)
-            or (difficultyID == 16 and db.mythic) then
-            DebugPrint("IsLoggingTarget: matched standard raid path -> true")
+        if (difficultyID == DIFFICULTY_LFR and db.lfr)
+            or (difficultyID == DIFFICULTY_NORMAL and db.normal)
+            or (difficultyID == DIFFICULTY_HEROIC and db.heroic)
+            or ((difficultyID == DIFFICULTY_MYTHIC or difficultyID == DIFFICULTY_MYTHIC_FLEX) and db.mythic) then
+            DebugPrint("IsLoggingTarget: matched standard raid path (difficultyID=%s) -> true", tostring(difficultyID))
             return true
         end
     elseif instanceType == "party" then
