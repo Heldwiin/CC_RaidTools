@@ -89,16 +89,25 @@ local function IsLoggingTarget()
     local db = AutoPromoteDB.logging
 
     if instanceType == "raid" then
-        return (difficultyID == 17 and db.lfr)
+        if (difficultyID == 17 and db.lfr)
             or (difficultyID == 14 and db.normal)
             or (difficultyID == 15 and db.heroic)
-            or (difficultyID == 16 and db.mythic)
+            or (difficultyID == 16 and db.mythic) then
+            return true
+        end
+    elseif instanceType == "party" then
+        if (difficultyID == 23 or difficultyID == 8) and db.dungeons then
+            return true
+        end
     end
 
-    if instanceType == "party" then
-        return (difficultyID == 23 or difficultyID == 8) and db.dungeons
-    end
-
+    -- Always checked, even when instanceType matched raid/party above but
+    -- its specific difficultyID didn't — some world-boss-style encounters
+    -- report instanceType=="raid" with an unusual difficultyID for their
+    -- Mythic tier specifically (confirmed: Normal/Heroic logged fine via
+    -- the raid path above for the same encounter, Mythic didn't), so this
+    -- classification-based fallback must never be unreachable just because
+    -- instanceType happened to match one of the blocks above.
     if inWorldBossEncounter and db.worldboss then
         return true
     end
