@@ -5,6 +5,7 @@
 ### Spec Reminder
 
 - Ajout du texte "Fermeture dans X secondes" directement sur la barre de progression de fermeture automatique.
+- Ajustement du positionnement vertical du texte sur la barre, et de la position de la barre dans la fenêtre.
 
 ## 1.2.24
 
