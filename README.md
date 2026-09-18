@@ -38,7 +38,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.24**
+**1.2.25**
+
+### v1.2.25
+
+#### Spec Reminder
+
+- Texte "Fermeture dans X secondes" sur la barre de progression.
 
 ### v1.2.24
 
