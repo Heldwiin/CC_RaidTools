@@ -6,8 +6,15 @@ local C = CCRT
 local startedByAddon = false
 local lastStartAttempt = 0
 local lastStopAttempt = 0
+local debugMode = false
 
 local ACTION_COOLDOWN = 5
+
+local function DebugPrint(fmt, ...)
+    if debugMode then
+        print(string.format("|cff7381FF[CC RaidTools debug]|r " .. fmt, ...))
+    end
+end
 
 local function IsLoggingActive()
     if C_ChatInfo and C_ChatInfo.IsLoggingCombat then
@@ -88,15 +95,23 @@ local function IsLoggingTarget()
     local _, instanceType, difficultyID = GetInstanceInfo()
     local db = AutoPromoteDB.logging
 
+    DebugPrint(
+        "IsLoggingTarget: instanceType=%s difficultyID=%s lfr=%s normal=%s heroic=%s mythic=%s dungeons=%s inWorldBossEncounter=%s",
+        tostring(instanceType), tostring(difficultyID), tostring(db.lfr), tostring(db.normal),
+        tostring(db.heroic), tostring(db.mythic), tostring(db.dungeons), tostring(inWorldBossEncounter)
+    )
+
     if instanceType == "raid" then
         if (difficultyID == 17 and db.lfr)
             or (difficultyID == 14 and db.normal)
             or (difficultyID == 15 and db.heroic)
             or (difficultyID == 16 and db.mythic) then
+            DebugPrint("IsLoggingTarget: matched standard raid path -> true")
             return true
         end
     elseif instanceType == "party" then
         if (difficultyID == 23 or difficultyID == 8) and db.dungeons then
+            DebugPrint("IsLoggingTarget: matched dungeon path -> true")
             return true
         end
     end
@@ -115,15 +130,23 @@ local function IsLoggingTarget()
     -- of Normal/Heroic/Mythic is enabled, matching the general "I care
     -- about this kind of content" intent those already express.
     if inWorldBossEncounter and (db.normal or db.heroic or db.mythic) then
+        DebugPrint("IsLoggingTarget: matched world-boss classification fallback -> true")
         return true
     end
 
+    DebugPrint("IsLoggingTarget: no match -> false")
     return false
 end
 
 local function CheckWorldBossTarget()
-    if UnitExists("target") and UnitClassification("target") == "worldboss" then
+    if not UnitExists("target") then
+        return
+    end
+    local classification = UnitClassification("target")
+    DebugPrint("CheckWorldBossTarget: target=%s classification=%s", tostring(UnitName("target")), tostring(classification))
+    if classification == "worldboss" then
         inWorldBossEncounter = true
+        DebugPrint("CheckWorldBossTarget: inWorldBossEncounter set to true")
     end
 end
 
@@ -140,7 +163,10 @@ end
 local function CheckAutoLog()
     C.InitDB()
 
-    if IsLoggingTarget() then
+    local shouldLog = IsLoggingTarget()
+    DebugPrint("CheckAutoLog: shouldLog=%s IsLoggingActive=%s startedByAddon=%s", tostring(shouldLog), tostring(IsLoggingActive()), tostring(startedByAddon))
+
+    if shouldLog then
         StartLogging()
         return
     end
@@ -149,6 +175,15 @@ local function CheckAutoLog()
 end
 
 C.CheckAutoLog = CheckAutoLog
+
+SLASH_CCRTLOGDEBUG1 = "/ccrtlogdebug"
+SlashCmdList["CCRTLOGDEBUG"] = function()
+    debugMode = not debugMode
+    print(string.format("|cff33ff99[CC RaidTools]|r AutoLog debug mode: %s", debugMode and "ON" or "OFF"))
+    if debugMode then
+        CheckAutoLog()
+    end
+end
 
 local checks = {}
 
