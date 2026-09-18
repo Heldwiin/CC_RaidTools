@@ -39,9 +39,6 @@ function C.InitDB()
     if logging.dungeons == nil then
         logging.dungeons = logging.dungeonMythic or logging.dungeonMythicPlus or false
     end
-    if logging.worldboss == nil then
-        logging.worldboss = false
-    end
     -- Combat-log ownership is session-only and must never live in SavedVariables.
 end
 

@@ -34,7 +34,6 @@ local frFR = {
     -- AutoLog
     autoLogLabel = "AutoLog :",
     autoLogDungeons = "Donjons (M0 / M+)",
-    autoLogWorldBoss = "World boss",
     autoLogHeroic = "Héroïque",
     autoLogLFR = "LFR",
     autoLogMythic = "Mythique",
@@ -259,7 +258,6 @@ local enUS = {
 
     autoLogLabel = "AutoLog:",
     autoLogDungeons = "Dungeons (M0 / M+)",
-    autoLogWorldBoss = "World boss",
     autoLogHeroic = "Heroic",
     autoLogLFR = "LFR",
     autoLogMythic = "Mythic",

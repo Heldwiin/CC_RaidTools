@@ -108,7 +108,13 @@ local function IsLoggingTarget()
     -- the raid path above for the same encounter, Mythic didn't), so this
     -- classification-based fallback must never be unreachable just because
     -- instanceType happened to match one of the blocks above.
-    if inWorldBossEncounter and db.worldboss then
+    --
+    -- No separate "world boss" toggle: since we can't reliably tell which
+    -- specific difficulty tier a non-standard-ID world boss encounter is
+    -- at, folded into the existing raid checkboxes instead — logs if any
+    -- of Normal/Heroic/Mythic is enabled, matching the general "I care
+    -- about this kind of content" intent those already express.
+    if inWorldBossEncounter and (db.normal or db.heroic or db.mythic) then
         return true
     end
 
@@ -159,7 +165,6 @@ local function BuildUI(frame)
         { C.L.autoLogHeroic, "heroic" },
         { C.L.autoLogMythic, "mythic" },
         { C.L.autoLogDungeons, "dungeons" },
-        { C.L.autoLogWorldBoss, "worldboss" },
     }
 
     for _, option in ipairs(options) do
