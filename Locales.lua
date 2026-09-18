@@ -232,6 +232,7 @@ local frFR = {
     srBody = "Spécialisation actuelle : |cffffcc00%s|r",
     srLoadoutLine = "Configuration : |cffffcc00%s|r",
     srLootSpecLine = "Spécialisation de butin : |cffffcc00%s|r",
+    srClosingIn = "Fermeture dans %d secondes",
     srUnknownSpec = "inconnue",
 }
 
@@ -402,6 +403,7 @@ local enUS = {
     srBody = "Current specialization: |cffffcc00%s|r",
     srLoadoutLine = "Loadout: |cffffcc00%s|r",
     srLootSpecLine = "Loot specialization: |cffffcc00%s|r",
+    srClosingIn = "Closing in %d seconds",
     srUnknownSpec = "unknown",
 
     rgLabel = "Raid Groups:",
