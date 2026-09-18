@@ -74,6 +74,14 @@ local function StopLogging()
     end
 end
 
+-- World bosses aren't reliably detectable via instanceType/difficultyID —
+-- as of patch 12.1 some run in an instanced-but-not-raid/party zone type,
+-- and open-world ones aren't instanced at all. Detected instead by target
+-- classification: once the player targets a "worldboss"-classified unit,
+-- this stays true for the rest of the encounter (so tabbing off it to heal
+-- someone mid-fight doesn't immediately stop the log), reset on zone change.
+local inWorldBossEncounter = false
+
 local function IsLoggingTarget()
     C.InitDB()
 
@@ -91,7 +99,17 @@ local function IsLoggingTarget()
         return (difficultyID == 23 or difficultyID == 8) and db.dungeons
     end
 
+    if inWorldBossEncounter and db.worldboss then
+        return true
+    end
+
     return false
+end
+
+local function CheckWorldBossTarget()
+    if UnitExists("target") and UnitClassification("target") == "worldboss" then
+        inWorldBossEncounter = true
+    end
 end
 
 local function StartChallengeLogging()
@@ -132,6 +150,7 @@ local function BuildUI(frame)
         { C.L.autoLogHeroic, "heroic" },
         { C.L.autoLogMythic, "mythic" },
         { C.L.autoLogDungeons, "dungeons" },
+        { C.L.autoLogWorldBoss, "worldboss" },
     }
 
     for _, option in ipairs(options) do
@@ -190,6 +209,7 @@ for _, eventName in ipairs({
     "CHALLENGE_MODE_START",
     "PLAYER_DIFFICULTY_CHANGED",
     "UPDATE_INSTANCE_INFO",
+    "PLAYER_TARGET_CHANGED",
 }) do
     events:RegisterEvent(eventName)
 end
@@ -209,6 +229,16 @@ events:SetScript("OnEvent", function(_, event, arg1)
     if event == "CHALLENGE_MODE_START" then
         C_Timer.After(1, StartChallengeLogging)
         return
+    end
+
+    if event == "PLAYER_TARGET_CHANGED" then
+        CheckWorldBossTarget()
+        C_Timer.After(2, CheckAutoLog)
+        return
+    end
+
+    if event == "ZONE_CHANGED_NEW_AREA" then
+        inWorldBossEncounter = false
     end
 
     C_Timer.After(2, CheckAutoLog)

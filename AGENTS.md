@@ -15,7 +15,7 @@ Core:
 
 Gameplay modules:
 - `AutoPromote.lua` — automatic raid-assistant promotion.
-- `AutoLog.lua` — automatic combat logging for configured raid/dungeon difficulties.
+- `AutoLog.lua` — automatic combat logging for configured raid/dungeon difficulties, plus world bosses. World bosses aren't reliably detectable via `GetInstanceInfo()`'s instanceType/difficultyID (as of patch 12.1 some run in an instanced-but-not-raid/party zone type, open-world ones aren't instanced at all), so they're detected separately by target classification: once the player targets a `UnitClassification(unit) == "worldboss"` unit, `inWorldBossEncounter` stays true for the rest of the encounter (so tabbing off it mid-fight to heal someone doesn't immediately stop the log) until `ZONE_CHANGED_NEW_AREA` resets it. Reported missing from a guild member's logs (a world boss, not a reload issue as they'd suspected — AutoLog simply had no path to detect it at all before this).
 - `ReadyCheck.lua` — custom Ready Check display, readiness state, raid buff/consumable checks and player durability (shared between raid members via addon message).
 - `RaidGroups.lua` — raid group organizer: drag & drop between the 8 groups, configurable auto sort (affected groups, number of splits, consecutive/alternating split rule), named presets, in-game sharing and text export/import, and applying the layout to the live raid (leader/assistant only, outside combat).
 - `InviteTool.lua` — whisper keyword invitation system.
