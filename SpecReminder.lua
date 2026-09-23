@@ -13,6 +13,30 @@ local TIMER_H = 12
 local TIMER_TEXTURE = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\atrocity.tga"
 local wasInInstance = false
 
+-- Mascot pool: one is picked at random each time the popup shows.
+-- To add one, drop the PNG in TexturesGUI and list it here (new files need
+-- a full game restart, /reload is not enough).
+local MASCOT_PATH = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\"
+local MASCOTS = {
+    "SpecReminderMascot1.png",
+    "SpecReminderMascot2.png",
+    "SpecReminderMascot3.png",
+    "SpecReminderMascot4.png",
+    "SpecReminderMascot5.png",
+}
+local lastMascot
+
+local function PickMascot()
+    local count = #MASCOTS
+    local index = math.random(count)
+    -- Avoid showing the same mascot twice in a row when there is a choice.
+    if count > 1 and index == lastMascot then
+        index = index % count + 1
+    end
+    lastMascot = index
+    return MASCOT_PATH .. MASCOTS[index]
+end
+
 local function InitDB()
     C.InitDB()
     CCRaidToolsDB.specReminder = CCRaidToolsDB.specReminder or {}
@@ -162,7 +186,7 @@ local function EnsureConfirmFrame()
     local mascot = f:CreateTexture(nil, "ARTWORK")
     mascot:SetSize(150, 150)
     mascot:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, -2)
-    mascot:SetTexture("Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\SpecReminderMascot.png")
+    -- Texture is set by ShowReminder() each time the popup opens.
     mascot:SetAlpha(1)
     f.mascot = mascot
 
@@ -256,6 +280,9 @@ local function ShowReminder()
         table.insert(lines, string.format(C.L.srLootSpecLine, lootSpecName))
     end
     f.body:SetText(table.concat(lines, "\n"))
+    if not f:IsShown() then
+        f.mascot:SetTexture(PickMascot())
+    end
     f:Show()
 
     -- Auto-dismiss after REMINDER_DURATION if the player never clicks
