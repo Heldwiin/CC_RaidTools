@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.28
+
+### Spec Reminder
+
+- La mascotte du popup est maintenant choisie au hasard parmi 5 nouvelles images à chaque affichage, sans jamais montrer la même deux fois de suite.
+- Si le popup est déjà affiché quand un nouveau rappel se déclenche (par exemple un Ready Check juste après l'entrée en instance), l'image reste la même.
+
 ## 1.2.27
 
 ### Interface
