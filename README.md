@@ -38,7 +38,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.26**
+**1.2.27**
+
+### v1.2.27
+
+#### Interface
+
+- Nouveau logo/mascotte pour l'addon.
 
 ### v1.2.26
 

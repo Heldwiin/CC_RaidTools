@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.27
+
+### Interface
+
+- Nouveau logo/mascotte pour l'addon (icône affichée dans la liste des AddOns et en jeu).
+
 ## 1.2.26
 
 ### AutoLog
