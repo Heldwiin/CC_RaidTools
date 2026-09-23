@@ -8,6 +8,15 @@ Target client: **WoW Retail 12.1**.
 
 The addon is intentionally lightweight and modular, with no external library dependency.
 
+## Git branching workflow
+
+`main` is the released branch — its `.toc` version is always what's actually shipped/installed. `beta-claude` is the ongoing AI-assisted development branch, sitting ahead of `main` with the work accumulated since the last release.
+
+- Day-to-day requests (a fix, a small feature, an asset swap, anything that isn't itself "prepare/release a version") are committed directly to `beta-claude`, with small, individually descriptive commits (e.g. `SpecReminder: make the popup draggable`, `AutoLog: add /ccrtlogdebug diagnostic mode`) — not release-formatted messages, and without touching `main`.
+- Only do work on `main` when the user explicitly asks to prepare, bump, finalize, or release a version (see "Versioning and releases" below). That release lands as a single commit directly on `main`, titled `Release X.Y.Z: <summary>`, carrying the full diff accumulated on `beta-claude` since the previous release plus the version bump/CHANGELOG/README updates.
+- Immediately after a release commit lands on `main`, merge `main` back into `beta-claude` with a commit titled `Sync beta-claude with main (X.Y.Z release: version bump, CHANGELOG, README)`, so `beta-claude` never falls behind what's actually shipped. Do the same (a `Sync beta-claude with main (...)` merge, described in a few words) any time something is committed straight to `main` outside the normal release flow (e.g. a one-off asset change) so the branches don't drift apart.
+- There is also a `beta` branch — this is unrelated to the AI workflow (predates it / a separate manual experiment); don't merge into or out of it as part of this workflow unless the user explicitly asks.
+
 ## Repository structure
 
 Core:
@@ -356,7 +365,7 @@ Version is stored in `CC_RaidTools.toc` and is the **single source of truth for 
 
 The `/ccrt` main window displays the version automatically from the `.toc` metadata. **Do not hard-code a release number in Lua.** The addon no longer prints a version/welcome message to chat on load.
 
-When the user asks to prepare, bump, finalize, or release a new version, follow this procedure:
+When the user asks to prepare, bump, finalize, or release a new version, follow this procedure (see "Git branching workflow" above for where each step happens — the release itself is a single commit on `main`, followed by syncing `beta-claude` back up to it):
 
 1. Update `## Version:` in `CC_RaidTools.toc`.
 2. Verify that `CC_RaidTools.lua` still reads the version from `.toc` metadata and displays it in the `/ccrt` window. Do not add a hard-coded version or restore the chat welcome message.
