@@ -611,6 +611,13 @@ local function BuildUI(panel)
     hint:SetWordWrap(true)
     hint:SetText(C.L.qolHint)
     hint:SetTextColor(0.7, 0.7, 0.7)
+
+    -- The main window sizes itself from the panel's child *frames* only
+    -- (GetModuleHeight in CC_RaidTools.lua), so a trailing font string gets
+    -- clipped; this empty frame under the hint makes it count.
+    local spacer = CreateFrame("Frame", nil, panel)
+    spacer:SetSize(1, 1)
+    spacer:SetPoint("TOPLEFT", hint, "BOTTOMLEFT", 0, 0)
 end
 
 local function RefreshUI(panel)

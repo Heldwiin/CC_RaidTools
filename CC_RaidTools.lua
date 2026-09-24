@@ -266,7 +266,7 @@ function C.BuildMainFrame()
         currentModuleName = name
         for n, p in pairs(panels) do p:SetShown(n == name) end
         for n, b in pairs(buttons) do SetMenuButtonSkin(b, n == name) end
-        if mainFrame._ccrtWatermark then mainFrame._ccrtWatermark:SetAlpha((name == "RaidInspect" or name == "RaidGroups") and 0.07 or 1) end
+        if mainFrame._ccrtWatermark then mainFrame._ccrtWatermark:SetAlpha((name == "RaidInspect" or name == "RaidGroups" or name == "QualityOfLife") and 0.07 or 1) end
         local m = C.modules[name]
         if m and m.refresh then m.refresh(panels[name]) end
         if C_Timer and C_Timer.After then C_Timer.After(0, function() if mainFrame and mainFrame:IsShown() then ResizeMainFrame(name) end end) else ResizeMainFrame(name) end
