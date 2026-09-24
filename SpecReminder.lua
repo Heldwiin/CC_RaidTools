@@ -23,6 +23,15 @@ local MASCOTS = {
     "SpecReminderMascot3.png",
     "SpecReminderMascot4.png",
     "SpecReminderMascot5.png",
+    "SpecReminderMascot6.png",
+    "SpecReminderMascot7.png",
+    "SpecReminderMascot8.png",
+    "SpecReminderMascot9.png",
+    "SpecReminderMascot10.png",
+    "SpecReminderMascot11.png",
+    "SpecReminderMascot12.png",
+    "SpecReminderMascot13.png",
+    "SpecReminderMascot14.png",
 }
 local lastMascot
 

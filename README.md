@@ -38,7 +38,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.28**
+**1.2.29**
+
+### v1.2.29
+
+#### Spec Reminder
+
+- 9 nouvelles mascottes : le tirage aléatoire du popup se fait maintenant parmi 14 images.
 
 ### v1.2.28
 
