@@ -38,7 +38,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.34**
+**1.2.35**
+
+### v1.2.35
+
+#### Spec Reminder
+
+- 2 nouvelles mascottes (23 au total) et une mascotte existante remplacée par une nouvelle version.
 
 ### v1.2.34
 
