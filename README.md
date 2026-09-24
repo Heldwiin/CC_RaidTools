@@ -29,6 +29,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - **Version Check** : diffusion et suivi des versions de l'addon dans le raid et la guilde.
 - **Bonus Roll Confirm** : confirmation avant un bonus roll, avec affichage de la spécialisation de butin.
 - **Spec Reminder** : rappel de la spécialisation active à l'entrée en donjon Mythique/M+ ou en raid, et à chaque Ready Check, plus une fenêtre mascotte avec compte à rebours pendant les pauses BigWigs (`/break`).
+- **Quality of Life** : petites automatisations activables une par une (vérification et appel de rôles, invitations des amis/guilde, résurrection hors combat, butin instantané, vente de camelote et réparation, quêtes, refus des duels, cinématiques, talking head, confirmation de suppression).
 - Interface personnalisée sombre/transparente avec bordures pixel et branding Caelestis Concilium.
 - Configuration persistante après `/reload`.
 
@@ -38,7 +39,15 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.35**
+**1.2.36**
+
+### v1.2.36
+
+#### Quality of Life (nouveau module)
+
+- Vérification de rôles et appel de rôles du chef acceptés automatiquement (activés par défaut).
+- Options à activer soi-même : invitations des amis/guilde, résurrection hors combat, butin instantané, vente de camelote, réparation (avec banque de guilde), acceptation et rendu des quêtes, refus des duels et combats de mascottes, cinématiques passées, talking head masqué, mot de confirmation de suppression pré-rempli.
+- Maj maintenue = on garde la main.
 
 ### v1.2.35
 

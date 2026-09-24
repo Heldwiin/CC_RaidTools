@@ -2,7 +2,7 @@
 ## Title: CC RaidTools
 ## Notes: Outils de raid pour Caelestis Concilium : promotions, invitations, Ready Check, consommables et buffs de raid
 ## Author: Heldwiin
-## Version: 1.2.35
+## Version: 1.2.36
 ## IconTexture: Interface\AddOns\CC_RaidTools\TexturesGUI\logo.png
 ## SavedVariables: CCRaidToolsDB
 
@@ -19,5 +19,6 @@ RaidInspect.lua
 VersionCheck.lua
 BonusRoll.lua
 SpecReminder.lua
+QualityOfLife.lua
 GuildBranding.lua
 ModuleIcons.lua

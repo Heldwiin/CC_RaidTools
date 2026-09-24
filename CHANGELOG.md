@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.2.36
+
+### Nouveau module : Quality of Life
+
+Petites automatisations, chacune avec sa propre case dans `/ccrt`. Maintenir **Maj** au moment où une fenêtre apparaît (ou en parlant à un PNJ / marchand) laisse toujours la main.
+
+Activées par défaut :
+
+- **Vérification de rôles** : quand le chef inscrit le groupe (donjon, BG, groupe prémade), vos rôles déjà cochés sont confirmés automatiquement, avec un message dans le chat. Si aucun rôle valide n'est coché, la fenêtre reste affichée.
+- **Appel de rôles du chef** : accepté automatiquement avec votre rôle actuel, si vous en avez déjà un.
+
+À activer soi-même :
+
+- **Invitations** des amis, amis Battle.net et membres de la guilde (pas si vous êtes déjà en groupe ou en file d'attente).
+- **Résurrection** acceptée hors combat uniquement (jamais en plein boss ou en plein pull).
+- **Butin instantané** quand le butin automatique s'applique.
+- **Vente de la camelote** et **réparation** chez les marchands, avec option banque de guilde (le reste est payé avec votre or si le plafond de guilde ne suffit pas).
+- **Quêtes** acceptées et rendues automatiquement (jamais de choix entre plusieurs récompenses, quêtes grises ignorées).
+- **Duels et combats de mascottes** refusés, sauf de la part d'amis.
+- **Cinématiques et vidéos** passées.
+- **Talking head** (fenêtre de dialogue des PNJ) masqué, la voix reste.
+- **Suppression d'objet** : le mot de confirmation est pré-rempli, il reste un clic sur « Oui ».
+
+### Interface
+
+- Nouvel onglet Quality of Life avec son icône, placé avant Version Check. Fenêtre légèrement plus haute pour les 12 boutons du menu.
+
 ## 1.2.35
 
 ### Spec Reminder
