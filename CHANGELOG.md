@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.32
+
+### Spec Reminder
+
+- Ajout d'une nouvelle mascotte : le popup Spec Reminder et la fenêtre de pause tirent maintenant leur image au hasard parmi 16.
+
 ## 1.2.31
 
 ### Spec Reminder
