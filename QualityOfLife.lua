@@ -588,7 +588,11 @@ local function BuildUI(panel)
             C.SkinCheckBox(check)
             local label = check:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             label:SetPoint("LEFT", check, "RIGHT", 7, 0)
+            -- Stop short of the 100px header icon in the top-right corner
+            -- (ModuleIcons.lua); a long label wraps instead of running under it.
+            label:SetPoint("RIGHT", panel, "RIGHT", -110, 0)
             label:SetJustifyH("LEFT")
+            label:SetWordWrap(true)
             label:SetText(C.L[toggle.label])
             check:SetScript("OnClick", function(self)
                 db[toggle.key] = self:GetChecked() and true or false

@@ -343,7 +343,7 @@ The popup features a prominent mascot portrait, picked at random from a pool (`M
   - **Delete confirm** (`deleteConfirm`): on `DELETE_ITEM_CONFIRM`, types `DELETE_ITEM_CONFIRM_STRING` (the client's localized word) into the edit box of a shown `DELETE_GOOD_ITEM`/`DELETE_GOOD_QUEST_ITEM`; the dialog's `StaticPopup_StandardConfirmationTextHandler` enables Yes, which the player still clicks.
 - Hook state is kept in file locals, never written as fields onto Blizzard frames.
 
-The module has no header artwork yet (no `MODULE_ICONS` entry); `ModuleIcons.lua` now styles every menu button regardless, and only the header icon depends on artwork existing.
+Header artwork: `TexturesGUI/QualityOfLife.png` (golden cogwheel with a sparkle, same epic purple/gold ring style as the others). Its toggle labels are capped 110px short of the panel's right edge so they wrap instead of running under that 100px icon. `ModuleIcons.lua` styles every menu button whether or not its module has artwork; only the header icon depends on a `MODULE_ICONS` entry.
 
 ## UI and visual identity
 

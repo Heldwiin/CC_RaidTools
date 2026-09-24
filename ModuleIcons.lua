@@ -13,6 +13,7 @@ local MODULE_ICONS = {
     VersionCheck = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\VersionCheck.png",
     BonusRoll = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\BonusRoll.png",
     SpecReminder = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\SpecReminder.png",
+    QualityOfLife = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\QualityOfLife.png",
 }
 
 local function StyleModuleButton(button)
