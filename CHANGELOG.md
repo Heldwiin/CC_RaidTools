@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.29
+
+### Spec Reminder
+
+- Ajout de 9 nouvelles mascottes : le popup tire maintenant son image au hasard parmi 14.
+
 ## 1.2.28
 
 ### Spec Reminder
