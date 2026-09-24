@@ -60,6 +60,9 @@ local function InitDB()
     if db.onReadyCheck == nil then
         db.onReadyCheck = true
     end
+    if db.onBreak == nil then
+        db.onBreak = true
+    end
 end
 
 -- ===== Current spec lookup (with deprecated-API fallback) =====
@@ -313,6 +316,156 @@ local function ShowReminder()
     end)
 end
 
+-- ===== Break popup (BigWigs /break) =====
+-- Shows the same mascot pool for the length of a BigWigs break, with a
+-- countdown, switching to a new mascot every BREAK_ROTATE seconds.
+
+local breakFrame
+local breakEndAt
+local nextMascotAt
+local BREAK_ROTATE = 60
+
+local function FormatClock(seconds)
+    seconds = math.max(0, math.ceil(seconds))
+    return string.format("%d:%02d", math.floor(seconds / 60), seconds % 60)
+end
+
+local function HideBreak()
+    breakEndAt = nil
+    if breakFrame then
+        breakFrame:SetScript("OnUpdate", nil)
+        breakFrame:Hide()
+    end
+end
+
+local function EnsureBreakFrame()
+    if breakFrame then
+        return breakFrame
+    end
+    InitDB()
+    local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    f:SetSize(236, 262)
+    if db.breakPoint then
+        f:SetPoint(db.breakPoint, UIParent, db.breakRelativePoint or db.breakPoint, db.breakX or 0, db.breakY or 0)
+    else
+        -- Below the spec reminder's default spot, so a Ready Check called
+        -- during a break doesn't stack both popups on top of each other.
+        f:SetPoint("CENTER", UIParent, "CENTER", 0, -120)
+    end
+    f:SetFrameStrata("DIALOG")
+    C.ApplyPanelSkin(f)
+    f:Hide()
+
+    f:SetMovable(true)
+    f:EnableMouse(true)
+    f:RegisterForDrag("LeftButton")
+    f:SetScript("OnDragStart", f.StartMoving)
+    f:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local point, _, relativePoint, x, y = self:GetPoint(1)
+        db.breakPoint = point
+        db.breakRelativePoint = relativePoint
+        db.breakX = x
+        db.breakY = y
+    end)
+
+    local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("TOP", 0, -10)
+    title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    title:SetText(C.L.srBreakTitle)
+
+    local mascot = f:CreateTexture(nil, "ARTWORK")
+    mascot:SetSize(200, 200)
+    mascot:SetPoint("TOP", f, "TOP", 0, -28)
+    f.mascot = mascot
+
+    local timerBar = CreateFrame("StatusBar", nil, f)
+    timerBar:SetHeight(TIMER_H)
+    timerBar:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 16, 10)
+    timerBar:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -16, 10)
+    timerBar:SetStatusBarTexture(TIMER_TEXTURE)
+    timerBar:SetStatusBarColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    timerBar.bg = timerBar:CreateTexture(nil, "BACKGROUND")
+    timerBar.bg:SetAllPoints()
+    timerBar.bg:SetColorTexture(0.08, 0.08, 0.10, 0.8)
+    timerBar.text = timerBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    timerBar.text:SetPoint("CENTER", 0, 1.5)
+    f.timerBar = timerBar
+
+    -- Same close-X pattern as the main CC RaidTools window.
+    local close = CreateFrame("Button", nil, f)
+    close:SetSize(22, 22)
+    close:SetPoint("TOPRIGHT", -4, -4)
+    local closeTex = close:CreateTexture(nil, "ARTWORK")
+    closeTex:SetPoint("CENTER")
+    closeTex:SetSize(13, 13)
+    closeTex:SetTexture("Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\Close.png")
+    closeTex:SetVertexColor(0.851, 0.851, 0.851, 1)
+    close:SetScript("OnEnter", function() closeTex:SetVertexColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 1) end)
+    close:SetScript("OnLeave", function() closeTex:SetVertexColor(0.851, 0.851, 0.851, 1) end)
+    close:SetScript("OnClick", HideBreak)
+
+    breakFrame = f
+    return f
+end
+
+local function ShowBreak(seconds)
+    seconds = tonumber(seconds) or 0
+    if seconds <= 0 then
+        HideBreak()
+        return
+    end
+    local f = EnsureBreakFrame()
+    local now = GetTime()
+    breakEndAt = now + seconds
+    nextMascotAt = now + BREAK_ROTATE
+    f.mascot:SetTexture(PickMascot())
+    f.timerBar:SetMinMaxValues(0, seconds)
+    f.timerBar:SetValue(seconds)
+    f.timerBar.text:SetText(string.format(C.L.srBreakResumeIn, FormatClock(seconds)))
+    f._ccrtTimerElapsed = 0
+    f:SetScript("OnUpdate", function(self, elapsed)
+        self._ccrtTimerElapsed = (self._ccrtTimerElapsed or 0) + elapsed
+        if self._ccrtTimerElapsed < 0.1 or not breakEndAt then
+            return
+        end
+        self._ccrtTimerElapsed = 0
+        local t = GetTime()
+        local remaining = breakEndAt - t
+        if remaining <= 0 then
+            HideBreak()
+            return
+        end
+        self.timerBar:SetValue(remaining)
+        self.timerBar.text:SetText(string.format(C.L.srBreakResumeIn, FormatClock(remaining)))
+        if t >= nextMascotAt then
+            nextMascotAt = t + BREAK_ROTATE
+            self.mascot:SetTexture(PickMascot())
+        end
+    end)
+    f:Show()
+end
+
+-- BigWigs exposes its internal messages through BigWigsLoader. Its Break
+-- plugin fires BigWigs_StartBreak (event, plugin, seconds, nick, isDBM,
+-- reboot) when a break starts — including DBM-sent breaks and a break
+-- resumed after a /reload (reboot = true, seconds = time left) — and
+-- BigWigs_StopBreak when one is cancelled. A break that simply runs out
+-- sends nothing, so our own countdown closes the popup.
+local function HookBigWigs()
+    if not BigWigsLoader or not BigWigsLoader.RegisterMessage then
+        return
+    end
+    local listener = {}
+    BigWigsLoader.RegisterMessage(listener, "BigWigs_StartBreak", function(_, _, seconds)
+        InitDB()
+        if db.onBreak then
+            ShowBreak(seconds)
+        end
+    end)
+    BigWigsLoader.RegisterMessage(listener, "BigWigs_StopBreak", HideBreak)
+end
+
 -- ===== Triggers =====
 
 -- Only fires when actually entering a new instance (not on every loading
@@ -340,9 +493,14 @@ end
 local e = CreateFrame("Frame")
 e:RegisterEvent("PLAYER_ENTERING_WORLD")
 e:RegisterEvent("READY_CHECK")
+e:RegisterEvent("PLAYER_LOGIN")
 e:SetScript("OnEvent", function(_, event)
     InitDB()
-    if event == "PLAYER_ENTERING_WORLD" then
+    if event == "PLAYER_LOGIN" then
+        -- Every non-load-on-demand addon (BigWigs' loader included) is
+        -- loaded by now.
+        HookBigWigs()
+    elseif event == "PLAYER_ENTERING_WORLD" then
         -- Instance info can take a moment to populate right after zoning.
         C_Timer.After(0.5, CheckZoneEntry)
     elseif event == "READY_CHECK" then
@@ -392,12 +550,32 @@ local function BuildUI(panel)
         db.onReadyCheck = self:GetChecked() and true or false
     end)
 
+    local breakCheck = CreateFrame("CheckButton", nil, panel, "BackdropTemplate")
+    breakCheck:SetPoint("TOPLEFT", readyCheck, "BOTTOMLEFT", 0, -34)
+    C.SkinCheckBox(breakCheck)
+    local breakLabel = breakCheck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    breakLabel:SetPoint("LEFT", breakCheck, "RIGHT", 7, 0)
+    breakLabel:SetText(C.L.srBreakLabel)
+    breakCheck:SetScript("OnClick", function(self)
+        db.onBreak = self:GetChecked() and true or false
+        if not db.onBreak then
+            HideBreak()
+        end
+    end)
+
     local testBtn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     testBtn:SetSize(140, 22)
-    testBtn:SetPoint("TOPLEFT", readyCheck, "BOTTOMLEFT", 0, -34)
+    testBtn:SetPoint("TOPLEFT", breakCheck, "BOTTOMLEFT", 0, -34)
     testBtn:SetText(C.L.srTestButton)
     C.SkinButton(testBtn)
     testBtn:SetScript("OnClick", ShowReminder)
+
+    local breakTestBtn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+    breakTestBtn:SetSize(140, 22)
+    breakTestBtn:SetPoint("LEFT", testBtn, "RIGHT", 10, 0)
+    breakTestBtn:SetText(C.L.srBreakTestButton)
+    C.SkinButton(breakTestBtn)
+    breakTestBtn:SetScript("OnClick", function() ShowBreak(60) end)
 
     local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     hint:SetPoint("TOPLEFT", testBtn, "BOTTOMLEFT", 0, -12)
@@ -410,6 +588,7 @@ local function BuildUI(panel)
     panel.enableCheck = enableCheck
     panel.zoneCheck = zoneCheck
     panel.readyCheck = readyCheck
+    panel.breakCheck = breakCheck
 end
 
 local function RefreshUI(panel)
@@ -430,6 +609,12 @@ local function RefreshUI(panel)
         panel.readyCheck:SetChecked(db.onReadyCheck)
         if panel.readyCheck._ccrtRefresh then
             panel.readyCheck:_ccrtRefresh()
+        end
+    end
+    if panel and panel.breakCheck then
+        panel.breakCheck:SetChecked(db.onBreak)
+        if panel.breakCheck._ccrtRefresh then
+            panel.breakCheck:_ccrtRefresh()
         end
     end
 end
