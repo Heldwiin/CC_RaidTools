@@ -234,6 +234,10 @@ local frFR = {
     srLootSpecLine = "Spécialisation de butin : |cffffcc00%s|r",
     srClosingIn = "Fermeture dans %d secondes",
     srUnknownSpec = "inconnue",
+    srBreakLabel = "Afficher une mascotte pendant les pauses BigWigs (/break)",
+    srBreakTestButton = "Tester la pause",
+    srBreakTitle = "Pause !",
+    srBreakResumeIn = "Reprise dans %s",
 }
 
 -- ===== English overrides =====
@@ -405,6 +409,10 @@ local enUS = {
     srLootSpecLine = "Loot specialization: |cffffcc00%s|r",
     srClosingIn = "Closing in %d seconds",
     srUnknownSpec = "unknown",
+    srBreakLabel = "Show a mascot during BigWigs breaks (/break)",
+    srBreakTestButton = "Test the break",
+    srBreakTitle = "Break time!",
+    srBreakResumeIn = "Resuming in %s",
 
     rgLabel = "Raid Groups:",
     rgSaveButton = "Save",
