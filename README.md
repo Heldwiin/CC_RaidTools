@@ -28,7 +28,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - **Raid Groups** : organisation des 8 groupes de raid par glisser-déposer (avec réordonnancement à l'intérieur d'un groupe), tri automatique configurable, presets nommés, partage en jeu et export/import texte, application directe des groupes en jeu.
 - **Version Check** : diffusion et suivi des versions de l'addon dans le raid et la guilde.
 - **Bonus Roll Confirm** : confirmation avant un bonus roll, avec affichage de la spécialisation de butin.
-- **Spec Reminder** : rappel de la spécialisation active à l'entrée en donjon Mythique/M+ ou en raid, et à chaque Ready Check.
+- **Spec Reminder** : rappel de la spécialisation active à l'entrée en donjon Mythique/M+ ou en raid, et à chaque Ready Check, plus une fenêtre mascotte avec compte à rebours pendant les pauses BigWigs (`/break`).
 - Interface personnalisée sombre/transparente avec bordures pixel et branding Caelestis Concilium.
 - Configuration persistante après `/reload`.
 
@@ -38,7 +38,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.30**
+**1.2.31**
+
+### v1.2.31
+
+#### Spec Reminder
+
+- Nouvelle fenêtre pendant les pauses BigWigs (`/break`) : mascotte aléatoire (qui change chaque minute) et compte à rebours jusqu'à la reprise. Option activable/désactivable et bouton de test.
 
 ### v1.2.30
 

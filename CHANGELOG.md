@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.31
+
+### Spec Reminder
+
+- Nouvelle fenêtre pendant les pauses BigWigs (`/break`) : une mascotte tirée au hasard parmi celles du Spec Reminder, qui change toutes les minutes, avec une barre « Reprise dans m:ss » jusqu'à la fin de la pause.
+- La fenêtre se ferme toute seule à la fin de la pause ou si elle est annulée (`/break 0`), revient avec le temps restant après un `/reload`, et peut être déplacée (position mémorisée).
+- Nouvelle option « Afficher une mascotte pendant les pauses BigWigs », activée par défaut, et bouton « Tester la pause » (pause fictive de 60 secondes).
+- Nécessite BigWigs. Les pauses lancées depuis DBM sont aussi affichées tant que vous avez BigWigs installé.
+
 ## 1.2.30
 
 ### Spec Reminder
