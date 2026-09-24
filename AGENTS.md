@@ -32,6 +32,7 @@ Gameplay modules:
 - `MarksBar.lua` — raid target markers and world markers, including its own throttled mouseover check (see Marks Bar section below).
 - `RaidInspect.lua` — raid/party inspection for item level, enchants and gem sockets; anyone also running CC RaidTools self-reports over an addon message instead of going through Blizzard's throttled native inspection.
 - `VersionCheck.lua` — broadcasts the local addon version to raid/party and guild; warns locally (once per session) if a newer version is seen in the wild, and shows an officer-facing list of who's running which version.
+- `QualityOfLife.lua` — small opt-out automations, one toggle each (see Quality of Life section below). Meant to grow: new QoL features go here rather than into a new module.
 - `BonusRoll.lua` — adds a confirmation step before a bonus roll (Roll or Pass) goes through, showing the loot specialization it will award for, so a mis-click doesn't burn a roll by accident. Cannot click the native buttons for the player (protected action, see the module's own header comment); disables them until confirmed instead.
 
 `DBMigration.lua` and `MarksBarPerformance.lua` no longer exist: the `AutoPromoteDB` → `CCRaidToolsDB` migration and the Marks Bar mouseover throttle were both folded into their respective modules once stabilized (see Changelog 1.2.3/1.2.4). Do not recreate them; keep this document in sync if that ever changes again.
@@ -324,6 +325,16 @@ The popup features a prominent mascot portrait, picked at random from a pool (`M
 
 **Break popup (BigWigs `/break`)** — also in `SpecReminder.lua`, reusing the same mascot pool: a separate movable popup (200x200 mascot, countdown bar "Reprise dans m:ss", close-X, own saved position in `db.breakPoint`/`breakRelativePoint`/`breakX`/`breakY`, default spot below the spec reminder's so a Ready Check during a break doesn't stack them) shown for the whole length of a break, switching to a new random mascot every 60s (`BREAK_ROTATE`). Toggle `db.onBreak` (defaults on, independent of the spec reminder's master enable), plus a "Tester la pause" button that runs a 60s fake break. Hooked on `PLAYER_LOGIN` through BigWigs' public message bus — `BigWigsLoader.RegisterMessage(listenerTable, "BigWigs_StartBreak", fn)` (note the `.` call with our own table as `self`; BigWigs errors if `self` is `BigWigsLoader`). Verified against BigWigs' `Plugins/Break.lua`/`Loader.lua`: callbacks receive `(event, plugin, seconds, nick, isDBM, reboot)`; StartBreak also fires for DBM-sent breaks and when a break is resumed after `/reload` (`reboot = true`, `seconds` = time left); `BigWigs_StopBreak` only fires when a break is cancelled (`/break 0`), a break that runs out sends nothing, so our own countdown hides the popup. No BigWigs installed → the hook is silently skipped. Only BigWigs is supported; a DBM-only raider won't see it (BigWigs relays DBM breaks, but DBM alone has no equivalent hook here).
 
+## Quality of Life
+
+`QualityOfLife.lua` groups small automations, each with its own toggle in `CCRaidToolsDB.qol` (defaults set only when `nil`), and each skipped for that one prompt if the player holds Shift when it appears. The user pointed at `atrocityEssentials/QoL/Automation.lua` (another addon they run) as a catalog of ideas; features are reimplemented here in this addon's own style after checking the Blizzard source, not copied.
+
+- **Queue role check** (`autoRoleCheck`, default on): when the group leader queues the group (dungeon finder, battleground, premade group application), `LFDRoleCheckPopup` is hooked on `OnShow` and, one frame later, its `LFDRoleCheckPopupAcceptButton` is clicked if enabled. Blizzard's `LFDRoleCheckPopupAccept_OnClick` then submits the roles already ticked through `SetLFGRoles`/`SetPVPRoles` + `CompleteLFGRoleCheck(true)`, none of which are protected (checked on wow-ui-source `live`, `Blizzard_GroupFinder/Mainline/LFDFrame.lua`). No valid role ticked → button disabled → nothing happens, the popup stays. A chat line reports the roles confirmed. **Do not** try to automate the premade *application* dialog (`LFGListApplicationDialog` sign-up): it calls `C_LFGList.ApplyToGroup`, which is protected, and atrocityEssentials had to remove exactly that after `ADDON_ACTION_BLOCKED` reports.
+- **Leader role poll** (`autoRolePoll`, default on): `RolePollPopup` (`Blizzard_FrameXML/Mainline/RolePoll.lua`) is pre-ticked with the player's assigned role; its `acceptButton` is clicked if enabled, which calls `UnitSetRoleEnum("player", role)` (`HasRestrictions`, but only for secret arguments). No role assigned → button disabled → popup stays.
+- Hook state is kept in file locals, never written as fields onto Blizzard frames.
+
+The module has no header artwork yet (no `MODULE_ICONS` entry); `ModuleIcons.lua` now styles every menu button regardless, and only the header icon depends on artwork existing.
+
 ## UI and visual identity
 
 Keep the established CC RaidTools visual style:
@@ -479,6 +490,12 @@ For Spec Reminder specifically:
 - verify each toggle (master enable, zone entry, ready check) independently gates its own trigger;
 - verify the spec name shown matches your actual current spec (not loot spec).
 - with BigWigs installed, `/break 1` (as leader/assistant) shows the break popup with a counting-down bar and closes by itself at the end; `/break 0` closes it early; a `/reload` mid-break brings it back with the remaining time; a break longer than a minute switches mascot every 60s; unchecking the option hides it and stops future ones; without BigWigs, no Lua error at login.
+
+For Quality of Life specifically:
+- have a group leader queue the group for a dungeon, then a premade group, then a battleground: the role check popup should close by itself with the previously ticked roles and a chat line naming them; holding Shift as it appears should leave it open;
+- untick all roles in the group finder first: the popup must stay open (Accept disabled);
+- as raid leader, start a role poll: members with a role already assigned accept automatically, members without one still get the popup;
+- toggle each option off and verify its popup is left alone; confirm no `ADDON_ACTION_BLOCKED` in any of the above.
 
 For Bonus Roll Confirm specifically:
 - trigger a real bonus roll and verify the native Roll button is disabled until confirmed, then a real click on it after confirming actually rolls;

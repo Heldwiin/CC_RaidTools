@@ -19,5 +19,6 @@ RaidInspect.lua
 VersionCheck.lua
 BonusRoll.lua
 SpecReminder.lua
+QualityOfLife.lua
 GuildBranding.lua
 ModuleIcons.lua

@@ -238,6 +238,13 @@ local frFR = {
     srBreakTestButton = "Tester la pause",
     srBreakTitle = "Pause !",
     srBreakResumeIn = "Reprise dans %s",
+
+    qolLabel = "Quality of Life :",
+    qolRoleCheckLabel = "Accepter automatiquement la vérification de rôles (file donjon, BG, groupe prémade)",
+    qolRolePollLabel = "Accepter automatiquement l'appel de rôles du chef de groupe (si un rôle est déjà choisi)",
+    qolHint = "Les rôles confirmés sont ceux déjà cochés, les derniers que vous avez utilisés. Si aucun rôle valide n'est coché, la fenêtre reste affichée. Maintenez Maj quand elle apparaît pour répondre vous-même.",
+    qolRoleCheckDone = "|cff33ff99[CC RaidTools]|r Rôles confirmés automatiquement (%s).",
+    qolRoleNone = "aucun",
 }
 
 -- ===== English overrides =====
@@ -413,6 +420,13 @@ local enUS = {
     srBreakTestButton = "Test the break",
     srBreakTitle = "Break time!",
     srBreakResumeIn = "Resuming in %s",
+
+    qolLabel = "Quality of Life:",
+    qolRoleCheckLabel = "Auto-accept the role check (dungeon, battleground, premade group queue)",
+    qolRolePollLabel = "Auto-accept the group leader's role poll (if a role is already set)",
+    qolHint = "The roles confirmed are the ones already ticked, i.e. the last ones you used. If no valid role is ticked, the window stays open. Hold Shift when it appears to answer it yourself.",
+    qolRoleCheckDone = "|cff33ff99[CC RaidTools]|r Roles confirmed automatically (%s).",
+    qolRoleNone = "none",
 
     rgLabel = "Raid Groups:",
     rgSaveButton = "Save",

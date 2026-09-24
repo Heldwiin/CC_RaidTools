@@ -205,12 +205,12 @@ local function ResizeMainFrame(name)
     local height = GetModuleHeight(panel)
     local minimums = { AutoPromote = 690, MarksBar = 350, RaidInspect = 520, RaidGroups = 620 }
     if minimums[name] and height < minimums[name] then height = minimums[name] end
-    -- Floor tall enough that the left-hand module menu (currently 11
+    -- Floor tall enough that the left-hand module menu (currently 12
     -- buttons at 30px tall with 34px spacing, last one anchored at
-    -- -62 - 10*34 = -402, +30 tall) never gets clipped by a module whose own
+    -- -62 - 11*34 = -436, +30 tall) never gets clipped by a module whose own
     -- content is short. Bump this if more modules are added or the button
     -- size/spacing changes again.
-    if height < 462 then height = 462 end
+    if height < 496 then height = 496 end
     if height > 705 then height = 705 end
     mainFrame:SetHeight(height)
     mainFrame._ccrtLastHeight = height
@@ -259,9 +259,8 @@ function C.BuildMainFrame()
     local menuTitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"); menuTitle:SetPoint("TOPLEFT", 8, -37); menuTitle:SetText("Modules"); menuTitle:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
     local content = CreateFrame("Frame", nil, mainFrame); content:SetPoint("TOPLEFT", 133, -31); content:SetPoint("BOTTOMRIGHT", -5, 7); mainFrame.content = content
     -- VersionCheck stays last, always — add future modules before it.
-    -- VersionCheck stays last, always — add future modules before it.
-    local order = { "AutoPromote", "AutoLog", "ReadyCheck", "RaidGroups", "InviteTool", "Focus", "MarksBar", "RaidInspect", "BonusRoll", "SpecReminder", "VersionCheck" }
-    local labels = { AutoPromote="Auto Promote", AutoLog="AutoLog", ReadyCheck="Ready Check", RaidGroups="Raid Groups", InviteTool="Invite Tool", Focus="Focus", MarksBar="Marks Bar", RaidInspect="Raid Inspect", VersionCheck="Version Check", BonusRoll="Bonus Roll", SpecReminder="Spec Reminder" }
+    local order = { "AutoPromote", "AutoLog", "ReadyCheck", "RaidGroups", "InviteTool", "Focus", "MarksBar", "RaidInspect", "BonusRoll", "SpecReminder", "QualityOfLife", "VersionCheck" }
+    local labels = { AutoPromote="Auto Promote", AutoLog="AutoLog", ReadyCheck="Ready Check", RaidGroups="Raid Groups", InviteTool="Invite Tool", Focus="Focus", MarksBar="Marks Bar", RaidInspect="Raid Inspect", VersionCheck="Version Check", BonusRoll="Bonus Roll", SpecReminder="Spec Reminder", QualityOfLife="Quality of Life" }
     local buttons, panels = {}, {}
     local function Select(name)
         currentModuleName = name

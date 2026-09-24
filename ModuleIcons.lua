@@ -121,47 +121,46 @@ local function ApplyModuleIcons(frame)
     end
 
     if frame.menuButtons then
-        for moduleName, button in pairs(frame.menuButtons) do
-            local texturePath = MODULE_ICONS[moduleName]
+        -- Every menu button gets the same styling, whether or not its module
+        -- has header artwork yet (a module without an entry in MODULE_ICONS
+        -- just shows no header icon).
+        for _, button in pairs(frame.menuButtons) do
+            StyleModuleButton(button)
 
-            if texturePath then
-                StyleModuleButton(button)
+            -- Menu buttons are text-only now (icons stay on the panel
+            -- header only, via ApplyPanelIcon below) — hide any
+            -- leftover icon/background from a previous session and
+            -- anchor the label straight to the button's left edge.
+            if button._ccrtModuleIconBg then
+                button._ccrtModuleIconBg:Hide()
+            end
+            if button._ccrtModuleIcon then
+                button._ccrtModuleIcon:Hide()
+            end
 
-                -- Menu buttons are text-only now (icons stay on the panel
-                -- header only, via ApplyPanelIcon below) — hide any
-                -- leftover icon/background from a previous session and
-                -- anchor the label straight to the button's left edge.
-                if button._ccrtModuleIconBg then
-                    button._ccrtModuleIconBg:Hide()
+            if button.text then
+                button.text:ClearAllPoints()
+                button.text:SetPoint("LEFT", button, "LEFT", 12, 0)
+                button.text:SetTextColor(0.96, 0.96, 0.96)
+                button.text:SetShadowOffset(1, -1)
+                button.text:SetShadowColor(0, 0, 0, 1)
+
+                local font, _, flags = button.text:GetFont()
+                if font then
+                    button.text:SetFont(font, 12, flags or "OUTLINE")
                 end
-                if button._ccrtModuleIcon then
-                    button._ccrtModuleIcon:Hide()
-                end
+            end
 
-                if button.text then
-                    button.text:ClearAllPoints()
-                    button.text:SetPoint("LEFT", button, "LEFT", 12, 0)
-                    button.text:SetTextColor(0.96, 0.96, 0.96)
-                    button.text:SetShadowOffset(1, -1)
-                    button.text:SetShadowColor(0, 0, 0, 1)
-
-                    local font, _, flags = button.text:GetFont()
-                    if font then
-                        button.text:SetFont(font, 12, flags or "OUTLINE")
-                    end
-                end
-
-                if not button._ccrtAccentSyncHooked then
-                    button._ccrtAccentSyncHooked = true
-                    button:HookScript("OnClick", function()
-                        C_Timer.After(0, function()
-                            local mainFrame = CCRT and CCRT.GetMainFrame and CCRT.GetMainFrame()
-                            if mainFrame then
-                                SyncMenuAccents(mainFrame)
-                            end
-                        end)
+            if not button._ccrtAccentSyncHooked then
+                button._ccrtAccentSyncHooked = true
+                button:HookScript("OnClick", function()
+                    C_Timer.After(0, function()
+                        local mainFrame = CCRT and CCRT.GetMainFrame and CCRT.GetMainFrame()
+                        if mainFrame then
+                            SyncMenuAccents(mainFrame)
+                        end
                     end)
-                end
+                end)
             end
         end
     end
