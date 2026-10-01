@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.37
+
+### Spec Reminder
+
+- Retrait d'une mascotte : le popup Spec Reminder et la fenêtre de pause tirent maintenant leur image au hasard parmi 22.
+
 ## 1.2.36
 
 ### Nouveau module : Quality of Life
