@@ -39,7 +39,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.36**
+**1.2.37**
+
+### v1.2.37
+
+#### Spec Reminder
+
+- Retrait d'une mascotte : le tirage aléatoire se fait maintenant parmi 22 images.
 
 ### v1.2.36
 
