@@ -39,7 +39,14 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.37**
+**1.2.38**
+
+### v1.2.38
+
+#### Compatibilité
+
+- Compatible avec le patch 12.1.5 de WoW.
+- Quality of Life : le message de réparation utilise de nouveau l'affichage en pièces (or/argent/cuivre).
 
 ### v1.2.37
 

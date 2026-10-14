@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.38
+
+### Compatibilité
+
+- Mise à jour pour le patch **12.1.5** de WoW (interface 120105). L'addon n'est plus signalé comme obsolète.
+- Revue des changements d'API de Blizzard entre 12.1.0 et 12.1.5 : une seule fonction utilisée par l'addon avait été retirée.
+
+### Quality of Life
+
+- Correctif : le message de réparation affichait le montant en pièces brutes, car Blizzard a supprimé l'ancienne fonction d'affichage de l'argent. Elle est remplacée par la nouvelle (or, argent, cuivre avec icônes).
+
 ## 1.2.37
 
 ### Spec Reminder
