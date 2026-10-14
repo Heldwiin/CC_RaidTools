@@ -58,7 +58,7 @@ jobs:
           set -euo pipefail
           toc="CC_RaidTools.toc"
           grep -Fxq "## Version: ${VERSION}" "$toc"
-          grep -Fxq '## Interface: 120100' "$toc"
+          grep -Fxq '## Interface: 120105' "$toc"
           awk 'NF && $1 !~ /^##/ && $1 !~ /^#/ {print $1}' "$toc" > /tmp/toc-files.txt
           while IFS= read -r file; do
             test -f "$file" || { echo "Missing TOC file: $file"; exit 1; }
