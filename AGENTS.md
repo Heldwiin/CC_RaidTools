@@ -4,7 +4,7 @@
 
 CC RaidTools is a World of Warcraft Retail addon developed for the guild **Caelestis Concilium (CC)**.
 
-Target client: **WoW Retail 12.1**.
+Target client: **WoW Retail 12.1.5** (interface `120105`).
 
 The addon is intentionally lightweight and modular, with no external library dependency.
 
@@ -408,6 +408,21 @@ When preparing a release, do not change already-tested functional code merely to
 Do not create a GitHub Release unless explicitly requested.
 
 Use the project's incremental versioning convention (`1.0.0`, `1.0.1`, `1.0.2`, etc.).
+
+### Updating for a new WoW patch
+
+A patch changes the interface number (`major*10000 + minor*100 + patch`: 12.1.0 → `120100`, 12.1.5 → `120105`). Confirm it against the installed client (`Wow.exe` product version) and against other installed addons' `## Interface:` lines, since the files in `Gethe/wow-ui-source` have no interface lines. Then:
+
+1. `## Interface:` in `CC_RaidTools.toc`.
+2. **`.github/workflows/release.yml`** has a fixed-string `grep -Fxq '## Interface: <number>'` in "Validate TOC and package file list": update it in the same release or the release job fails.
+3. The "Target client" line at the top of this file.
+4. Review what Blizzard changed between the two patches in `wow-ui-source` (`live` branch; commit messages read `12.1.5 (70391)` etc.). The GitHub compare endpoint caps at 300 files and sorts alphabetically, so it only shows `Blizzard_APIDocumentationGenerated`: compare the two **tree** listings (`git/trees/<sha>?recursive=1`) to get the full changed-file list instead. Then check, for every function/event/global this addon names:
+   - API documentation blocks (`Blizzard_APIDocumentationGenerated/*Documentation.lua`): removed/renamed functions, changed arguments/returns, new `SecretArguments`/`HasRestrictions` flags;
+   - **deleted `Blizzard_Deprecated*` shims**: each patch deletes a few of these globals-to-`C_*` aliases (12.1.5 removed `GetCoinTextureString`, `GetItemInfoInstant`, `GetItemIcon`, and ~70 more). The shims were gated behind the `loadDeprecationFallbacks` CVar, so a still-used old global stops existing without any error until called — grep this addon's Lua for every removed alias;
+   - Blizzard code this addon hooks or reproduces: `ReadyCheck.lua`, `GameDialogDefs.lua` (popups clicked by Quality of Life), `EventImplementation.lua`/`EventRouting.lua`, `LFDFrame.lua`/`RolePoll.lua`, `TalkingHeadUI.lua`, `MovieFrame.lua`.
+5. Note anything user-visible in the CHANGELOG, and test in game (`/reload`, `/ccrt`, a Ready Check, a queue role check).
+
+12.1.0 → 12.1.5 outcome, for reference: only `GetCoinTextureString` (Quality of Life repair message, now `C_CurrencyInfo.GetCoinTextureString`) needed a code change; the rest was additive (new age-verification popups/event, a `TooltipDataLineType` enum with 2 new values, Ready Check difficulty text, `GetBattlefieldStatus`'s 12th return renamed `isSoloQueued`).
 
 ## Testing checklist
 

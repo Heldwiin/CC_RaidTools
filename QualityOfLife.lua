@@ -249,11 +249,15 @@ end
 -- The repair cost can be a secret value in restricted content; it is only
 -- read (for the chat line and the guild-funds fallback) when it isn't.
 
+-- 12.1.5 removed the deprecated global GetCoinTextureString (it was only a
+-- fallback alias for the C_CurrencyInfo function, gated behind the
+-- loadDeprecationFallbacks CVar).
 local function MoneyText(copper)
     if not copper or IsSecret(copper) then
         return nil
     end
-    return GetCoinTextureString and GetCoinTextureString(copper) or tostring(copper)
+    local coinText = (C_CurrencyInfo and C_CurrencyInfo.GetCoinTextureString) or GetCoinTextureString
+    return coinText and coinText(copper) or tostring(copper)
 end
 
 local function OnMerchantShow()
