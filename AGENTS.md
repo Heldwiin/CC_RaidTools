@@ -358,7 +358,7 @@ Header artwork: `TexturesGUI/QualityOfLife.png` (golden cogwheel with a sparkle,
 - `UNIT_AURA` is very hot in combat, so it is registered **only while the option is on** (`ApplyEnabled`), not left registered and ignored.
 - If the standalone `SonDuLust` addon is still loaded (`C_AddOns.IsAddOnLoaded`) this module stays silent and the panel says so, to avoid a doubled sound. The standalone's `SonDuLustDB` is not migrated (it isn't a SavedVariable of this addon).
 - The sound lives in a new top-level **`sounds/`** folder. `release.yml` copies the TOC files and the asset folders into the zip explicitly (`find TexturesGUI sounds -type f`), so **any new asset folder must be added there too**, or the release zip silently ships without it.
-- No header artwork yet (no `MODULE_ICONS` entry); the menu button is styled regardless.
+- Header artwork: `TexturesGUI/LustSound.png` (the Horde-style red/gold war emblem with sound waves, same purple/gold ring as the other module icons). Its text blocks keep a 110px right margin so nothing runs under the 100px header icon.
 
 ## UI and visual identity
 
