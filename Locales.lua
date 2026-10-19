@@ -271,9 +271,12 @@ local frFR = {
 
     lustLabel = "Son du Lust :",
     lustEnableLabel = "Jouer un son à chaque Furie sanguinaire / Héroïsme / Distorsion temporelle / tambours reçus",
-    lustChannelLabel = "Canal audio :",
+    lustSoundLabel = "Son :",
+    lustSoundDefault = "Apocalypse (par défaut)",
+    lustNoGameSounds = "La liste des sons du jeu n'est pas disponible. Le son Apocalypse reste utilisable.",
+    lustChannelLabel = "Canal audio (son Apocalypse) :",
     lustTestButton = "Écouter le son",
-    lustHint = "Le son se déclenche à l'apparition du débuff de verrouillage (Rassasié, Épuisement, Distorsion temporelle, Fatigué…) posé en même temps que le lust : le buff lui-même n'est plus lisible en combat depuis la 12.1. Fonctionne quelle que soit votre classe.",
+    lustHint = "Cliquer sur un son de la liste le joue pour l'écouter. Le canal audio ne s'applique qu'au son Apocalypse ; les sons du jeu utilisent le canal d'interface par défaut. Le son se déclenche à l'apparition du débuff de verrouillage (Rassasié, Épuisement, Distorsion temporelle, Fatigué…) posé en même temps que le lust, car le buff lui-même n'est plus lisible en combat depuis la 12.1. Fonctionne quelle que soit votre classe.",
     lustStandaloneNote = "L'addon « Son du Lust » est aussi installé : c'est lui qui joue le son. Désinstallez-le pour utiliser celui de CC RaidTools.",
 }
 
@@ -483,9 +486,12 @@ local enUS = {
 
     lustLabel = "Lust Sound:",
     lustEnableLabel = "Play a sound whenever you receive Bloodlust / Heroism / Time Warp / drums",
-    lustChannelLabel = "Audio channel:",
+    lustSoundLabel = "Sound:",
+    lustSoundDefault = "Apocalypse (default)",
+    lustNoGameSounds = "The list of game sounds isn't available. The Apocalypse sound can still be used.",
+    lustChannelLabel = "Audio channel (Apocalypse sound):",
     lustTestButton = "Play the sound",
-    lustHint = "The sound is tied to the lockout debuff (Sated, Exhaustion, Temporal Displacement, Fatigued...) applied at the same moment as the lust: the lust buff itself can't be read in combat since 12.1. Works whatever your class.",
+    lustHint = "Clicking a sound in the list plays it so you can preview it. The audio channel only applies to the Apocalypse sound; game sounds use the default interface channel. The sound is tied to the lockout debuff (Sated, Exhaustion, Temporal Displacement, Fatigued...) applied at the same moment as the lust, because the lust buff itself can't be read in combat since 12.1. Works whatever your class.",
     lustStandaloneNote = "The standalone \"Son du Lust\" addon is also installed and plays the sound itself. Uninstall it to use CC RaidTools' own.",
 
     rgLabel = "Raid Groups:",
