@@ -1437,10 +1437,7 @@ local function BuildUI(panel)
     EnsureDB()
     LoadCurrent()
 
-    local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, -8)
-    title:SetText(C.L.rgLabel)
-    title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    C.UI.Title(panel, "RaidGroups")
 
     -- Preset row
     presetEdit = CreateFrame("EditBox", nil, panel, "BackdropTemplate")

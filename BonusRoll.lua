@@ -203,72 +203,53 @@ end
 
 -- ===== Settings UI =====
 
+local layout
+
 local function BuildUI(panel)
     InitDB()
+    local UI = C.UI
+    UI.Band(panel, "BonusRoll", C.L.brIntro)
 
-    local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, -8)
-    title:SetText(C.L.brLabel)
-    title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    layout = UI.NewLayout(panel)
 
-    local enableCheck = CreateFrame("CheckButton", nil, panel, "BackdropTemplate")
-    enableCheck:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -12)
-    C.SkinCheckBox(enableCheck)
-    local enableLabel = enableCheck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    enableLabel:SetPoint("LEFT", enableCheck, "RIGHT", 7, 0)
-    enableLabel:SetText(C.L.brEnableLabel)
-    enableCheck:SetScript("OnClick", function(self)
-        db.enabled = self:GetChecked() and true or false
-    end)
+    layout:Header(C.L.uiSectionOptions)
+    layout:Toggle({
+        label = C.L.brEnableLabel,
+        desc = C.L.brEnableDesc,
+        get = function() return db.enabled end,
+        set = function(value) db.enabled = value end,
+    })
+    layout:Toggle({
+        label = C.L.brConfirmPassLabel,
+        desc = C.L.brConfirmPassDesc,
+        indent = true,
+        parent = function() return db.enabled end,
+        get = function() return db.confirmPass end,
+        set = function(value) db.confirmPass = value end,
+    })
 
-    local passCheck = CreateFrame("CheckButton", nil, panel, "BackdropTemplate")
-    passCheck:SetPoint("TOPLEFT", enableCheck, "BOTTOMLEFT", 0, -34)
-    C.SkinCheckBox(passCheck)
-    local passLabel = passCheck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    passLabel:SetPoint("LEFT", passCheck, "RIGHT", 7, 0)
-    passLabel:SetText(C.L.brConfirmPassLabel)
-    passCheck:SetScript("OnClick", function(self)
-        db.confirmPass = self:GetChecked() and true or false
-    end)
+    layout:Header(C.L.uiSectionPreview)
+    layout:Button({
+        label = C.L.brTestLabel,
+        text = C.L.uiTestButton,
+        onClick = function()
+            ShowConfirm("roll", function() end)
+        end,
+    })
 
-    local testBtn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-    testBtn:SetSize(140, 22)
-    testBtn:SetPoint("TOPLEFT", passCheck, "BOTTOMLEFT", 0, -34)
-    testBtn:SetText(C.L.brTestButton)
-    C.SkinButton(testBtn)
-    testBtn:SetScript("OnClick", function()
-        ShowConfirm("roll", function() end)
-    end)
-
-    local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    hint:SetPoint("TOPLEFT", testBtn, "BOTTOMLEFT", 0, -12)
-    hint:SetPoint("RIGHT", panel, "RIGHT", -10, 0)
-    hint:SetJustifyH("LEFT")
-    hint:SetWordWrap(true)
-    hint:SetText(C.L.brHint)
-    hint:SetTextColor(0.7, 0.7, 0.7)
-
-    panel.enableCheck = enableCheck
-    panel.passCheck = passCheck
+    layout:Note(C.L.brHint)
+    layout:Finish()
 end
 
-local function RefreshUI(panel)
+local function RefreshUI()
     InitDB()
-    if panel and panel.enableCheck then
-        panel.enableCheck:SetChecked(db.enabled)
-        if panel.enableCheck._ccrtRefresh then
-            panel.enableCheck:_ccrtRefresh()
-        end
-    end
-    if panel and panel.passCheck then
-        panel.passCheck:SetChecked(db.confirmPass)
-        if panel.passCheck._ccrtRefresh then
-            panel.passCheck:_ccrtRefresh()
-        end
+    if layout then
+        layout:Refresh()
     end
 end
 
 C.RegisterModule("BonusRoll", BuildUI, RefreshUI)
+
 
 -- Hook from multiple entry points, all idempotent thanks to the
 -- _ccrtBonusHooked flag on each button — whichever fires first (or all of

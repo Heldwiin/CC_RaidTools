@@ -6,9 +6,6 @@
 
 local C = CCRT
 
-local enabledCheck
-local keywordEdit
-
 local DEFAULT_KEYWORD = "+1, inv, 123"
 
 local function InitDB()
@@ -50,82 +47,46 @@ local function IsInviteKeyword(message)
     return false
 end
 
-local function SkinEditBox(editBox)
-    editBox:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-    })
-    editBox:SetBackdropColor(0.018, 0.018, 0.024, 0.90)
-    editBox:SetBackdropBorderColor(0, 0, 0, 1)
-    editBox:SetTextColor(1, 1, 1)
-end
-
-local function SaveKeyword()
-    local value = Normalize(keywordEdit:GetText())
-    if value == "" then
-        value = DEFAULT_KEYWORD
-    end
-
-    AutoPromoteDB.inviteTool.keyword = value
-    keywordEdit:SetText(value)
-    keywordEdit:ClearFocus()
-end
+local layout
 
 local function BuildUI(frame)
     InitDB()
+    local UI = C.UI
+    UI.Band(frame, "InviteTool", C.L.itIntro)
 
-    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -30)
-    title:SetText(C.L.itLabel)
-    title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    layout = UI.NewLayout(frame)
 
-    enabledCheck = CreateFrame("CheckButton", nil, frame, "BackdropTemplate")
-    enabledCheck:SetSize(48, 24)
-    enabledCheck:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -50)
-    C.SkinCheckBox(enabledCheck)
+    layout:Header(C.L.uiSectionOptions)
+    layout:Toggle({
+        label = C.L.itEnableLabel,
+        desc = C.L.itEnableDesc,
+        get = function() return AutoPromoteDB.inviteTool.enabled end,
+        set = function(value) AutoPromoteDB.inviteTool.enabled = value end,
+    })
+    layout:Input({
+        label = C.L.itKeywordsLabel,
+        desc = C.L.itKeywordsDesc,
+        width = 220,
+        maxLetters = 60,
+        get = function() return AutoPromoteDB.inviteTool.keyword or DEFAULT_KEYWORD end,
+        commit = function(text)
+            local value = Normalize(text)
+            if value == "" then
+                value = DEFAULT_KEYWORD
+            end
+            AutoPromoteDB.inviteTool.keyword = value
+            return value
+        end,
+    })
 
-    local keywordLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    keywordLabel:SetPoint("LEFT", enabledCheck, "RIGHT", 2, 0)
-    keywordLabel:SetText(C.L.itKeywordsLabel)
-
-    keywordEdit = CreateFrame("EditBox", nil, frame, "BackdropTemplate")
-    keywordEdit:SetSize(145, 22)
-    keywordEdit:SetPoint("LEFT", keywordLabel, "RIGHT", 6, 0)
-    keywordEdit:SetAutoFocus(false)
-    keywordEdit:SetMaxLetters(60)
-    keywordEdit:SetFontObject("ChatFontNormal")
-    keywordEdit:SetTextInsets(5, 5, 0, 0)
-    SkinEditBox(keywordEdit)
-
-    enabledCheck:SetScript("OnClick", function(self)
-        AutoPromoteDB.inviteTool.enabled = self:GetChecked() and true or false
-
-        if self._ccrtRefresh then
-            self:_ccrtRefresh()
-        end
-    end)
-
-    keywordEdit:SetScript("OnEnterPressed", SaveKeyword)
-    keywordEdit:SetScript("OnEditFocusLost", SaveKeyword)
-    keywordEdit:SetScript("OnEscapePressed", function(self)
-        self:SetText(AutoPromoteDB.inviteTool.keyword or DEFAULT_KEYWORD)
-        self:ClearFocus()
-    end)
+    layout:Finish()
 end
 
 local function Refresh()
     InitDB()
 
-    if enabledCheck then
-        enabledCheck:SetChecked(AutoPromoteDB.inviteTool.enabled and true or false)
-        if enabledCheck._ccrtRefresh then
-            enabledCheck:_ccrtRefresh()
-        end
-    end
-
-    if keywordEdit then
-        keywordEdit:SetText(AutoPromoteDB.inviteTool.keyword or DEFAULT_KEYWORD)
+    if layout then
+        layout:Refresh()
     end
 end
 

@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.2.39
+
+### Nouveau module : Lust Sound
+
+- Joue un son quand vous recevez Furie sanguinaire, Héroïsme, Distorsion temporelle, Rage primordiale, Fureur des Aspects ou des tambours, quelle que soit votre classe. Le buff lui-même n'est plus lisible en combat depuis la 12.1 : le son est donc déclenché par l'apparition du débuff de verrouillage (Rassasié, Épuisement…).
+- **Désactivé par défaut** : à activer dans `/ccrt`, onglet Lust Sound.
+- Son au choix : Apocalypse (par défaut) ou les sons de **BigWigs, EllesmereUI et Northern Sky Raid Tools** quand ces addons sont installés. Un clic sur un son de la liste l'écoute. Le canal audio est réglable.
+- Aucun son à la connexion, au `/reload` ou au changement de zone avec un lust déjà en cours. Le module reste muet si l'ancien addon « Son du Lust » est encore actif, pour éviter un double son.
+
+### Interface
+
+- Toutes les pages de modules partagent maintenant le même style : titre, courte introduction, lignes alignées avec l'interrupteur à droite et le détail de chaque option au survol. Concerne AutoLog, Ready Check, Invite Tool, Focus, Marks Bar, Bonus Roll, Spec Reminder, Quality of Life et Lust Sound. Auto Promote, Raid Groups, Raid Inspect et Version Check gardent leur disposition, avec le titre harmonisé.
+- Marks Bar : l'orientation (horizontale / verticale) se choisit désormais avec un menu déroulant.
+- Quality of Life : nouvelle présentation, plus lisible.
+
+### Corrections
+
+- Quality of Life : une invitation de groupe reçue en plein combat ou une cinématique ne peut plus provoquer d'erreur Lua.
+
 ## 1.2.38
 
 ### Compatibilité

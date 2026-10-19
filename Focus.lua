@@ -158,113 +158,6 @@ local function SaveFocusSettings()
     AutoPromoteDB.focusMouseButton = mouseButton
 end
 
-local function CreateSwitchMenu(parent, values, currentValue, onSelect)
-    local holder = CreateFrame("Frame", nil, parent)
-    holder:SetSize(118, 24)
-
-    local button = CreateFrame("Button", nil, holder)
-    button:SetAllPoints()
-
-    local background = button:CreateTexture(nil, "BACKGROUND")
-    background:SetAllPoints()
-    background:SetColorTexture(0.035, 0.035, 0.045, 0.96)
-
-    local border = button:CreateTexture(nil, "BORDER")
-    border:SetAllPoints()
-    border:SetTexture("Interface\\Buttons\\WHITE8X8")
-    border:SetVertexColor(0, 0, 0, 0.95)
-
-    local text = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    text:SetPoint("LEFT", 9, 0)
-    text:SetPoint("RIGHT", -24, 0)
-    text:SetJustifyH("LEFT")
-    text:SetTextColor(0.92, 0.92, 0.92)
-
-    local arrow = button:CreateTexture(nil, "OVERLAY")
-    arrow:SetSize(14, 10)
-    arrow:SetPoint("RIGHT", -7, 0)
-    arrow:SetTexture("Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\arrow.png")
-    arrow:SetVertexColor(1, 1, 1, 1)
-
-    local menu = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    menu:SetSize(118, #values * 24 + 2)
-    menu:SetFrameStrata("DIALOG")
-    menu:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-    })
-    menu:SetBackdropColor(0.018, 0.018, 0.024, 0.98)
-    menu:SetBackdropBorderColor(0, 0, 0, 1)
-    menu:Hide()
-
-    for index, entry in ipairs(values) do
-        local row = CreateFrame("Button", nil, menu)
-        row:SetSize(116, 23)
-        row:SetPoint("TOPLEFT", 1, -1 - (index - 1) * 24)
-
-        local rowBackground = row:CreateTexture(nil, "BACKGROUND")
-        rowBackground:SetAllPoints()
-        rowBackground:SetColorTexture(0.018, 0.018, 0.024, 1)
-
-        local rowText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        rowText:SetPoint("LEFT", 8, 0)
-        rowText:SetText(entry[1])
-        rowText:SetTextColor(0.92, 0.92, 0.92)
-
-        row:SetScript("OnEnter", function()
-            rowBackground:SetColorTexture(C.BRAND_R * 0.35, C.BRAND_G * 0.35, C.BRAND_B * 0.48, 1)
-        end)
-
-        row:SetScript("OnLeave", function()
-            rowBackground:SetColorTexture(0.018, 0.018, 0.024, 1)
-        end)
-
-        row:SetScript("OnClick", function()
-            currentValue = entry[2]
-            text:SetText(entry[1])
-            menu:Hide()
-            onSelect(entry[2], entry[1])
-        end)
-    end
-
-    button:SetScript("OnEnter", function()
-        background:SetColorTexture(0.07, 0.07, 0.09, 0.98)
-    end)
-
-    button:SetScript("OnLeave", function()
-        background:SetColorTexture(0.035, 0.035, 0.045, 0.96)
-    end)
-
-    button:SetScript("OnClick", function()
-        if menu:IsShown() then
-            menu:Hide()
-            return
-        end
-
-        menu:ClearAllPoints()
-        menu:SetPoint("TOPLEFT", holder, "BOTTOMLEFT", 0, -1)
-        menu:Show()
-    end)
-
-    holder._button = button
-    holder._text = text
-    holder._menu = menu
-
-    function holder:SetValue(value)
-        for _, entry in ipairs(values) do
-            if entry[2] == value then
-                currentValue = value
-                text:SetText(entry[1])
-                return
-            end
-        end
-    end
-
-    holder:SetValue(currentValue)
-    return holder
-end
-
 local modifierValues = {
     { "Shift", "shift" },
     { "Alt", "alt" },
@@ -279,67 +172,52 @@ local mouseValues = {
     { C.L.mouse5, "5" },
 }
 
-local modifierDrop
-local mouseDrop
-local enabledCheck
+local layout
 
 local function BuildUI(frame)
-    local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    label:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -30)
-    label:SetText(C.L.focusLabel)
-    label:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    local UI = C.UI
+    UI.Band(frame, "Focus", C.L.focusIntro)
 
-    enabledCheck = CreateFrame("CheckButton", nil, frame, "BackdropTemplate")
-    enabledCheck:SetSize(48, 24)
-    C.SkinCheckBox(enabledCheck)
-    enabledCheck:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -8)
-    enabledCheck:SetScript("OnClick", function(self)
-        enabled = self:GetChecked() and true or false
-        SaveFocusSettings()
-        ApplyFocusBinding()
-    end)
-
-    local enabledLabel = enabledCheck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    enabledLabel:SetPoint("LEFT", enabledCheck, "RIGHT", 7, 0)
-    enabledLabel:SetText(C.L.focusEnable)
-
-    local modifierLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    modifierLabel:SetPoint("TOPLEFT", enabledCheck, "BOTTOMLEFT", 0, -10)
-    modifierLabel:SetText(C.L.focusKey)
-
-    modifierDrop = CreateSwitchMenu(frame, modifierValues, modifier, function(value)
-        modifier = value
-        SaveFocusSettings()
-        ApplyFocusBinding()
-    end)
-    modifierDrop:SetPoint("TOPLEFT", modifierLabel, "BOTTOMLEFT", 0, -4)
-
-    local mouseLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    mouseLabel:SetPoint("TOPLEFT", modifierLabel, "TOPLEFT", 158, 0)
-    mouseLabel:SetText(C.L.focusMouseClick)
-
-    mouseDrop = CreateSwitchMenu(frame, mouseValues, mouseButton, function(value)
-        mouseButton = value
-        SaveFocusSettings()
-        ApplyFocusBinding()
-    end)
-    mouseDrop:SetPoint("TOPLEFT", modifierDrop, "TOPLEFT", 158, 0)
+    layout = UI.NewLayout(frame)
+    layout:Header(C.L.uiSectionOptions)
+    layout:Toggle({
+        label = C.L.focusEnable,
+        desc = C.L.focusEnableDesc,
+        get = function() return enabled end,
+        set = function(value)
+            enabled = value
+            SaveFocusSettings()
+            ApplyFocusBinding()
+        end,
+    })
+    layout:Choice({
+        label = C.L.focusKey,
+        desc = C.L.focusKeyDesc,
+        values = modifierValues,
+        get = function() return modifier end,
+        set = function(value)
+            modifier = value
+            SaveFocusSettings()
+            ApplyFocusBinding()
+        end,
+    })
+    layout:Choice({
+        label = C.L.focusMouseClick,
+        desc = C.L.focusMouseDesc,
+        values = mouseValues,
+        get = function() return mouseButton end,
+        set = function(value)
+            mouseButton = value
+            SaveFocusSettings()
+            ApplyFocusBinding()
+        end,
+    })
+    layout:Finish()
 end
 
 local function RefreshUI()
-    if enabledCheck and focusDB then
-        enabledCheck:SetChecked(enabled)
-        if enabledCheck._ccrtRefresh then
-            enabledCheck:_ccrtRefresh()
-        end
-    end
-
-    if modifierDrop and focusDB then
-        modifierDrop:SetValue(focusDB.modifier)
-    end
-
-    if mouseDrop and focusDB then
-        mouseDrop:SetValue(focusDB.mouseButton)
+    if layout and focusDB then
+        layout:Refresh()
     end
 end
 

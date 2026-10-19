@@ -153,6 +153,11 @@ local function OnPartyInvite(name, tank, healer, damage, _, _, inviterGUID, isQu
     if not db.acceptInvites or IsShiftKeyDown() or IsInGroup() then
         return
     end
+    -- Payload values can be secret mid-encounter; a secret boolean can't be
+    -- tested, so an invite whose details are unreadable is left to the player.
+    if IsSecret(tank) or IsSecret(healer) or IsSecret(damage) or IsSecret(isQuestSessionActive) then
+        return
+    end
     if tank or healer or damage or isQuestSessionActive then
         return
     end
@@ -418,7 +423,7 @@ end
 -- button calls.
 
 local function OnCinematicStart(canBeCancelled)
-    if not db.skipCinematics or IsShiftKeyDown() then
+    if not db.skipCinematics or IsShiftKeyDown() or IsSecret(canBeCancelled) then
         return
     end
     if canBeCancelled then
@@ -540,100 +545,64 @@ events:SetScript("OnEvent", function(_, event, ...)
 end)
 
 -- ===== Settings UI =====
+-- Built with the shared UI kit (UIKit.lua): one row per option, short label
+-- on the left, switch on the right, the detail in the tooltip.
 
--- Layout: sections with a small header, one toggle per line.
 local SECTIONS = {
     { title = "qolSectionGroup", toggles = {
-        { key = "autoRoleCheck", label = "qolRoleCheckLabel" },
-        { key = "autoRolePoll", label = "qolRolePollLabel" },
-        { key = "acceptInvites", label = "qolInvitesLabel" },
-        { key = "acceptResurrect", label = "qolResurrectLabel" },
+        { key = "autoRoleCheck", label = "qolRoleCheckLabel", desc = "qolRoleCheckDesc" },
+        { key = "autoRolePoll", label = "qolRolePollLabel", desc = "qolRolePollDesc" },
+        { key = "acceptInvites", label = "qolInvitesLabel", desc = "qolInvitesDesc" },
+        { key = "acceptResurrect", label = "qolResurrectLabel", desc = "qolResurrectDesc" },
     } },
     { title = "qolSectionLoot", toggles = {
-        { key = "fastLoot", label = "qolFastLootLabel" },
-        { key = "sellJunk", label = "qolSellJunkLabel" },
-        { key = "autoRepair", label = "qolRepairLabel" },
-        { key = "repairGuildFunds", label = "qolRepairGuildLabel", indent = true },
+        { key = "fastLoot", label = "qolFastLootLabel", desc = "qolFastLootDesc" },
+        { key = "sellJunk", label = "qolSellJunkLabel", desc = "qolSellJunkDesc" },
+        { key = "autoRepair", label = "qolRepairLabel", desc = "qolRepairDesc" },
+        { key = "repairGuildFunds", label = "qolRepairGuildLabel", desc = "qolRepairGuildDesc",
+          indent = true, parentKey = "autoRepair" },
     } },
     { title = "qolSectionQuests", toggles = {
-        { key = "questAccept", label = "qolQuestAcceptLabel" },
-        { key = "questTurnIn", label = "qolQuestTurnInLabel" },
+        { key = "questAccept", label = "qolQuestAcceptLabel", desc = "qolQuestAcceptDesc" },
+        { key = "questTurnIn", label = "qolQuestTurnInLabel", desc = "qolQuestTurnInDesc" },
     } },
     { title = "qolSectionMisc", toggles = {
-        { key = "declineDuels", label = "qolDuelsLabel" },
-        { key = "declinePetDuels", label = "qolPetDuelsLabel" },
-        { key = "skipCinematics", label = "qolCinematicsLabel" },
-        { key = "hideTalkingHead", label = "qolTalkingHeadLabel" },
-        { key = "deleteConfirm", label = "qolDeleteLabel" },
+        { key = "declineDuels", label = "qolDuelsLabel", desc = "qolDuelsDesc" },
+        { key = "declinePetDuels", label = "qolPetDuelsLabel", desc = "qolPetDuelsDesc" },
+        { key = "skipCinematics", label = "qolCinematicsLabel", desc = "qolCinematicsDesc" },
+        { key = "hideTalkingHead", label = "qolTalkingHeadLabel", desc = "qolTalkingHeadDesc" },
+        { key = "deleteConfirm", label = "qolDeleteLabel", desc = "qolDeleteDesc" },
     } },
 }
 
-local ROW_H = 28
+local layout
 
 local function BuildUI(panel)
     InitDB()
+    C.UI.Band(panel, "QualityOfLife", C.L.qolIntro)
 
-    local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, -8)
-    title:SetText(C.L.qolLabel)
-    title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
-
-    panel.toggles = {}
-    local y = -30
+    layout = C.UI.NewLayout(panel)
     for _, section in ipairs(SECTIONS) do
-        local header = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        header:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, y - 4)
-        header:SetText(C.L[section.title])
-        header:SetTextColor(0.85, 0.75, 0.45)
-        y = y - 20
+        layout:Header(C.L[section.title])
         for _, toggle in ipairs(section.toggles) do
-            local check = CreateFrame("CheckButton", nil, panel, "BackdropTemplate")
-            check:SetPoint("TOPLEFT", panel, "TOPLEFT", toggle.indent and 34 or 10, y)
-            C.SkinCheckBox(check)
-            local label = check:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            label:SetPoint("LEFT", check, "RIGHT", 7, 0)
-            -- Stop short of the 100px header icon in the top-right corner
-            -- (ModuleIcons.lua); a long label wraps instead of running under it.
-            label:SetPoint("RIGHT", panel, "RIGHT", -110, 0)
-            label:SetJustifyH("LEFT")
-            label:SetWordWrap(true)
-            label:SetText(C.L[toggle.label])
-            check:SetScript("OnClick", function(self)
-                db[toggle.key] = self:GetChecked() and true or false
-            end)
-            check._ccrtKey = toggle.key
-            table.insert(panel.toggles, check)
-            y = y - ROW_H
+            local key, parentKey = toggle.key, toggle.parentKey
+            layout:Toggle({
+                label = C.L[toggle.label],
+                desc = C.L[toggle.desc],
+                indent = toggle.indent,
+                parent = parentKey and function() return db[parentKey] end or nil,
+                get = function() return db[key] end,
+                set = function(value) db[key] = value end,
+            })
         end
-        y = y - 6
     end
-
-    local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    hint:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, y - 4)
-    hint:SetPoint("RIGHT", panel, "RIGHT", -10, 0)
-    hint:SetJustifyH("LEFT")
-    hint:SetWordWrap(true)
-    hint:SetText(C.L.qolHint)
-    hint:SetTextColor(0.7, 0.7, 0.7)
-
-    -- The main window sizes itself from the panel's child *frames* only
-    -- (GetModuleHeight in CC_RaidTools.lua), so a trailing font string gets
-    -- clipped; this empty frame under the hint makes it count.
-    local spacer = CreateFrame("Frame", nil, panel)
-    spacer:SetSize(1, 1)
-    spacer:SetPoint("TOPLEFT", hint, "BOTTOMLEFT", 0, 0)
+    layout:Finish()
 end
 
-local function RefreshUI(panel)
+local function RefreshUI()
     InitDB()
-    if not panel or not panel.toggles then
-        return
-    end
-    for _, check in ipairs(panel.toggles) do
-        check:SetChecked(db[check._ccrtKey])
-        if check._ccrtRefresh then
-            check:_ccrtRefresh()
-        end
+    if layout then
+        layout:Refresh()
     end
 end
 
