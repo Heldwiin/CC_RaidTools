@@ -153,6 +153,11 @@ local function OnPartyInvite(name, tank, healer, damage, _, _, inviterGUID, isQu
     if not db.acceptInvites or IsShiftKeyDown() or IsInGroup() then
         return
     end
+    -- Payload values can be secret mid-encounter; a secret boolean can't be
+    -- tested, so an invite whose details are unreadable is left to the player.
+    if IsSecret(tank) or IsSecret(healer) or IsSecret(damage) or IsSecret(isQuestSessionActive) then
+        return
+    end
     if tank or healer or damage or isQuestSessionActive then
         return
     end
@@ -418,7 +423,7 @@ end
 -- button calls.
 
 local function OnCinematicStart(canBeCancelled)
-    if not db.skipCinematics or IsShiftKeyDown() then
+    if not db.skipCinematics or IsShiftKeyDown() or IsSecret(canBeCancelled) then
         return
     end
     if canBeCancelled then

@@ -158,6 +158,22 @@ local function IsFresh(aura)
     return (expires - GetTime()) >= (duration - FRESH_MARGIN)
 end
 
+-- In restricted content (combat, encounters, M+) fields of the UNIT_AURA
+-- payload can be secret values, and a secret boolean can't even be tested
+-- (`if x then` raises an error). When isFullUpdate is unreadable we treat it
+-- as "not a full update": the ready window and IsFresh already stop a reload
+-- or relog from replaying the sound.
+local function IsFullUpdate(updateInfo)
+    if not updateInfo then
+        return false
+    end
+    local full = updateInfo.isFullUpdate
+    if issecretvalue and issecretvalue(full) then
+        return false
+    end
+    return full == true
+end
+
 local ready = false        -- false while loading: observe only
 local generation = 0       -- invalidates settle timers from an earlier load
 local wasLockedOut = false
@@ -195,7 +211,7 @@ watcher:SetScript("OnEvent", function(_, event, _, updateInfo)
     -- Sound only on a fresh lockout APPEARING: never during loading, on a
     -- full aura refresh, or for an old lust (reload, relog, zone change).
     if ready and locked and not wasLockedOut
-        and not (updateInfo and updateInfo.isFullUpdate)
+        and not IsFullUpdate(updateInfo)
         and IsFresh(aura) and not StandaloneLoaded() then
         PlayConfigured()
     end
