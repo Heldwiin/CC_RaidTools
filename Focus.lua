@@ -265,6 +265,9 @@ local function CreateSwitchMenu(parent, values, currentValue, onSelect)
     return holder
 end
 
+-- Shared with the other modules' settings panels (e.g. LustSound.lua).
+C.CreateSwitchMenu = CreateSwitchMenu
+
 local modifierValues = {
     { "Shift", "shift" },
     { "Alt", "alt" },

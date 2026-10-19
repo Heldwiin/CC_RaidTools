@@ -32,6 +32,7 @@ Gameplay modules:
 - `MarksBar.lua` — raid target markers and world markers, including its own throttled mouseover check (see Marks Bar section below).
 - `RaidInspect.lua` — raid/party inspection for item level, enchants and gem sockets; anyone also running CC RaidTools self-reports over an addon message instead of going through Blizzard's throttled native inspection.
 - `VersionCheck.lua` — broadcasts the local addon version to raid/party and guild; warns locally (once per session) if a newer version is seen in the wild, and shows an officer-facing list of who's running which version.
+- `LustSound.lua` — plays `sounds/Apocalypse.ogg` when the player receives a Bloodlust-type effect (see Lust Sound section below).
 - `QualityOfLife.lua` — small opt-out automations, one toggle each (see Quality of Life section below). Meant to grow: new QoL features go here rather than into a new module.
 - `BonusRoll.lua` — adds a confirmation step before a bonus roll (Roll or Pass) goes through, showing the loot specialization it will award for, so a mis-click doesn't burn a roll by accident. Cannot click the native buttons for the player (protected action, see the module's own header comment); disables them until confirmed instead.
 
@@ -345,6 +346,16 @@ The popup features a prominent mascot portrait, picked at random from a pool (`M
 
 Header artwork: `TexturesGUI/QualityOfLife.png` (golden cogwheel with a sparkle, same epic purple/gold ring style as the others). Its toggle labels are capped 110px short of the panel's right edge so they wrap instead of running under that 100px icon. `ModuleIcons.lua` styles every menu button whether or not its module has artwork; only the header icon depends on a `MODULE_ICONS` entry.
 
+## Lust Sound
+
+`LustSound.lua` is the standalone "Son du Lust" addon (written for the user in an earlier session) folded into CC RaidTools. Its `/lust` slash command was **not** carried over — `/ccrt` is the only command (see Commands) — so its three settings live in the module's panel instead: enable (`CCRaidToolsDB.lustSound.enabled`, **default off**, like the other opt-in features), audio channel (`channel`, one of Master/SFX/Music/Ambience/Dialog, via the shared `C.CreateSwitchMenu` exported from `Focus.lua`) and a test button.
+
+- **Detection**: the lust buff is a secret value in combat since 12.1, so it can't be read. The sound is tied to the *lockout debuff* the game applies at the same instant (Sated 57724, Exhaustion 57723 / 390435, Temporal Displacement 80354, Fatigued 264689 / 160455, Insanity 95809) via `C_UnitAuras.GetPlayerAuraBySpellID`, documented `RequiresNonSecretAura` (it only returns auras the addon may see, which these are). Drums apply the same debuffs. Sound plays only when a lockout *appears* (`UNIT_AURA` on `player`), never at login/`/reload`/zone change: `PLAYER_ENTERING_WORLD` and enabling the option only record the starting state.
+- `UNIT_AURA` is very hot in combat, so it is registered **only while the option is on** (`ApplyEnabled`), not left registered and ignored.
+- If the standalone `SonDuLust` addon is still loaded (`C_AddOns.IsAddOnLoaded`) this module stays silent and the panel says so, to avoid a doubled sound. The standalone's `SonDuLustDB` is not migrated (it isn't a SavedVariable of this addon).
+- The sound lives in a new top-level **`sounds/`** folder. `release.yml` copies the TOC files and the asset folders into the zip explicitly (`find TexturesGUI sounds -type f`), so **any new asset folder must be added there too**, or the release zip silently ships without it.
+- No header artwork yet (no `MODULE_ICONS` entry); the menu button is styled regardless.
+
 ## UI and visual identity
 
 Keep the established CC RaidTools visual style:
@@ -515,6 +526,13 @@ For Spec Reminder specifically:
 - verify each toggle (master enable, zone entry, ready check) independently gates its own trigger;
 - verify the spec name shown matches your actual current spec (not loot spec).
 - with BigWigs installed, `/break 1` (as leader/assistant) shows the break popup with a counting-down bar and closes by itself at the end; `/break 0` closes it early; a `/reload` mid-break brings it back with the remaining time; a break longer than a minute switches mascot every 60s; unchecking the option hides it and stops future ones; without BigWigs, no Lua error at login.
+
+For Lust Sound specifically:
+- tick the option, click the test button (sound plays on the chosen channel), change the channel and test again; `/reload` and verify both settings persist;
+- with the option on, receive a Bloodlust / Heroism / Time Warp / drums in and out of combat: the sound plays once when the debuff appears, not on `/reload`, login, zone change or when the debuff expires;
+- enable the option while a lockout is already active: no sound;
+- untick the option and verify no sound on the next lust;
+- with the standalone `SonDuLust` still installed: the note shows in the panel and only one sound plays.
 
 For Quality of Life specifically:
 - have a group leader queue the group for a dungeon, then a premade group, then a battleground: the role check popup should close by itself with the previously ticked roles and a chat line naming them; holding Shift as it appears should leave it open;

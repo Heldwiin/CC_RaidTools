@@ -75,7 +75,7 @@ jobs:
             mkdir -p "package/CC_RaidTools/$(dirname "$file")"
             cp -p "$file" "package/CC_RaidTools/$file"
           done < /tmp/toc-files.txt
-          find TexturesGUI -type f -print0 | while IFS= read -r -d '' file; do
+          find TexturesGUI sounds -type f -print0 | while IFS= read -r -d '' file; do
             mkdir -p "package/CC_RaidTools/$(dirname "$file")"
             cp -p "$file" "package/CC_RaidTools/$file"
           done

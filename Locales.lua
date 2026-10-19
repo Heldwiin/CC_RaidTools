@@ -268,6 +268,13 @@ local frFR = {
     qolRepairedGuild = "|cff33ff99[CC RaidTools]|r Équipement réparé pour %s (banque de guilde).",
     qolRepairedRest = "|cff33ff99[CC RaidTools]|r La banque de guilde ne couvrait pas tout : %s payés avec votre or.",
     qolDuelDeclined = "|cff33ff99[CC RaidTools]|r Duel de %s refusé automatiquement.",
+
+    lustLabel = "Son du Lust :",
+    lustEnableLabel = "Jouer un son à chaque Furie sanguinaire / Héroïsme / Distorsion temporelle / tambours reçus",
+    lustChannelLabel = "Canal audio :",
+    lustTestButton = "Écouter le son",
+    lustHint = "Le son se déclenche à l'apparition du débuff de verrouillage (Rassasié, Épuisement, Distorsion temporelle, Fatigué…) posé en même temps que le lust : le buff lui-même n'est plus lisible en combat depuis la 12.1. Fonctionne quelle que soit votre classe.",
+    lustStandaloneNote = "L'addon « Son du Lust » est aussi installé : c'est lui qui joue le son. Désinstallez-le pour utiliser celui de CC RaidTools.",
 }
 
 -- ===== English overrides =====
@@ -473,6 +480,13 @@ local enUS = {
     qolRepairedGuild = "|cff33ff99[CC RaidTools]|r Gear repaired for %s (guild bank).",
     qolRepairedRest = "|cff33ff99[CC RaidTools]|r Guild bank didn't cover it all: %s paid with your own gold.",
     qolDuelDeclined = "|cff33ff99[CC RaidTools]|r Duel from %s declined automatically.",
+
+    lustLabel = "Lust Sound:",
+    lustEnableLabel = "Play a sound whenever you receive Bloodlust / Heroism / Time Warp / drums",
+    lustChannelLabel = "Audio channel:",
+    lustTestButton = "Play the sound",
+    lustHint = "The sound is tied to the lockout debuff (Sated, Exhaustion, Temporal Displacement, Fatigued...) applied at the same moment as the lust: the lust buff itself can't be read in combat since 12.1. Works whatever your class.",
+    lustStandaloneNote = "The standalone \"Son du Lust\" addon is also installed and plays the sound itself. Uninstall it to use CC RaidTools' own.",
 
     rgLabel = "Raid Groups:",
     rgSaveButton = "Save",
