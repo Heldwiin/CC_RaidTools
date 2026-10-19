@@ -540,101 +540,186 @@ events:SetScript("OnEvent", function(_, event, ...)
 end)
 
 -- ===== Settings UI =====
+-- One row per option: short label on the left, switch on the right, and the
+-- whole row is the click target. Short labels keep every row a single aligned
+-- line; the detail of each option lives in its tooltip. The 100px module icon
+-- (ModuleIcons.lua) sits in the panel's top-right corner, so the intro text
+-- stays clear of it and the sections start below it.
 
--- Layout: sections with a small header, one toggle per line.
 local SECTIONS = {
     { title = "qolSectionGroup", toggles = {
-        { key = "autoRoleCheck", label = "qolRoleCheckLabel" },
-        { key = "autoRolePoll", label = "qolRolePollLabel" },
-        { key = "acceptInvites", label = "qolInvitesLabel" },
-        { key = "acceptResurrect", label = "qolResurrectLabel" },
+        { key = "autoRoleCheck", label = "qolRoleCheckLabel", desc = "qolRoleCheckDesc" },
+        { key = "autoRolePoll", label = "qolRolePollLabel", desc = "qolRolePollDesc" },
+        { key = "acceptInvites", label = "qolInvitesLabel", desc = "qolInvitesDesc" },
+        { key = "acceptResurrect", label = "qolResurrectLabel", desc = "qolResurrectDesc" },
     } },
     { title = "qolSectionLoot", toggles = {
-        { key = "fastLoot", label = "qolFastLootLabel" },
-        { key = "sellJunk", label = "qolSellJunkLabel" },
-        { key = "autoRepair", label = "qolRepairLabel" },
-        { key = "repairGuildFunds", label = "qolRepairGuildLabel", indent = true },
+        { key = "fastLoot", label = "qolFastLootLabel", desc = "qolFastLootDesc" },
+        { key = "sellJunk", label = "qolSellJunkLabel", desc = "qolSellJunkDesc" },
+        { key = "autoRepair", label = "qolRepairLabel", desc = "qolRepairDesc" },
+        { key = "repairGuildFunds", label = "qolRepairGuildLabel", desc = "qolRepairGuildDesc",
+          indent = true, parentKey = "autoRepair" },
     } },
     { title = "qolSectionQuests", toggles = {
-        { key = "questAccept", label = "qolQuestAcceptLabel" },
-        { key = "questTurnIn", label = "qolQuestTurnInLabel" },
+        { key = "questAccept", label = "qolQuestAcceptLabel", desc = "qolQuestAcceptDesc" },
+        { key = "questTurnIn", label = "qolQuestTurnInLabel", desc = "qolQuestTurnInDesc" },
     } },
     { title = "qolSectionMisc", toggles = {
-        { key = "declineDuels", label = "qolDuelsLabel" },
-        { key = "declinePetDuels", label = "qolPetDuelsLabel" },
-        { key = "skipCinematics", label = "qolCinematicsLabel" },
-        { key = "hideTalkingHead", label = "qolTalkingHeadLabel" },
-        { key = "deleteConfirm", label = "qolDeleteLabel" },
+        { key = "declineDuels", label = "qolDuelsLabel", desc = "qolDuelsDesc" },
+        { key = "declinePetDuels", label = "qolPetDuelsLabel", desc = "qolPetDuelsDesc" },
+        { key = "skipCinematics", label = "qolCinematicsLabel", desc = "qolCinematicsDesc" },
+        { key = "hideTalkingHead", label = "qolTalkingHeadLabel", desc = "qolTalkingHeadDesc" },
+        { key = "deleteConfirm", label = "qolDeleteLabel", desc = "qolDeleteDesc" },
     } },
 }
 
-local ROW_H = 28
+local ROW_H = 26
+local HEADER_H = 24
+local SECTION_GAP = 6
+local CONTENT_TOP = -110   -- just below the 100px header icon
+local ICON_CLEAR = 112     -- right margin that keeps text off the icon
+local SIDE = 10
+local ON_COLOR = { 0.92, 0.93, 0.97 }
+local OFF_COLOR = { 0.58, 0.58, 0.65 }
+
+local rows = {}
+
+local function PaintRow(row)
+    local on = db[row.key] and true or false
+    row.check:SetChecked(on)
+    if row.check._ccrtRefresh then
+        row.check:_ccrtRefresh()
+    end
+    row.accent:SetShown(on)
+    local color = on and ON_COLOR or OFF_COLOR
+    row.label:SetTextColor(color[1], color[2], color[3])
+    -- A sub-option only matters while its parent option is on.
+    if row.parentKey then
+        row:SetAlpha(db[row.parentKey] and 1 or 0.45)
+    end
+end
+
+local function PaintAll()
+    for _, row in ipairs(rows) do
+        PaintRow(row)
+    end
+end
+
+local function CreateHeader(panel, y, text)
+    local header = CreateFrame("Frame", nil, panel)
+    header:SetPoint("TOPLEFT", panel, "TOPLEFT", SIDE, y)
+    header:SetPoint("RIGHT", panel, "RIGHT", -12, 0)
+    header:SetHeight(HEADER_H)
+
+    local label = header:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    label:SetPoint("BOTTOMLEFT", header, "BOTTOMLEFT", 2, 4)
+    label:SetText(text)
+    label:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+
+    local line = header:CreateTexture(nil, "ARTWORK")
+    line:SetPoint("BOTTOMLEFT", header, "BOTTOMLEFT", 0, 0)
+    line:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", 0, 0)
+    line:SetHeight(1)
+    line:SetColorTexture(C.BRAND_R * 0.6, C.BRAND_G * 0.6, C.BRAND_B * 0.6, 0.7)
+end
+
+local function CreateRow(panel, y, toggle, index)
+    local row = CreateFrame("Button", nil, panel)
+    row:SetPoint("TOPLEFT", panel, "TOPLEFT", SIDE, y)
+    row:SetPoint("RIGHT", panel, "RIGHT", -12, 0)
+    row:SetHeight(ROW_H)
+    row.key = toggle.key
+    row.parentKey = toggle.parentKey
+
+    -- Alternating dark bands, brand-tinted on hover.
+    local baseAlpha = (index % 2 == 0) and 0.55 or 0.30
+    local background = row:CreateTexture(nil, "BACKGROUND")
+    background:SetAllPoints()
+    background:SetColorTexture(0.045, 0.045, 0.06, baseAlpha)
+
+    -- Left accent bar: only visible while the option is on.
+    row.accent = row:CreateTexture(nil, "ARTWORK")
+    row.accent:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+    row.accent:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
+    row.accent:SetWidth(3)
+    row.accent:SetColorTexture(C.BRAND_R, C.BRAND_G, C.BRAND_B, 1)
+
+    row.label = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    row.label:SetPoint("LEFT", row, "LEFT", toggle.indent and 34 or 12, 0)
+    row.label:SetPoint("RIGHT", row, "RIGHT", -62, 0)
+    row.label:SetJustifyH("LEFT")
+    row.label:SetWordWrap(false)
+    row.label:SetText(C.L[toggle.label])
+
+    -- The switch only displays the state; the row itself takes the click, so
+    -- the hover and tooltip stay consistent across the whole line.
+    row.check = CreateFrame("CheckButton", nil, row, "BackdropTemplate")
+    row.check:SetPoint("RIGHT", row, "RIGHT", -6, 0)
+    C.SkinCheckBox(row.check)
+    row.check:EnableMouse(false)
+    for _, child in ipairs({ row.check:GetChildren() }) do
+        child:EnableMouse(false)
+    end
+
+    row:SetScript("OnClick", function()
+        db[toggle.key] = not db[toggle.key]
+        PaintAll()
+    end)
+    row:SetScript("OnEnter", function(self)
+        background:SetColorTexture(C.BRAND_R * 0.18, C.BRAND_G * 0.18, C.BRAND_B * 0.30, 0.85)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(C.L[toggle.label], 1, 1, 1)
+        GameTooltip:AddLine(C.L[toggle.desc], 0.8, 0.8, 0.85, true)
+        GameTooltip:Show()
+    end)
+    row:SetScript("OnLeave", function(self)
+        background:SetColorTexture(0.045, 0.045, 0.06, baseAlpha)
+        if GameTooltip:GetOwner() == self then
+            GameTooltip:Hide()
+        end
+    end)
+    row:HookScript("OnHide", function(self)
+        if GameTooltip:GetOwner() == self then
+            GameTooltip:Hide()
+        end
+    end)
+    return row
+end
 
 local function BuildUI(panel)
     InitDB()
 
     local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, -8)
+    title:SetPoint("TOPLEFT", panel, "TOPLEFT", SIDE, -8)
     title:SetText(C.L.qolLabel)
     title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
 
-    panel.toggles = {}
-    local y = -30
+    local intro = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    intro:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+    intro:SetPoint("RIGHT", panel, "RIGHT", -ICON_CLEAR, 0)
+    intro:SetJustifyH("LEFT")
+    intro:SetWordWrap(true)
+    intro:SetTextColor(0.66, 0.66, 0.72)
+    intro:SetText(C.L.qolIntro)
+
+    local y = CONTENT_TOP
+    local index = 0
     for _, section in ipairs(SECTIONS) do
-        local header = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        header:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, y - 4)
-        header:SetText(C.L[section.title])
-        header:SetTextColor(0.85, 0.75, 0.45)
-        y = y - 20
+        CreateHeader(panel, y, C.L[section.title])
+        y = y - HEADER_H
         for _, toggle in ipairs(section.toggles) do
-            local check = CreateFrame("CheckButton", nil, panel, "BackdropTemplate")
-            check:SetPoint("TOPLEFT", panel, "TOPLEFT", toggle.indent and 34 or 10, y)
-            C.SkinCheckBox(check)
-            local label = check:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            label:SetPoint("LEFT", check, "RIGHT", 7, 0)
-            -- Stop short of the 100px header icon in the top-right corner
-            -- (ModuleIcons.lua); a long label wraps instead of running under it.
-            label:SetPoint("RIGHT", panel, "RIGHT", -110, 0)
-            label:SetJustifyH("LEFT")
-            label:SetWordWrap(true)
-            label:SetText(C.L[toggle.label])
-            check:SetScript("OnClick", function(self)
-                db[toggle.key] = self:GetChecked() and true or false
-            end)
-            check._ccrtKey = toggle.key
-            table.insert(panel.toggles, check)
+            index = index + 1
+            table.insert(rows, CreateRow(panel, y, toggle, index))
             y = y - ROW_H
         end
-        y = y - 6
+        y = y - SECTION_GAP
     end
-
-    local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    hint:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, y - 4)
-    hint:SetPoint("RIGHT", panel, "RIGHT", -10, 0)
-    hint:SetJustifyH("LEFT")
-    hint:SetWordWrap(true)
-    hint:SetText(C.L.qolHint)
-    hint:SetTextColor(0.7, 0.7, 0.7)
-
-    -- The main window sizes itself from the panel's child *frames* only
-    -- (GetModuleHeight in CC_RaidTools.lua), so a trailing font string gets
-    -- clipped; this empty frame under the hint makes it count.
-    local spacer = CreateFrame("Frame", nil, panel)
-    spacer:SetSize(1, 1)
-    spacer:SetPoint("TOPLEFT", hint, "BOTTOMLEFT", 0, 0)
+    PaintAll()
 end
 
-local function RefreshUI(panel)
+local function RefreshUI()
     InitDB()
-    if not panel or not panel.toggles then
-        return
-    end
-    for _, check in ipairs(panel.toggles) do
-        check:SetChecked(db[check._ccrtKey])
-        if check._ccrtRefresh then
-            check:_ccrtRefresh()
-        end
-    end
+    PaintAll()
 end
 
 C.RegisterModule("QualityOfLife", BuildUI, RefreshUI)

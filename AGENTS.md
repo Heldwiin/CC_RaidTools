@@ -52,6 +52,7 @@ Do not create duplicate `*Fix.lua` or compatibility modules unless there is a cl
 - Do not introduce external libraries without explicit approval.
 - Keep Lua readable and defensive.
 - Initialize optional tables and settings before indexing them.
+- Source files are UTF-8 without BOM with LF line endings, and `Locales.lua` carries accented French. Windows PowerShell 5.1 reads a BOM-less `.ps1` as ANSI, so **never put accented text inside a PowerShell script that writes into a source file** (it comes out double-encoded: `séparément` → `sÃ©parÃ©ment`). Use the editor tools, or keep the text in a UTF-8 file and read it with an explicit `UTF8Encoding`; then check the result for `Ã`/`Â` before committing.
 - Never overwrite an existing SavedVariable value just to establish a default.
 - When adding a SavedVariable, only assign the default when the value is `nil`.
 
@@ -343,6 +344,8 @@ The popup features a prominent mascot portrait, picked at random from a pool (`M
   - **Talking head** (`hideTalkingHead`): `hooksecurefunc(TalkingHeadFrame, "PlayCurrent")` → hide the frame; the voice line keeps playing.
   - **Delete confirm** (`deleteConfirm`): on `DELETE_ITEM_CONFIRM`, types `DELETE_ITEM_CONFIRM_STRING` (the client's localized word) into the edit box of a shown `DELETE_GOOD_ITEM`/`DELETE_GOOD_QUEST_ITEM`; the dialog's `StaticPopup_StandardConfirmationTextHandler` enables Yes, which the player still clicks.
 - Hook state is kept in file locals, never written as fields onto Blizzard frames.
+
+**Panel layout** (redesigned after the first version read as a wall of white text with wrapped, misaligned labels): one 26px row per option, short single-line label on the left and the `C.SkinCheckBox` switch on the right, the whole row being the click target (the switch's own mouse handling is disabled so hover and tooltip stay consistent across the line). Rows alternate two dark bands and tint on hover, labels are muted grey-blue when off and brighter with a 3px brand-coloured accent bar when on, section headers are brand-coloured with a thin rule, and the detail of each option is its tooltip (`qol*Desc` strings) rather than a longer label. `repairGuildFunds` is an indented sub-option dimmed while `autoRepair` is off. The 100px header icon occupies the top-right corner, so the intro text keeps a 112px right margin and the sections start at y = -110, below the icon. To add an option: a `DEFAULTS` entry, a `SECTIONS` entry, and `qol<Name>Label` + `qol<Name>Desc` in both languages.
 
 Header artwork: `TexturesGUI/QualityOfLife.png` (golden cogwheel with a sparkle, same epic purple/gold ring style as the others). Its toggle labels are capped 110px short of the panel's right edge so they wrap instead of running under that 100px icon. `ModuleIcons.lua` styles every menu button whether or not its module has artwork; only the header icon depends on a `MODULE_ICONS` entry.
 
