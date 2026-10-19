@@ -9,9 +9,9 @@
 -- C_UnitAuras.GetPlayerAuraBySpellID is documented RequiresNonSecretAura:
 -- it only ever returns auras the addon is allowed to see, which these are.
 --
--- The sound is either the bundled Apocalypse file (default) or any of the
--- game sounds Blizzard offers for Cooldown Manager alerts (CooldownViewerSoundData:
--- 93 sound kits in 7 categories, with names already localized by the client).
+-- The sound is either the bundled Apocalypse file (default) or one of the
+-- sounds of BigWigs, EllesmereUI or Northern Sky Raid Tools, whichever of
+-- those addons is installed.
 local C = CCRT
 
 local db
@@ -43,6 +43,8 @@ local CHANNEL_VALUES = {
     { "Dialog", "Dialog" },
 }
 
+local SOURCES = { bigwigs = true, ellesmere = true, nsrt = true }
+
 local function InitDB()
     C.InitDB()
     CCRaidToolsDB.lustSound = CCRaidToolsDB.lustSound or {}
@@ -61,72 +63,126 @@ local function InitDB()
     if not valid then
         db.channel = "Master"
     end
-    -- nil means the bundled Apocalypse file; otherwise a game sound kit ID.
-    if type(db.soundKit) ~= "number" then
-        db.soundKit = nil
+    -- nil/nil means the bundled Apocalypse file; otherwise the sound is named
+    -- by the addon it comes from and its key there. The name is stored rather
+    -- than a file path, so it survives that addon moving its files around.
+    if not (SOURCES[db.soundSource] and type(db.soundName) == "string") then
+        db.soundSource, db.soundName = nil, nil
     end
+    -- Earlier development builds stored a game sound kit ID here.
+    db.soundKit = nil
 end
 
--- ===== Game sound catalog =====
--- Read from Blizzard's own Cooldown Manager data rather than copied, so the
--- list, the localized names and any future additions stay in step with the
--- client. If it ever isn't there, only the bundled sound is offered.
+-- ===== Sound catalog =====
+-- Built from whichever of the three addons is installed:
+--   * BigWigs and NSRT register their sounds in LibSharedMedia-3.0
+--     (name -> file path or file ID); they are told apart by the "BigWigs: "
+--     name prefix / the folder the file lives in;
+--   * EllesmereUI keeps its own list and exposes it through
+--     EllesmereUI.BuildAlertSoundTables().
+-- Each group is { source, title, sounds = { { key, text, value } } }, where
+-- value is something PlaySoundFile accepts (path or file ID).
 
-local catalog, soundNames
+local catalog
 
-local function CategoryTitle(name)
-    return _G["COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_" .. name:upper()] or name
+local function StripColor(text)
+    return (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+end
+
+local function ByName(a, b)
+    return StripColor(a.text):lower() < StripColor(b.text):lower()
+end
+
+local function CollectSharedMedia()
+    local bigwigs, nsrt = {}, {}
+    local lsm = LibStub and LibStub("LibSharedMedia-3.0", true)
+    local registered = lsm and lsm:HashTable("sound")
+    if type(registered) ~= "table" then
+        return bigwigs, nsrt
+    end
+    for name, value in pairs(registered) do
+        if type(name) == "string" and (type(value) == "string" or type(value) == "number") then
+            local path = type(value) == "string" and value:lower() or ""
+            if name:find("^BigWigs: ") or path:find("\\addons\\bigwigs\\", 1, true) then
+                table.insert(bigwigs, { key = name, text = (name:gsub("^BigWigs: ", "")), value = value })
+            elseif path:find("northernskyraidtools", 1, true) then
+                table.insert(nsrt, { key = name, text = name, value = value })
+            end
+        end
+    end
+    table.sort(bigwigs, ByName)
+    table.sort(nsrt, ByName)
+    return bigwigs, nsrt
+end
+
+local function CollectEllesmere()
+    local eui = _G.EllesmereUI
+    if type(eui) ~= "table" or type(eui.BuildAlertSoundTables) ~= "function" then
+        return nil
+    end
+    local ok, paths, names, order = pcall(eui.BuildAlertSoundTables)
+    if not ok or type(paths) ~= "table" or type(order) ~= "table" then
+        return nil
+    end
+    local sounds = {}
+    for _, key in ipairs(order) do
+        -- "none" has a name but no file.
+        if paths[key] then
+            table.insert(sounds, { key = key, text = (type(names) == "table" and names[key]) or key, value = paths[key] })
+        end
+    end
+    return sounds
 end
 
 local function GetCatalog()
     if catalog then
         return catalog
     end
-    catalog, soundNames = {}, {}
-    local data = _G.CooldownViewerSoundData
-    local categories = Enum and Enum.CooldownViewerSoundCategory
-    if type(data) ~= "table" or type(categories) ~= "table" then
-        return catalog
+    catalog = {}
+    local bigwigs, nsrt = CollectSharedMedia()
+    local ellesmere = CollectEllesmere()
+    if #bigwigs > 0 then
+        table.insert(catalog, { source = "bigwigs", title = "BigWigs", sounds = bigwigs })
     end
-    local ordered = {}
-    for name, value in pairs(categories) do
-        if type(value) == "number" and type(data[value]) == "table" then
-            table.insert(ordered, { name = name, value = value })
-        end
+    if ellesmere and #ellesmere > 0 then
+        table.insert(catalog, { source = "ellesmere", title = "EllesmereUI", sounds = ellesmere })
     end
-    table.sort(ordered, function(a, b) return a.value < b.value end)
-    for _, category in ipairs(ordered) do
-        local sounds = {}
-        for _, entry in ipairs(data[category.value]) do
-            if type(entry.soundKitID) == "number" then
-                local text = (type(entry.text) == "string" and entry.text ~= "") and entry.text or tostring(entry.soundKitID)
-                table.insert(sounds, { id = entry.soundKitID, text = text })
-                soundNames[entry.soundKitID] = soundNames[entry.soundKitID] or text
-            end
-        end
-        if #sounds > 0 then
-            table.insert(catalog, { title = CategoryTitle(category.name), sounds = sounds })
-        end
+    if #nsrt > 0 then
+        table.insert(catalog, { source = "nsrt", title = "Northern Sky Raid Tools", sounds = nsrt })
     end
     return catalog
 end
 
-local function CurrentSoundName()
-    if not db.soundKit then
-        return C.L.lustSoundDefault
+local function FindSound(source, key)
+    if not source then
+        return nil
     end
-    GetCatalog()
-    return soundNames[db.soundKit] or ("ID " .. db.soundKit)
+    for _, group in ipairs(GetCatalog()) do
+        if group.source == source then
+            for _, sound in ipairs(group.sounds) do
+                if sound.key == key then
+                    return sound, group
+                end
+            end
+        end
+    end
 end
 
-local function PlayConfigured()
-    if db.soundKit then
-        -- Game sounds take a UI sound subtype rather than a channel name
-        -- (C_Sound.PlaySound), so the channel setting only applies to the file.
-        PlaySound(db.soundKit)
-    else
-        PlaySoundFile(SOUND, db.channel)
+local function CurrentSoundName()
+    if not db.soundSource then
+        return C.L.lustSoundDefault
     end
+    local sound, group = FindSound(db.soundSource, db.soundName)
+    if sound then
+        return group.title .. " - " .. sound.text
+    end
+    return db.soundName
+end
+
+-- Falls back to the bundled sound when the addon the choice came from is gone.
+local function PlayConfigured()
+    local sound = FindSound(db.soundSource, db.soundName)
+    PlaySoundFile(sound and sound.value or SOUND, db.channel)
 end
 
 -- ===== Detection =====
@@ -252,25 +308,15 @@ end)
 
 local ROW_H = 20
 local HEADER_H = 24
-local POPUP_W, POPUP_H = 280, 300
+local POPUP_W, POPUP_H = 300, 300
 
-local enableCheck, channelDrop, standaloneNote, pickerText
+local layout, standaloneNote, pickerText
 local popup, catcher
 local rows = {}
 
-local function UpdateChannelState()
-    if not channelDrop then
-        return
-    end
-    local custom = db.soundKit == nil
-    channelDrop:SetAlpha(custom and 1 or 0.4)
-    channelDrop._button:SetEnabled(custom)
-end
-
 local function RefreshRows()
     for _, row in ipairs(rows) do
-        local selected = (row.soundKit == db.soundKit)
-        if selected then
+        if row.source == db.soundSource and row.key == db.soundName then
             row.text:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
         else
             row.text:SetTextColor(0.92, 0.92, 0.92)
@@ -278,12 +324,11 @@ local function RefreshRows()
     end
 end
 
-local function SelectSound(soundKit)
-    db.soundKit = soundKit
+local function SelectSound(source, key)
+    db.soundSource, db.soundName = source, key
     if pickerText then
         pickerText:SetText(CurrentSoundName())
     end
-    UpdateChannelState()
     RefreshRows()
     -- Clicking a sound plays it, so the list doubles as a preview.
     PlayConfigured()
@@ -298,7 +343,7 @@ local function HidePopup()
     end
 end
 
-local function AddRow(child, y, text, soundKit)
+local function AddRow(child, y, text, source, key)
     local row = CreateFrame("Button", nil, child)
     row:SetPoint("TOPLEFT", child, "TOPLEFT", 0, y)
     row:SetPoint("RIGHT", child, "RIGHT", 0, 0)
@@ -310,16 +355,17 @@ local function AddRow(child, y, text, soundKit)
     row.text:SetPoint("LEFT", 8, 0)
     row.text:SetPoint("RIGHT", -4, 0)
     row.text:SetJustifyH("LEFT")
+    row.text:SetWordWrap(false)
     row.text:SetText(text)
-    row.soundKit = soundKit
+    row.source, row.key = source, key
     row:SetScript("OnClick", function()
-        SelectSound(row.soundKit)
+        SelectSound(row.source, row.key)
     end)
     table.insert(rows, row)
 end
 
--- Built on first open: ~100 rows that are never needed unless the player
--- actually browses the list.
+-- Built on first open: up to ~100 rows that are never needed unless the
+-- player actually browses the list.
 local function BuildPopup()
     catcher = CreateFrame("Button", nil, UIParent)
     catcher:SetAllPoints(UIParent)
@@ -346,7 +392,7 @@ local function BuildPopup()
     scroll:SetScrollChild(child)
 
     local y = 0
-    AddRow(child, y, C.L.lustSoundDefault, nil)
+    AddRow(child, y, C.L.lustSoundDefault, nil, nil)
     y = y - ROW_H
 
     local groups = GetCatalog()
@@ -357,8 +403,8 @@ local function BuildPopup()
         note:SetJustifyH("LEFT")
         note:SetWordWrap(true)
         note:SetTextColor(0.7, 0.7, 0.7)
-        note:SetText(C.L.lustNoGameSounds)
-        y = y - 48
+        note:SetText(C.L.lustNoSounds)
+        y = y - 64
     end
     for _, group in ipairs(groups) do
         local header = child:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -367,7 +413,7 @@ local function BuildPopup()
         header:SetTextColor(0.85, 0.75, 0.45)
         y = y - HEADER_H
         for _, sound in ipairs(group.sounds) do
-            AddRow(child, y, sound.text, sound.id)
+            AddRow(child, y, sound.text, group.source, sound.key)
             y = y - ROW_H
         end
     end
@@ -390,7 +436,7 @@ local function TogglePopup(anchor)
     popup:Show()
 end
 
--- Same look as Focus.lua's switch menu, but opening the scrollable list.
+-- Same look as the shared dropdown, but opening the scrollable list.
 local function CreatePickerButton(parent, width)
     local button = CreateFrame("Button", nil, parent)
     button:SetSize(width, 24)
@@ -408,6 +454,7 @@ local function CreatePickerButton(parent, width)
     pickerText:SetPoint("LEFT", 9, 0)
     pickerText:SetPoint("RIGHT", -24, 0)
     pickerText:SetJustifyH("LEFT")
+    pickerText:SetWordWrap(false)
     pickerText:SetTextColor(0.92, 0.92, 0.92)
 
     local arrow = button:CreateTexture(nil, "OVERLAY")
@@ -429,73 +476,45 @@ end
 
 local function BuildUI(panel)
     InitDB()
+    local UI = C.UI
+    UI.Band(panel, "LustSound", C.L.lustIntro)
 
-    local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, -8)
-    title:SetText(C.L.lustLabel)
-    title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    layout = UI.NewLayout(panel)
 
-    enableCheck = CreateFrame("CheckButton", nil, panel, "BackdropTemplate")
-    enableCheck:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -12)
-    C.SkinCheckBox(enableCheck)
-    local enableLabel = enableCheck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    enableLabel:SetPoint("LEFT", enableCheck, "RIGHT", 7, 0)
-    -- Stop short of the 100px header icon in the top-right corner
-    -- (ModuleIcons.lua), wrapping instead of running under it.
-    enableLabel:SetPoint("RIGHT", panel, "RIGHT", -110, 0)
-    enableLabel:SetJustifyH("LEFT")
-    enableLabel:SetWordWrap(true)
-    enableLabel:SetText(C.L.lustEnableLabel)
-    enableCheck:SetScript("OnClick", function(self)
-        db.enabled = self:GetChecked() and true or false
-        ApplyEnabled()
-    end)
+    layout:Header(C.L.uiSectionOptions)
+    layout:Toggle({
+        label = C.L.lustEnableLabel,
+        desc = C.L.lustEnableDesc,
+        get = function() return db.enabled end,
+        set = function(value)
+            db.enabled = value
+            ApplyEnabled()
+        end,
+    })
 
-    local soundLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    soundLabel:SetPoint("TOPLEFT", enableCheck, "BOTTOMLEFT", 0, -16)
-    soundLabel:SetText(C.L.lustSoundLabel)
+    layout:Header(C.L.lustSectionSound)
+    -- The sound list needs a wider control than a plain dropdown, so this row
+    -- hosts the picker button; the list itself opens in BuildPopup.
+    local soundRow = layout:Row({ label = C.L.lustSoundLabel, desc = C.L.lustSoundDesc }, false, 268)
+    local picker = CreatePickerButton(soundRow, 250)
+    picker:SetPoint("RIGHT", soundRow, "RIGHT", -6, 0)
 
-    local picker = CreatePickerButton(panel, 250)
-    picker:SetPoint("TOPLEFT", soundLabel, "BOTTOMLEFT", 0, -4)
+    layout:Choice({
+        label = C.L.lustChannelLabel,
+        desc = C.L.lustChannelDesc,
+        values = CHANNEL_VALUES,
+        get = function() return db.channel end,
+        set = function(value) db.channel = value end,
+    })
+    layout:Button({
+        label = C.L.lustTestLabel,
+        text = C.L.lustTestButton,
+        onClick = PlayConfigured,
+    })
 
-    local channelLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    channelLabel:SetPoint("TOPLEFT", picker, "BOTTOMLEFT", 0, -14)
-    channelLabel:SetText(C.L.lustChannelLabel)
-
-    channelDrop = C.CreateSwitchMenu(panel, CHANNEL_VALUES, db.channel, function(value)
-        db.channel = value
-    end)
-    channelDrop:SetPoint("TOPLEFT", channelLabel, "BOTTOMLEFT", 0, -4)
-
-    local testBtn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-    testBtn:SetSize(140, 22)
-    testBtn:SetPoint("TOPLEFT", channelDrop, "BOTTOMLEFT", 0, -16)
-    testBtn:SetText(C.L.lustTestButton)
-    C.SkinButton(testBtn)
-    testBtn:SetScript("OnClick", PlayConfigured)
-
-    local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    hint:SetPoint("TOPLEFT", testBtn, "BOTTOMLEFT", 0, -16)
-    hint:SetPoint("RIGHT", panel, "RIGHT", -110, 0)
-    hint:SetJustifyH("LEFT")
-    hint:SetWordWrap(true)
-    hint:SetText(C.L.lustHint)
-    hint:SetTextColor(0.7, 0.7, 0.7)
-
-    standaloneNote = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    standaloneNote:SetPoint("TOPLEFT", hint, "BOTTOMLEFT", 0, -12)
-    standaloneNote:SetPoint("RIGHT", panel, "RIGHT", -110, 0)
-    standaloneNote:SetJustifyH("LEFT")
-    standaloneNote:SetWordWrap(true)
-    standaloneNote:SetText(C.L.lustStandaloneNote)
-    standaloneNote:SetTextColor(1, 0.7, 0.3)
-
-    -- The main window sizes itself from the panel's child *frames* only
-    -- (GetModuleHeight in CC_RaidTools.lua), so trailing text gets clipped;
-    -- this empty frame under the notes makes them count.
-    local spacer = CreateFrame("Frame", nil, panel)
-    spacer:SetSize(1, 1)
-    spacer:SetPoint("TOPLEFT", standaloneNote, "BOTTOMLEFT", 0, 0)
+    layout:Note(C.L.lustHint)
+    standaloneNote = layout:Note(C.L.lustStandaloneNote, { 1, 0.7, 0.3 })
+    layout:Finish()
 
     -- Leaving the tab (or closing the window) closes an open sound list.
     panel:HookScript("OnHide", HidePopup)
@@ -503,19 +522,12 @@ end
 
 local function RefreshUI()
     InitDB()
-    if enableCheck then
-        enableCheck:SetChecked(db.enabled)
-        if enableCheck._ccrtRefresh then
-            enableCheck:_ccrtRefresh()
-        end
+    if layout then
+        layout:Refresh()
     end
     if pickerText then
         pickerText:SetText(CurrentSoundName())
     end
-    if channelDrop then
-        channelDrop:SetValue(db.channel)
-    end
-    UpdateChannelState()
     if standaloneNote then
         standaloneNote:SetShown(StandaloneLoaded() and true or false)
     end

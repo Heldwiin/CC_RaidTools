@@ -286,103 +286,54 @@ local function ResetPosition()
     end
 end
 
+local layout
+
 local function BuildUI(parent)
-    local title = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -30)
-    title:SetText(C.L.mbLabel)
-    title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
-    local enable = CreateFrame("CheckButton", nil, parent, "BackdropTemplate")
-    enable:SetSize(48, 24)
-    enable:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
-    C.SkinCheckBox(enable)
-    enable:SetChecked(db.enabled)
-    enable:SetScript("OnClick", function(self)
-        SetEnabled(self:GetChecked())
-    end)
-    local enableText = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    enableText:SetPoint("LEFT", enable, "RIGHT", 8, 0)
-    enableText:SetText(C.L.mbEnableBar)
-    local lock = CreateFrame("CheckButton", nil, parent, "BackdropTemplate")
-    lock:SetSize(48, 24)
-    lock:SetPoint("TOPLEFT", enable, "BOTTOMLEFT", 0, -12)
-    C.SkinCheckBox(lock)
-    lock:SetChecked(db.locked)
-    lock:SetScript("OnClick", function(self)
-        SetLocked(self:GetChecked())
-    end)
-    local lockText = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    lockText:SetPoint("LEFT", lock, "RIGHT", 8, 0)
-    lockText:SetText(C.L.mbLock)
-    local mouse = CreateFrame("CheckButton", nil, parent, "BackdropTemplate")
-    mouse:SetSize(48, 24)
-    mouse:SetPoint("TOPLEFT", lock, "BOTTOMLEFT", 0, -12)
-    C.SkinCheckBox(mouse)
-    mouse:SetChecked(db.mouseoverDisplay)
-    mouse:SetScript("OnClick", function(self)
-        SetMouseoverDisplay(self:GetChecked())
-    end)
-    local mouseText = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    mouseText:SetPoint("LEFT", mouse, "RIGHT", 8, 0)
-    mouseText:SetText(C.L.mbMouseoverOnly)
-    local orient = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    orient:SetPoint("TOPLEFT", mouse, "BOTTOMLEFT", 0, -16)
-    orient:SetText(C.L.mbOrientation)
-    local horizontal = CreateFrame("Button", nil, parent)
-    horizontal:SetSize(110, 26)
-    horizontal:SetPoint("TOPLEFT", orient, "BOTTOMLEFT", 0, -5)
-    C.SkinButton(horizontal)
-    horizontal:SetText(C.L.mbHorizontal)
-    horizontal:SetNormalFontObject("GameFontHighlightSmall")
-    local vertical = CreateFrame("Button", nil, parent)
-    vertical:SetSize(110, 26)
-    vertical:SetPoint("LEFT", horizontal, "RIGHT", 6, 0)
-    C.SkinButton(vertical)
-    vertical:SetText(C.L.mbVertical)
-    vertical:SetNormalFontObject("GameFontHighlightSmall")
-    local function RefreshOrientation()
-        local h = db.orientation == "HORIZONTAL"
-        horizontal._ccrtBg:SetColorTexture(
-            h and C.BRAND_R * 0.28 or 0.045,
-            h and C.BRAND_G * 0.28 or 0.045,
-            h and C.BRAND_B * 0.30 or 0.055,
-            0.95
-        )
-        vertical._ccrtBg:SetColorTexture(
-            not h and C.BRAND_R * 0.28 or 0.045,
-            not h and C.BRAND_G * 0.28 or 0.045,
-            not h and C.BRAND_B * 0.30 or 0.055,
-            0.95
-        )
-    end
-    horizontal:SetScript("OnClick", function()
-        db.orientation = "HORIZONTAL"
-        RefreshOrientation()
-        ApplyBarLayout()
-    end)
-    vertical:SetScript("OnClick", function()
-        db.orientation = "VERTICAL"
-        RefreshOrientation()
-        ApplyBarLayout()
-    end)
-    RefreshOrientation()
-    local reset = CreateFrame("Button", nil, parent)
-    reset:SetSize(130, 26)
-    reset:SetPoint("TOPLEFT", horizontal, "BOTTOMLEFT", 0, -14)
-    C.SkinButton(reset)
-    reset:SetText(C.L.mbRecenter)
-    reset:SetNormalFontObject("GameFontHighlightSmall")
-    reset:SetScript("OnClick", ResetPosition)
-    local info = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    info:SetPoint("TOPLEFT", reset, "BOTTOMLEFT", 0, -12)
-    info:SetWidth(360)
-    info:SetJustifyH("LEFT")
-    info:SetText(C.L.mbTooltip)
-    info:SetTextColor(0.65, 0.65, 0.65)
+    local UI = C.UI
+    UI.Band(parent, "MarksBar", C.L.mbIntro)
+
+    layout = UI.NewLayout(parent)
+
+    layout:Header(C.L.uiSectionOptions)
+    layout:Toggle({
+        label = C.L.mbEnableBar,
+        get = function() return db.enabled end,
+        set = function(value) SetEnabled(value) end,
+    })
+    layout:Toggle({
+        label = C.L.mbLock,
+        get = function() return db.locked end,
+        set = function(value) SetLocked(value) end,
+    })
+    layout:Toggle({
+        label = C.L.mbMouseoverOnly,
+        get = function() return db.mouseoverDisplay end,
+        set = function(value) SetMouseoverDisplay(value) end,
+    })
+    layout:Choice({
+        label = C.L.mbOrientation,
+        values = {
+            { C.L.mbHorizontal, "HORIZONTAL" },
+            { C.L.mbVertical, "VERTICAL" },
+        },
+        get = function() return db.orientation end,
+        set = function(value)
+            db.orientation = value
+            ApplyBarLayout()
+        end,
+    })
+    layout:Button({
+        label = C.L.mbPositionLabel,
+        text = C.L.mbRecenter,
+        width = 150,
+        onClick = function() ResetPosition() end,
+    })
+
+    layout:Note(C.L.mbTooltip)
+    layout:Finish()
+
     configRefresh = function()
-        enable:SetChecked(db.enabled)
-        lock:SetChecked(db.locked)
-        mouse:SetChecked(db.mouseoverDisplay)
-        RefreshOrientation()
+        layout:Refresh()
     end
 end
 C.RegisterModule("MarksBar", BuildUI, function()

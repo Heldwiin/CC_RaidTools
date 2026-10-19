@@ -932,10 +932,7 @@ local function BuildUI(frame)
         end
     end)
 
-    local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    label:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -30)
-    label:SetText(C.L.riLabel)
-    label:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    local label = C.UI.Title(frame, "RaidInspect")
 
     inspectButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     inspectButton:SetSize(150, 24)

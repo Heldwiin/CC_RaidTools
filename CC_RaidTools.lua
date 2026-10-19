@@ -261,6 +261,8 @@ function C.BuildMainFrame()
     -- VersionCheck stays last, always — add future modules before it.
     local order = { "AutoPromote", "AutoLog", "ReadyCheck", "RaidGroups", "InviteTool", "Focus", "MarksBar", "RaidInspect", "BonusRoll", "SpecReminder", "QualityOfLife", "LustSound", "VersionCheck" }
     local labels = { AutoPromote="Auto Promote", AutoLog="AutoLog", ReadyCheck="Ready Check", RaidGroups="Raid Groups", InviteTool="Invite Tool", Focus="Focus", MarksBar="Marks Bar", RaidInspect="Raid Inspect", VersionCheck="Version Check", BonusRoll="Bonus Roll", SpecReminder="Spec Reminder", QualityOfLife="Quality of Life", LustSound="Lust Sound" }
+    -- Shared with the module panels: each tab's title is its menu label.
+    C.moduleLabels = labels
     local buttons, panels = {}, {}
     local function Select(name)
         currentModuleName = name

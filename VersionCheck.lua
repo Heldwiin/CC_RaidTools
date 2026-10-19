@@ -202,10 +202,7 @@ local function HandleReceived(sender, version)
 end
 
 local function BuildUI(panel)
-    local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, -8)
-    title:SetText(C.L.vcLabel)
-    title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    local title = C.UI.Title(panel, "VersionCheck")
 
     local localLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     localLabel:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)

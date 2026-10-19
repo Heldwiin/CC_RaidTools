@@ -236,6 +236,8 @@ local function BuildUI(frame)
     mainFrame = frame
     local db = CCRaidToolsDB
 
+    C.UI.Title(frame, "AutoPromote")
+
     local addLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     addLabel:SetPoint("TOPLEFT", 16, -30)
     addLabel:SetText(C.L.apAddPlayersLabel)

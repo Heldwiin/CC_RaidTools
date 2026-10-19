@@ -196,46 +196,36 @@ SlashCmdList["CCRTLOGDEBUG"] = function()
     end
 end
 
-local checks = {}
+local layout
 
 local function BuildUI(frame)
-    local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    label:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -30)
-    label:SetText(C.L.autoLogLabel)
-    label:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    local UI = C.UI
+    UI.Band(frame, "AutoLog", C.L.autoLogIntro)
 
-    local previous = label
-    local options = {
-        { C.L.autoLogLFR, "lfr" },
-        { C.L.autoLogNormal, "normal" },
-        { C.L.autoLogHeroic, "heroic" },
-        { C.L.autoLogMythic, "mythic" },
-        { C.L.autoLogDungeons, "dungeons" },
-    }
+    layout = UI.NewLayout(frame)
 
-    for _, option in ipairs(options) do
-        local check = CreateFrame("CheckButton", nil, frame, "BackdropTemplate")
-        check:SetSize(48, 24)
-        C.SkinCheckBox(check)
-        check:SetPoint("TOPLEFT", previous, "BOTTOMLEFT", 0, -3)
-
-        local text = check:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        text:SetPoint("LEFT", check, "RIGHT", 7, 0)
-        text:SetText(option[1])
-
-        check:SetScript("OnClick", function(self)
-            AutoPromoteDB.logging[option[2]] = self:GetChecked() and true or false
-
-            if self._ccrtRefresh then
-                self:_ccrtRefresh()
-            end
-
-            CheckAutoLog()
-        end)
-
-        checks[option[2]] = check
-        previous = check
+    local function AddToggle(label, key)
+        layout:Toggle({
+            label = label,
+            desc = C.L.autoLogDesc,
+            get = function() return AutoPromoteDB.logging[key] end,
+            set = function(value)
+                AutoPromoteDB.logging[key] = value
+                CheckAutoLog()
+            end,
+        })
     end
+
+    layout:Header(C.L.autoLogSectionRaids)
+    AddToggle(C.L.autoLogLFR, "lfr")
+    AddToggle(C.L.autoLogNormal, "normal")
+    AddToggle(C.L.autoLogHeroic, "heroic")
+    AddToggle(C.L.autoLogMythic, "mythic")
+
+    layout:Header(C.L.autoLogSectionDungeons)
+    AddToggle(C.L.autoLogDungeons, "dungeons")
+
+    layout:Finish()
 end
 
 local function MigrateDungeonSetting()
@@ -251,11 +241,8 @@ local function Refresh()
     C.InitDB()
     MigrateDungeonSetting()
 
-    for key, check in pairs(checks) do
-        check:SetChecked(AutoPromoteDB.logging[key] and true or false)
-        if check._ccrtRefresh then
-            check:_ccrtRefresh()
-        end
+    if layout then
+        layout:Refresh()
     end
 end
 

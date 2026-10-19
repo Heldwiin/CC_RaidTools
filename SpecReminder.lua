@@ -519,110 +519,73 @@ end)
 
 -- ===== Settings UI =====
 
+local layout
+
 local function BuildUI(panel)
     InitDB()
+    local UI = C.UI
+    UI.Band(panel, "SpecReminder", C.L.srIntro)
 
-    local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, -8)
-    title:SetText(C.L.srLabel)
-    title:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
+    layout = UI.NewLayout(panel)
 
-    local enableCheck = CreateFrame("CheckButton", nil, panel, "BackdropTemplate")
-    enableCheck:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -12)
-    C.SkinCheckBox(enableCheck)
-    local enableLabel = enableCheck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    enableLabel:SetPoint("LEFT", enableCheck, "RIGHT", 7, 0)
-    enableLabel:SetText(C.L.srEnableLabel)
-    enableCheck:SetScript("OnClick", function(self)
-        db.enabled = self:GetChecked() and true or false
-    end)
+    layout:Header(C.L.srSectionReminder)
+    layout:Toggle({
+        label = C.L.srEnableLabel,
+        desc = C.L.srEnableDesc,
+        get = function() return db.enabled end,
+        set = function(value) db.enabled = value end,
+    })
+    layout:Toggle({
+        label = C.L.srZoneEnterLabel,
+        desc = C.L.srZoneEnterDesc,
+        indent = true,
+        parent = function() return db.enabled end,
+        get = function() return db.onZoneEnter end,
+        set = function(value) db.onZoneEnter = value end,
+    })
+    layout:Toggle({
+        label = C.L.srReadyCheckLabel,
+        desc = C.L.srReadyCheckDesc,
+        indent = true,
+        parent = function() return db.enabled end,
+        get = function() return db.onReadyCheck end,
+        set = function(value) db.onReadyCheck = value end,
+    })
 
-    local zoneCheck = CreateFrame("CheckButton", nil, panel, "BackdropTemplate")
-    zoneCheck:SetPoint("TOPLEFT", enableCheck, "BOTTOMLEFT", 0, -34)
-    C.SkinCheckBox(zoneCheck)
-    local zoneLabel = zoneCheck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    zoneLabel:SetPoint("LEFT", zoneCheck, "RIGHT", 7, 0)
-    zoneLabel:SetText(C.L.srZoneEnterLabel)
-    zoneCheck:SetScript("OnClick", function(self)
-        db.onZoneEnter = self:GetChecked() and true or false
-    end)
+    -- The break popup has its own switch: it doesn't depend on the reminder.
+    layout:Header(C.L.srSectionBreak)
+    layout:Toggle({
+        label = C.L.srBreakLabel,
+        desc = C.L.srBreakDesc,
+        get = function() return db.onBreak end,
+        set = function(value)
+            db.onBreak = value
+            if not value then
+                HideBreak()
+            end
+        end,
+    })
 
-    local readyCheck = CreateFrame("CheckButton", nil, panel, "BackdropTemplate")
-    readyCheck:SetPoint("TOPLEFT", zoneCheck, "BOTTOMLEFT", 0, -34)
-    C.SkinCheckBox(readyCheck)
-    local readyLabel = readyCheck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    readyLabel:SetPoint("LEFT", readyCheck, "RIGHT", 7, 0)
-    readyLabel:SetText(C.L.srReadyCheckLabel)
-    readyCheck:SetScript("OnClick", function(self)
-        db.onReadyCheck = self:GetChecked() and true or false
-    end)
+    layout:Header(C.L.uiSectionPreview)
+    layout:Button({
+        label = C.L.srTestLabel,
+        text = C.L.uiTestButton,
+        onClick = function() ShowReminder() end,
+    })
+    layout:Button({
+        label = C.L.srBreakTestLabel,
+        text = C.L.uiTestButton,
+        onClick = function() ShowBreak(60) end,
+    })
 
-    local breakCheck = CreateFrame("CheckButton", nil, panel, "BackdropTemplate")
-    breakCheck:SetPoint("TOPLEFT", readyCheck, "BOTTOMLEFT", 0, -34)
-    C.SkinCheckBox(breakCheck)
-    local breakLabel = breakCheck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    breakLabel:SetPoint("LEFT", breakCheck, "RIGHT", 7, 0)
-    breakLabel:SetText(C.L.srBreakLabel)
-    breakCheck:SetScript("OnClick", function(self)
-        db.onBreak = self:GetChecked() and true or false
-        if not db.onBreak then
-            HideBreak()
-        end
-    end)
-
-    local testBtn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-    testBtn:SetSize(140, 22)
-    testBtn:SetPoint("TOPLEFT", breakCheck, "BOTTOMLEFT", 0, -34)
-    testBtn:SetText(C.L.srTestButton)
-    C.SkinButton(testBtn)
-    testBtn:SetScript("OnClick", ShowReminder)
-
-    local breakTestBtn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-    breakTestBtn:SetSize(140, 22)
-    breakTestBtn:SetPoint("LEFT", testBtn, "RIGHT", 10, 0)
-    breakTestBtn:SetText(C.L.srBreakTestButton)
-    C.SkinButton(breakTestBtn)
-    breakTestBtn:SetScript("OnClick", function() ShowBreak(60) end)
-
-    local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    hint:SetPoint("TOPLEFT", testBtn, "BOTTOMLEFT", 0, -12)
-    hint:SetPoint("RIGHT", panel, "RIGHT", -10, 0)
-    hint:SetJustifyH("LEFT")
-    hint:SetWordWrap(true)
-    hint:SetText(C.L.srHint)
-    hint:SetTextColor(0.7, 0.7, 0.7)
-
-    panel.enableCheck = enableCheck
-    panel.zoneCheck = zoneCheck
-    panel.readyCheck = readyCheck
-    panel.breakCheck = breakCheck
+    layout:Note(C.L.srHint)
+    layout:Finish()
 end
 
-local function RefreshUI(panel)
+local function RefreshUI()
     InitDB()
-    if panel and panel.enableCheck then
-        panel.enableCheck:SetChecked(db.enabled)
-        if panel.enableCheck._ccrtRefresh then
-            panel.enableCheck:_ccrtRefresh()
-        end
-    end
-    if panel and panel.zoneCheck then
-        panel.zoneCheck:SetChecked(db.onZoneEnter)
-        if panel.zoneCheck._ccrtRefresh then
-            panel.zoneCheck:_ccrtRefresh()
-        end
-    end
-    if panel and panel.readyCheck then
-        panel.readyCheck:SetChecked(db.onReadyCheck)
-        if panel.readyCheck._ccrtRefresh then
-            panel.readyCheck:_ccrtRefresh()
-        end
-    end
-    if panel and panel.breakCheck then
-        panel.breakCheck:SetChecked(db.onBreak)
-        if panel.breakCheck._ccrtRefresh then
-            panel.breakCheck:_ccrtRefresh()
-        end
+    if layout then
+        layout:Refresh()
     end
 end
 

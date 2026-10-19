@@ -8,6 +8,7 @@
 
 Locales.lua
 CC_RaidTools.lua
+UIKit.lua
 AutoPromote.lua
 AutoLog.lua
 ReadyCheck.lua

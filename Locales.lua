@@ -32,7 +32,6 @@ local frFR = {
     apGuildRankLabel = "Rang à Auto Promote :",
 
     -- AutoLog
-    autoLogLabel = "AutoLog :",
     autoLogDungeons = "Donjons (M0 / M+)",
     autoLogHeroic = "Héroïque",
     autoLogLFR = "LFR",
@@ -57,7 +56,6 @@ local frFR = {
     rcClosingIn = "Fermeture dans %ds",
     rcClosingIn30 = "Fermeture dans 30s",
     rcWindowTitle = "CC RaidTools - Ready Check",
-    rcLabel = "Ready Check :",
     rcFinished = "Ready check terminé",
     rcTestButton = "Test",
     rcEveryoneReady = "Tout le monde est prêt !",
@@ -65,8 +63,6 @@ local frFR = {
 
     -- InviteTool
     itCombatBlocked = "Invitation impossible pendant le combat.",
-    itLabel = "Invite Tool :",
-    itKeywordsLabel = "Mots-clés :",
     itLeaderWhisper = "|cff33ff99[CC RaidTools]|r %s demande une invitation.",
     itInviteRequest = "CC RaidTools : %s demande une invitation.",
     itInviteButton = "Inviter",
@@ -75,7 +71,6 @@ local frFR = {
     -- Focus
     focusEnable = "Activer le Focus",
     focusMouseClick = "Clic souris",
-    focusLabel = "Focus :",
     focusKey = "Touche",
     mouseLeft = "Gauche",
     mouseRight = "Droit",
@@ -90,7 +85,6 @@ local frFR = {
     mbMouseoverOnly = "Afficher uniquement au mouseover",
     mbWorldCommand = "Commande monde : /wm ",
     mbTooltip = "Ligne 1 : marques de raid.\nLigne 2 : marqueurs au sol.\nClic droit : retirer.\nLa barre est déplaçable tant qu'elle n'est pas verrouillée.",
-    mbLabel = "Marks Bar :",
     mbRaidMark = "Marque de raid ",
     mbWorldMarker = "Marqueur au sol ",
     mbOrientation = "Orientation",
@@ -100,7 +94,6 @@ local frFR = {
     mbVertical = "Vertical",
 
     -- RaidGroups
-    rgLabel = "Raid Groups :",
     rgSaveButton = "Sauvegarder",
     rgPresetsButton = "Presets",
     rgSortButton = "Tri auto",
@@ -152,7 +145,6 @@ local frFR = {
     -- RaidInspect
     riTabName = "Raid Inspect",
     riWindowTitle = "CC RaidTools - Raid Inspect",
-    riLabel = "Raid Inspect :",
     riInspectButton = "Inspecter le raid",
     riInspectingButton = "Inspection...",
     riResetButton = "Réinitialiser",
@@ -190,7 +182,6 @@ local frFR = {
     riMissingGemTooltip = "Socket(s) vide(s) sur :",
 
     -- VersionCheck
-    vcLabel = "Version Check :",
     vcYourVersion = "Votre version : %s",
     vcRefreshButton = "Rafraîchir",
     vcListHeader = "Membre                  Version    Statut",
@@ -205,7 +196,6 @@ local frFR = {
     vcNoApi = "|cffff6666[CC RaidTools]|r Impossible de diffuser (API indisponible).",
 
     -- BonusRoll
-    brLabel = "Bonus Roll Confirm :",
     brEnableLabel = "Activer la confirmation avant un bonus roll",
     brConfirmPassLabel = "Demander confirmation aussi pour Passer",
     brTestButton = "Tester la popup",
@@ -222,11 +212,9 @@ local frFR = {
     brPassConfirmed = "|cff33ff99[CC RaidTools]|r Bonus roll passé.",
 
     -- SpecReminder
-    srLabel = "Spec Reminder :",
     srEnableLabel = "Activer le rappel de spécialisation",
     srZoneEnterLabel = "À l'entrée en donjon Mythique+ ou en raid",
     srReadyCheckLabel = "À chaque Ready Check",
-    srTestButton = "Tester le rappel",
     srHint = "La spécialisation ne peut pas être changée une fois en combat — ce rappel s'affiche donc avant, pour avoir le temps de la changer si besoin.",
     srTitle = "Vérifiez votre spécialisation",
     srBody = "Spécialisation actuelle : |cffffcc00%s|r",
@@ -234,12 +222,9 @@ local frFR = {
     srLootSpecLine = "Spécialisation de butin : |cffffcc00%s|r",
     srClosingIn = "Fermeture dans %d secondes",
     srUnknownSpec = "inconnue",
-    srBreakLabel = "Afficher une mascotte pendant les pauses BigWigs (/break)",
-    srBreakTestButton = "Tester la pause",
     srBreakTitle = "Pause !",
     srBreakResumeIn = "Reprise dans %s",
 
-    qolLabel = "Quality of Life :",
     qolIntro = "Petites automatisations, chacune activable séparément. Survolez une ligne pour le détail. Maintenez Maj quand une fenêtre apparaît (ou en parlant à un PNJ ou à un marchand) pour la gérer vous-même.",
     qolSectionGroup = "Groupe",
     qolSectionLoot = "Butin et marchands",
@@ -284,14 +269,63 @@ local frFR = {
     qolRepairedRest = "|cff33ff99[CC RaidTools]|r La banque de guilde ne couvrait pas tout : %s payés avec votre or.",
     qolDuelDeclined = "|cff33ff99[CC RaidTools]|r Duel de %s refusé automatiquement.",
 
-    lustLabel = "Son du Lust :",
-    lustEnableLabel = "Jouer un son à chaque Furie sanguinaire / Héroïsme / Distorsion temporelle / tambours reçus",
-    lustSoundLabel = "Son :",
+    uiSectionOptions = "Options",
+    uiSectionPreview = "Aperçu",
+    uiTestButton = "Tester",
+
+    autoLogIntro = "Démarre et arrête tout seul l'enregistrement du combat (combat log) selon la difficulté de l'instance. Un enregistrement lancé à la main n'est jamais arrêté par l'addon.",
+    autoLogSectionRaids = "Raids",
+    autoLogSectionDungeons = "Donjons",
+    autoLogDesc = "Enregistre automatiquement les combats dans ce type de contenu.",
+
+    rcIntro = "Remplace le Ready Check de base par une fenêtre détaillée : réponse de chacun, consommables, buffs de raid et durabilité de l'équipement.",
+    rcCheckBuffsDesc = "Affiche la fenêtre CC RaidTools à chaque Ready Check, avec les consommables, les buffs de raid et la durabilité de chaque joueur.",
+    rcTestLabel = "Aperçu de la fenêtre",
+
+    itIntro = "Invite automatiquement les joueurs qui vous chuchotent un mot-clé. Si vous n'êtes pas chef de groupe, la demande passe par « Suggérer une invitation ».",
+    itEnableLabel = "Invitation par mot-clé",
+    itEnableDesc = "Invite (ou suggère d'inviter) tout joueur qui vous chuchote l'un des mots-clés.",
+    itKeywordsLabel = "Mots-clés (séparés par des virgules)",
+    itKeywordsDesc = "Un chuchotement qui correspond exactement à l'un de ces mots déclenche l'invitation. Les majuscules n'ont pas d'importance.",
+
+    focusIntro = "Maintenez une touche et cliquez sur un cadre d'unité pour en faire votre focus, sans macro. Fonctionne avec les cadres sécurisés (cible, boss...).",
+    focusEnableDesc = "Active le raccourci. Désactivé, il est entièrement retiré.",
+    focusKeyDesc = "Touche à maintenir pendant le clic.",
+    focusMouseDesc = "Bouton de la souris à utiliser.",
+
+    mbIntro = "Barre flottante pour poser les marques de raid et les marqueurs au sol en un clic.",
+    mbPositionLabel = "Position de la barre",
+
+    brIntro = "Demande une confirmation avant qu'un bonus roll (Lancer ou Passer) soit utilisé, en rappelant votre spécialisation de butin, pour éviter les clics par erreur.",
+    brEnableDesc = "Affiche d'abord une confirmation quand vous cliquez sur Lancer dans un vrai bonus roll.",
+    brConfirmPassDesc = "Demande aussi une confirmation avant de passer le bonus roll.",
+    brTestLabel = "Aperçu de la confirmation",
+
+    srIntro = "Rappelle votre spécialisation, votre configuration de talents et votre spécialisation de butin avant qu'il soit trop tard : on ne peut plus changer de spécialisation en combat.",
+    srSectionReminder = "Rappel de spécialisation",
+    srSectionBreak = "Pauses BigWigs",
+    srEnableDesc = "Active le rappel. Il se ferme tout seul après 15 secondes.",
+    srZoneEnterDesc = "Affiche le rappel une fois quand vous entrez dans un donjon Mythique (0 ou +) ou dans un raid.",
+    srReadyCheckDesc = "Affiche le rappel à chaque Ready Check.",
+    srBreakLabel = "Mascotte pendant les pauses BigWigs (/break)",
+    srBreakDesc = "Affiche une mascotte tirée au hasard, avec un compte à rebours, pendant toute la durée d'une pause BigWigs. Ne dépend pas du rappel de spécialisation.",
+    srTestLabel = "Aperçu du rappel",
+    srBreakTestLabel = "Aperçu de la fenêtre de pause",
+
+    lustIntro = "Joue un son quand vous recevez Furie sanguinaire, Héroïsme, Distorsion temporelle, Rage primordiale, Fureur des Aspects ou des tambours, quelle que soit votre classe.",
+    lustSoundDesc = "Cliquez sur un son pour l'écouter et le choisir. Les sons de BigWigs, d'EllesmereUI et de Northern Sky Raid Tools sont proposés quand ces addons sont installés. Apocalypse est le son par défaut.",
+    lustNoSounds = "Aucun son d'addon trouvé. Installez BigWigs, EllesmereUI ou Northern Sky Raid Tools pour en avoir plus. Le son Apocalypse reste utilisable.",
+    lustChannelLabel = "Canal audio",
+    lustChannelDesc = "Canal sur lequel le son est joué. « Master » le joue même si les effets sonores sont coupés.",
+    lustSectionSound = "Son",
+    lustEnableLabel = "Jouer un son à chaque lust reçu",
+    lustEnableDesc = "Joue un son à chaque Furie sanguinaire / Héroïsme / Distorsion temporelle / tambours reçus. Désactivé par défaut.",
+    lustSoundLabel = "Son",
+    lustTestLabel = "Aperçu du son choisi",
+    lustTestButton = "Écouter",
+    lustHint = "Le son se déclenche à l'apparition du débuff de verrouillage (Rassasié, Épuisement, Distorsion temporelle, Fatigué…) posé en même temps que le lust, car le buff lui-même n'est plus lisible en combat depuis la 12.1. Fonctionne quelle que soit votre classe.",
+
     lustSoundDefault = "Apocalypse (par défaut)",
-    lustNoGameSounds = "La liste des sons du jeu n'est pas disponible. Le son Apocalypse reste utilisable.",
-    lustChannelLabel = "Canal audio (son Apocalypse) :",
-    lustTestButton = "Écouter le son",
-    lustHint = "Cliquer sur un son de la liste le joue pour l'écouter. Le canal audio ne s'applique qu'au son Apocalypse ; les sons du jeu utilisent le canal d'interface par défaut. Le son se déclenche à l'apparition du débuff de verrouillage (Rassasié, Épuisement, Distorsion temporelle, Fatigué…) posé en même temps que le lust, car le buff lui-même n'est plus lisible en combat depuis la 12.1. Fonctionne quelle que soit votre classe.",
     lustStandaloneNote = "L'addon « Son du Lust » est aussi installé : c'est lui qui joue le son. Désinstallez-le pour utiliser celui de CC RaidTools.",
 }
 
@@ -315,7 +349,6 @@ local enUS = {
     apNoGuildLabel = "No guild, or rank list still loading...",
     apGuildRankLabel = "Rank to Auto Promote:",
 
-    autoLogLabel = "AutoLog:",
     autoLogDungeons = "Dungeons (M0 / M+)",
     autoLogHeroic = "Heroic",
     autoLogLFR = "LFR",
@@ -339,15 +372,12 @@ local enUS = {
     rcClosingIn = "Closing in %ds",
     rcClosingIn30 = "Closing in 30s",
     rcWindowTitle = "CC RaidTools - Ready Check",
-    rcLabel = "Ready Check:",
     rcFinished = "Ready check finished",
     rcTestButton = "Test",
     rcEveryoneReady = "Everyone is ready!",
     rcNeedGroup = "Ready Check requires being in a party or raid.",
 
     itCombatBlocked = "Cannot invite while in combat.",
-    itLabel = "Invite Tool:",
-    itKeywordsLabel = "Keywords:",
     itLeaderWhisper = "|cff33ff99[CC RaidTools]|r %s is requesting an invite.",
     itInviteRequest = "CC RaidTools: %s is requesting an invite.",
     itInviteButton = "Invite",
@@ -355,7 +385,6 @@ local enUS = {
 
     focusEnable = "Enable Focus",
     focusMouseClick = "Mouse click",
-    focusLabel = "Focus:",
     focusKey = "Key",
     mouseLeft = "Left",
     mouseRight = "Right",
@@ -369,7 +398,6 @@ local enUS = {
     mbHelpWorldMarks = "Left click: place   |   Right click: remove",
     mbWorldCommand = "World command: /wm ",
     mbTooltip = "Row 1: raid marks.\nRow 2: world markers.\nRight click: remove.\nThe bar can be moved while unlocked.",
-    mbLabel = "Marks Bar:",
     mbRaidMark = "Raid mark ",
     mbWorldMarker = "World marker ",
     mbOrientation = "Orientation",
@@ -382,7 +410,6 @@ local enUS = {
 
     riTabName = "Raid Inspect",
     riWindowTitle = "CC RaidTools - Raid Inspect",
-    riLabel = "Raid Inspect:",
     riInspectButton = "Inspect raid",
     riInspectingButton = "Inspecting...",
     riResetButton = "Reset",
@@ -420,7 +447,6 @@ local enUS = {
     riMissingGemTooltip = "Empty socket(s) on:",
 
     -- VersionCheck
-    vcLabel = "Version Check:",
     vcYourVersion = "Your version: %s",
     vcRefreshButton = "Refresh",
     vcListHeader = "Member                  Version    Status",
@@ -435,7 +461,6 @@ local enUS = {
     vcNoApi = "|cffff6666[CC RaidTools]|r Unable to broadcast (API unavailable).",
 
     -- BonusRoll
-    brLabel = "Bonus Roll Confirm:",
     brEnableLabel = "Enable confirmation before a bonus roll",
     brConfirmPassLabel = "Also confirm before Pass",
     brTestButton = "Test the popup",
@@ -452,11 +477,9 @@ local enUS = {
     brPassConfirmed = "|cff33ff99[CC RaidTools]|r Bonus roll passed.",
 
     -- SpecReminder
-    srLabel = "Spec Reminder:",
     srEnableLabel = "Enable specialization reminder",
     srZoneEnterLabel = "When entering a Mythic+ dungeon or a raid",
     srReadyCheckLabel = "On every Ready Check",
-    srTestButton = "Test the reminder",
     srHint = "Specialization can't be changed once in combat — this reminder shows beforehand so there's still time to switch if needed.",
     srTitle = "Check your specialization",
     srBody = "Current specialization: |cffffcc00%s|r",
@@ -464,12 +487,9 @@ local enUS = {
     srLootSpecLine = "Loot specialization: |cffffcc00%s|r",
     srClosingIn = "Closing in %d seconds",
     srUnknownSpec = "unknown",
-    srBreakLabel = "Show a mascot during BigWigs breaks (/break)",
-    srBreakTestButton = "Test the break",
     srBreakTitle = "Break time!",
     srBreakResumeIn = "Resuming in %s",
 
-    qolLabel = "Quality of Life:",
     qolIntro = "Small automations, each one switched on separately. Hover a row for details. Hold Shift when a window appears (or while talking to an NPC or merchant) to handle it yourself.",
     qolSectionGroup = "Group",
     qolSectionLoot = "Loot and merchants",
@@ -514,17 +534,65 @@ local enUS = {
     qolRepairedRest = "|cff33ff99[CC RaidTools]|r Guild bank didn't cover it all: %s paid with your own gold.",
     qolDuelDeclined = "|cff33ff99[CC RaidTools]|r Duel from %s declined automatically.",
 
-    lustLabel = "Lust Sound:",
-    lustEnableLabel = "Play a sound whenever you receive Bloodlust / Heroism / Time Warp / drums",
-    lustSoundLabel = "Sound:",
+    uiSectionOptions = "Options",
+    uiSectionPreview = "Preview",
+    uiTestButton = "Test",
+
+    autoLogIntro = "Starts and stops combat logging by itself depending on the instance difficulty. A log you started by hand is never stopped by the addon.",
+    autoLogSectionRaids = "Raids",
+    autoLogSectionDungeons = "Dungeons",
+    autoLogDesc = "Automatically logs combat in this kind of content.",
+
+    rcIntro = "Replaces the default Ready Check with a detailed window: everyone's answer, consumables, raid buffs and gear durability.",
+    rcCheckBuffsDesc = "Shows the CC RaidTools window on every Ready Check, with each player's consumables, raid buffs and durability.",
+    rcTestLabel = "Window preview",
+
+    itIntro = "Automatically invites players who whisper you a keyword. If you aren't the group leader, the request goes through \"Suggest Invite\".",
+    itEnableLabel = "Keyword invites",
+    itEnableDesc = "Invites (or suggests inviting) anyone who whispers you one of the keywords.",
+    itKeywordsLabel = "Keywords (comma separated)",
+    itKeywordsDesc = "A whisper that exactly matches one of these words triggers the invite. Case doesn't matter.",
+
+    focusIntro = "Hold a key and click a unit frame to make it your focus, without a macro. Works with secure unit frames (target, bosses...).",
+    focusEnableDesc = "Turns the shortcut on. When off, it is removed completely.",
+    focusKeyDesc = "Key to hold while clicking.",
+    focusMouseDesc = "Mouse button to use.",
+
+    mbIntro = "A floating bar to place raid markers and world markers in one click.",
+    mbPositionLabel = "Bar position",
+
+    brIntro = "Asks for a confirmation before a bonus roll (Roll or Pass) is used, recalling your loot specialization, to avoid misclicks.",
+    brEnableDesc = "Shows a confirmation first when you click Roll on a real bonus roll.",
+    brConfirmPassDesc = "Also asks for a confirmation before passing the bonus roll.",
+    brTestLabel = "Confirmation preview",
+
+    srIntro = "Reminds you of your specialization, talent loadout and loot specialization before it's too late: you can't change specialization once in combat.",
+    srSectionReminder = "Specialization reminder",
+    srSectionBreak = "BigWigs breaks",
+    srEnableDesc = "Turns the reminder on. It closes by itself after 15 seconds.",
+    srZoneEnterDesc = "Shows the reminder once when you enter a Mythic dungeon (0 or +) or a raid.",
+    srReadyCheckDesc = "Shows the reminder on every Ready Check.",
+    srBreakLabel = "Mascot during BigWigs breaks (/break)",
+    srBreakDesc = "Shows a random mascot with a countdown for the whole length of a BigWigs break. Doesn't depend on the specialization reminder.",
+    srTestLabel = "Reminder preview",
+    srBreakTestLabel = "Break window preview",
+
+    lustIntro = "Plays a sound when you receive Bloodlust, Heroism, Time Warp, Primal Rage, Fury of the Aspects or drums, whatever your class.",
+    lustSoundDesc = "Click a sound to hear it and pick it. Sounds from BigWigs, EllesmereUI and Northern Sky Raid Tools are offered when those addons are installed. Apocalypse is the default.",
+    lustNoSounds = "No addon sounds found. Install BigWigs, EllesmereUI or Northern Sky Raid Tools to get more. The Apocalypse sound can still be used.",
+    lustChannelLabel = "Audio channel",
+    lustChannelDesc = "Channel the sound is played on. \"Master\" plays it even when sound effects are muted.",
+    lustSectionSound = "Sound",
+    lustEnableLabel = "Play a sound on every lust received",
+    lustEnableDesc = "Plays a sound whenever you receive Bloodlust / Heroism / Time Warp / drums. Off by default.",
+    lustSoundLabel = "Sound",
+    lustTestLabel = "Chosen sound preview",
+    lustTestButton = "Play",
+    lustHint = "The sound is tied to the lockout debuff (Sated, Exhaustion, Temporal Displacement, Fatigued...) applied at the same moment as the lust, because the lust buff itself can't be read in combat since 12.1. Works whatever your class.",
+
     lustSoundDefault = "Apocalypse (default)",
-    lustNoGameSounds = "The list of game sounds isn't available. The Apocalypse sound can still be used.",
-    lustChannelLabel = "Audio channel (Apocalypse sound):",
-    lustTestButton = "Play the sound",
-    lustHint = "Clicking a sound in the list plays it so you can preview it. The audio channel only applies to the Apocalypse sound; game sounds use the default interface channel. The sound is tied to the lockout debuff (Sated, Exhaustion, Temporal Displacement, Fatigued...) applied at the same moment as the lust, because the lust buff itself can't be read in combat since 12.1. Works whatever your class.",
     lustStandaloneNote = "The standalone \"Son du Lust\" addon is also installed and plays the sound itself. Uninstall it to use CC RaidTools' own.",
 
-    rgLabel = "Raid Groups:",
     rgSaveButton = "Save",
     rgPresetsButton = "Presets",
     rgSortButton = "Auto Sort",

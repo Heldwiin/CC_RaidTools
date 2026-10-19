@@ -984,48 +984,43 @@ local function Update(unit, response)
     end
     Refresh()
 end
-local chk
+local layout
 
 local function BuildUI(f)
-    local label = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    label:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -30)
-    label:SetText(C.L.rcLabel)
-    label:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
-    chk = CreateFrame("CheckButton", nil, f, "BackdropTemplate")
-    chk:SetSize(48, 24)
-    C.SkinCheckBox(chk)
-    chk:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -50)
-    local t = chk:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    t:SetPoint("LEFT", chk, "RIGHT", 7, 0)
-    t:SetText(C.L.rcCheckBuffsLabel)
-    chk:SetScript("OnClick", function(self)
-        AutoPromoteDB.raidCheckEnabled = self:GetChecked() and true or false
-        if self._ccrtRefresh then
-            self:_ccrtRefresh()
-        end
-        if not AutoPromoteDB.raidCheckEnabled and frame then
-            frame:Hide()
-        end
-    end)
-    f.raidCheckChk = chk
-    local test = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    test:SetSize(54, 22)
-    test:SetPoint("LEFT", chk, "RIGHT", 280, 0)
-    test:SetText(C.L.rcTestButton)
-    C.SkinButton(test)
-    test:SetScript("OnClick", function()
-        C.ShowReadyCheck(nil, true)
-    end)
-    f.raidCheckTestButton = test
+    local UI = C.UI
+    UI.Band(f, "ReadyCheck", C.L.rcIntro)
+
+    layout = UI.NewLayout(f)
+
+    layout:Header(C.L.uiSectionOptions)
+    layout:Toggle({
+        label = C.L.rcCheckBuffsLabel,
+        desc = C.L.rcCheckBuffsDesc,
+        get = function() return AutoPromoteDB.raidCheckEnabled end,
+        set = function(value)
+            AutoPromoteDB.raidCheckEnabled = value
+            if not value and frame then
+                frame:Hide()
+            end
+        end,
+    })
+
+    layout:Header(C.L.uiSectionPreview)
+    layout:Button({
+        label = C.L.rcTestLabel,
+        text = C.L.rcTestButton,
+        onClick = function()
+            C.ShowReadyCheck(nil, true)
+        end,
+    })
+
+    layout:Finish()
 end
 
 local function RefreshUI()
     C.InitDB()
-    if chk then
-        chk:SetChecked(AutoPromoteDB.raidCheckEnabled and true or false)
-        if chk._ccrtRefresh then
-            chk:_ccrtRefresh()
-        end
+    if layout then
+        layout:Refresh()
     end
 end
 C.RegisterModule("ReadyCheck", BuildUI, RefreshUI)
