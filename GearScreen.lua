@@ -24,7 +24,8 @@ local DEFAULTS = {
     inspectInfo = true,
     widerFrame = false,
     compareHeader = true,
-    gemHelper = true,             -- row of socket buttons under the window
+    fontSize = 13,                -- item level / enchant text on the slots
+    gemHelper = true,            -- row of socket buttons under the window
     gemEnchantHelper = true,      -- "apply an enchant from your bags" button on that row
     gemOnlyEmpty = false,
     gemButtonSize = 24,
@@ -395,8 +396,17 @@ end
 local overlays = setmetatable({}, { __mode = "k" })
 
 local function FontSettings()
-    local path, _, flags = GameFontHighlightSmall:GetFont()
-    return path or "Fonts\\FRIZQT__.TTF", 12, "OUTLINE"
+    local path = GameFontHighlightSmall:GetFont()
+    return path or "Fonts\\FRIZQT__.TTF", db.fontSize or 13, "OUTLINE"
+end
+
+-- Re-applies the font size to every overlay already created.
+local function ApplyFonts()
+    local path, size, flags = FontSettings()
+    for _, overlay in pairs(overlays) do
+        overlay.line1:SetFont(path, size, flags)
+        overlay.line2:SetFont(path, size - 1, flags)
+    end
 end
 
 local function GetOverlay(button, side)
@@ -1548,6 +1558,7 @@ end
 
 local function Apply()
     InitDB()
+    ApplyFonts()
     if CharacterFrame and CharacterFrame:IsShown() then
         PaintWindow("character")
     end
@@ -1727,6 +1738,13 @@ local function BuildUI(panel)
         set = function(value) db.qualityBorders = value; Apply() end,
     })
     layout:Note(C.L.gsEnchantNote)
+
+    layout:Slider({
+        label = C.L.gsFontLabel, desc = C.L.gsFontDesc, parent = Enabled,
+        min = 10, max = 20, step = 1,
+        get = function() return db.fontSize end,
+        set = function(value) db.fontSize = value; Apply() end,
+    })
 
     layout:Header(C.L.gsSectionTrack)
     layout:Toggle({
