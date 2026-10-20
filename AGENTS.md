@@ -614,3 +614,13 @@ When uncertain, prefer:
 **existing behavior + minimal change + defensive initialization + Blizzard-secure APIs + explicit testing**
 
 over a large rewrite.
+
+## Gear Screen
+
+`GearScreen.lua` ports the "Fenetre d'equipement" options of atrocityEssentials (read from its source; no code copied). Opt-in (`CCRaidToolsDB.gearScreen.enabled`, default off). Stage 1 is done: per-slot item level (quality colour), upgrade track letter + current/max, enchant label or red "No Enchant" (max level only), rarity borders, inspect window info, wider window (+40px, absolute anchors, only touched when the option was applied), compare-tooltip header restyle (independent of the master switch). **Not yet ported**: Omnium Foil / Great Vault window buttons and size slider, gem socket helper, enchant helper.
+
+- Overlays live in a weak table keyed by the Blizzard slot button; nothing is written onto Blizzard frames. Repaints are coalesced (`Queue`) from `PaperDollItemSlotButton_Update`, `PLAYER_EQUIPMENT_CHANGED`, `GET_ITEM_INFO_RECEIVED`, `INSPECT_READY`.
+- Tooltip reads use structured line types (`ItemEnchantmentPermanent`, `ItemUpgradeLevel`) and `issecretvalue` checks, never localized text where avoidable. Track keywords are EN+FR; the enchant name-to-stat table is English-only facts and degrades to a keyword elsewhere.
+- `ENCHANTABLE` (GearScreen.lua) and `ENCHANT_SLOTS` (RaidInspect.lua) must both be updated when an expansion changes enchantable slots.
+- The settings page is taller than the 705px window cap, so it uses `UI.NewScrollLayout(panel)` (scroll frame under the band; `Finish` sizes the child). `ResizeMainFrame` has `GearScreen = 705` in `minimums` and the height floor is 570 for 14 menu buttons.
+- UIKit also gained `Layout:Slider{label,desc,min,max,step,get,set,width}` and generic row dimming via `opts.parent` for every row type.
