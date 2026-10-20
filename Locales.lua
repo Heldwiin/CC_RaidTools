@@ -329,7 +329,8 @@ local frFR = {
     lustStandaloneNote = "L'addon « Son du Lust » est aussi installé : c'est lui qui joue le son. Désinstallez-le pour utiliser celui de CC RaidTools.",
 
     gsIntro = "Ajoute des informations sur la fenêtre de personnage et d'inspection : niveau d'objet, progression d'amélioration, enchantements manquants et bordures de rareté.",
-    gsEnableLabel = "Activer le Gear Screen",
+    gsModuleName = "Fenêtre d'équipement",
+    gsEnableLabel = "Activer la fenêtre d'équipement",
     gsEnableDesc = "Active toutes les options ci-dessous sur la fenêtre de personnage. Désactivé par défaut.",
     gsSectionEnchants = "Enchantements",
     gsMissingLabel = "Enchantements manquants",
@@ -655,7 +656,8 @@ local enUS = {
     lustStandaloneNote = "The standalone \"Son du Lust\" addon is also installed and plays the sound itself. Uninstall it to use CC RaidTools' own.",
 
     gsIntro = "Adds information to the character and inspect windows: item level, upgrade progress, missing enchants and rarity borders.",
-    gsEnableLabel = "Enable Gear Screen",
+    gsModuleName = "Gear Window",
+    gsEnableLabel = "Enable Gear Window",
     gsEnableDesc = "Turns on all the options below for the character window. Off by default.",
     gsSectionEnchants = "Enchants",
     gsMissingLabel = "Missing enchants",

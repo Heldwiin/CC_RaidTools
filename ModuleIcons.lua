@@ -150,6 +150,14 @@ local function ApplyModuleIcons(frame)
                 local font, _, flags = button.text:GetFont()
                 if font then
                     button.text:SetFont(font, 12, flags or "OUTLINE")
+                    -- A long label (e.g. "Fenêtre d'équipement") shrinks a
+                    -- point or two rather than running off the 128px button.
+                    for size = 11, 9, -1 do
+                        if button.text:GetStringWidth() <= 108 then
+                            break
+                        end
+                        button.text:SetFont(font, size, flags or "OUTLINE")
+                    end
                 end
             end
 
