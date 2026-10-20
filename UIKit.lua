@@ -196,6 +196,29 @@ function UI.NewLayout(panel, startY)
     }, Layout)
 end
 
+-- Same layout, but inside a scroll frame under the band, for pages taller than
+-- the main window. The scroll frame has a fixed height (the window is sized by
+-- the module's minimum height), so :Finish only has to size the scroll child.
+UI.SCROLL_H = 560
+UI.SCROLL_CHILD_W = 456
+
+function UI.NewScrollLayout(panel)
+    local scroll = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -UI.BAND_H)
+    scroll:SetSize(UI.SCROLL_CHILD_W + 6, UI.SCROLL_H)
+    C.SkinScrollBar(scroll)
+
+    local child = CreateFrame("Frame", nil, scroll)
+    child:SetSize(UI.SCROLL_CHILD_W, UI.SCROLL_H)
+    scroll:SetScrollChild(child)
+
+    local layout = UI.NewLayout(child, 0)
+    layout.contentW = UI.SCROLL_CHILD_W - UI.SIDE - UI.RIGHT
+    layout.scroll = scroll
+    layout.child = child
+    return layout
+end
+
 local function ShowTooltip(owner, title, description)
     GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
     GameTooltip:SetText(title or "", 1, 1, 1)
@@ -259,6 +282,10 @@ function Layout:Row(opts, clickable, reserve)
     row.label:SetWordWrap(false)
     row.label:SetText(opts.label or "")
     row.label:SetTextColor(ON_COLOR[1], ON_COLOR[2], ON_COLOR[3])
+
+    -- Any row can depend on another option (opts.parent() -> boolean): it is
+    -- dimmed, not disabled, while that option is off. Applied by :Refresh().
+    row._parent = opts.parent
 
     row:SetScript("OnEnter", function(self_)
         background:SetColorTexture(C.BRAND_R * 0.18, C.BRAND_G * 0.18, C.BRAND_B * 0.30, 0.85)
@@ -381,12 +408,64 @@ function Layout:Input(opts)
     return row
 end
 
+-- Slider row. opts: label, desc, min, max, step, get(), set(value), width.
+-- The current value is shown to the left of the slider.
+function Layout:Slider(opts)
+    local width = opts.width or 150
+    local step = opts.step or 1
+    local row = self:Row(opts, false, width + 62)
+
+    local slider = CreateFrame("Slider", nil, row)
+    slider:SetOrientation("HORIZONTAL")
+    slider:SetSize(width, 16)
+    slider:SetPoint("RIGHT", row, "RIGHT", -10, 0)
+    slider:SetMinMaxValues(opts.min, opts.max)
+    slider:SetValueStep(step)
+    slider:SetObeyStepOnDrag(true)
+
+    local track = slider:CreateTexture(nil, "BACKGROUND")
+    track:SetPoint("LEFT", slider, "LEFT", 0, 0)
+    track:SetPoint("RIGHT", slider, "RIGHT", 0, 0)
+    track:SetHeight(4)
+    track:SetColorTexture(0.02, 0.02, 0.03, 1)
+
+    local thumb = slider:CreateTexture(nil, "OVERLAY")
+    thumb:SetSize(10, 16)
+    thumb:SetColorTexture(C.BRAND_R, C.BRAND_G, C.BRAND_B, 1)
+    slider:SetThumbTexture(thumb)
+
+    local valueText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    valueText:SetPoint("RIGHT", slider, "LEFT", -10, 0)
+    valueText:SetWidth(36)
+    valueText:SetJustifyH("RIGHT")
+    valueText:SetTextColor(ON_COLOR[1], ON_COLOR[2], ON_COLOR[3])
+
+    local painting = false
+    slider:SetScript("OnValueChanged", function(_, value)
+        value = math.floor(value / step + 0.5) * step
+        valueText:SetText(value)
+        if not painting then
+            opts.set(value)
+        end
+    end)
+
+    row.slider = slider
+    row._paint = function()
+        painting = true
+        local value = opts.get() or opts.min
+        slider:SetValue(value)
+        valueText:SetText(value)
+        painting = false
+    end
+    return row
+end
+
 -- Wrapped note under the rows. Returns the font string.
 function Layout:Note(text, color)
     color = color or NOTE_COLOR
     local note = self.panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     note:SetPoint("TOPLEFT", self.panel, "TOPLEFT", UI.SIDE + 2, self.y - 8)
-    note:SetWidth(UI.CONTENT_W - 4)
+    note:SetWidth((self.contentW or UI.CONTENT_W) - 4)
     note:SetJustifyH("LEFT")
     note:SetWordWrap(true)
     note:SetTextColor(color[1], color[2], color[3])
@@ -401,6 +480,9 @@ function Layout:Refresh()
         if row._paint then
             row._paint()
         end
+        if row._parent then
+            row:SetAlpha(row._parent() and 1 or 0.45)
+        end
     end
 end
 
@@ -408,6 +490,9 @@ end
 -- panel's child *frames* only, so an empty frame at the bottom makes any
 -- trailing note count towards the window height.
 function Layout:Finish()
+    if self.child then
+        self.child:SetHeight(math.max(UI.SCROLL_H, -self.y + 10))
+    end
     local spacer = CreateFrame("Frame", nil, self.panel)
     spacer:SetSize(1, 1)
     spacer:SetPoint("TOPLEFT", self.panel, "TOPLEFT", UI.SIDE, self.y)

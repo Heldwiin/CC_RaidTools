@@ -31,6 +31,7 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 - **Spec Reminder** : rappel de la spécialisation active à l'entrée en donjon Mythique/M+ ou en raid, et à chaque Ready Check, plus une fenêtre mascotte avec compte à rebours pendant les pauses BigWigs (`/break`).
 - **Quality of Life** : petites automatisations activables une par une (vérification et appel de rôles, invitations des amis/guilde, résurrection hors combat, butin instantané, vente de camelote et réparation, quêtes, refus des duels, cinématiques, talking head, confirmation de suppression).
 - **Lust Sound** : joue un son quand vous recevez Furie sanguinaire, Héroïsme, Distorsion temporelle ou des tambours, quelle que soit votre classe. Son au choix parmi Apocalypse et les sons de BigWigs, EllesmereUI et Northern Sky Raid Tools.
+- **Équipement** : options de la fenêtre de personnage et d'inspection, désactivées par défaut. Niveau d'objet, lettre de suivi (M/H/C/V/A) et rang d'amélioration, enchantements manquants ou nommés, bordures de rareté, fenêtre plus large, aide à l'enchâssement (gemmes et enchantements de vos sacs), boutons Omnium et Grande Chambre forte, style de l'en-tête des infobulles de comparaison.
 - Pages des modules harmonisées : même titre, même intro, mêmes lignes alignées avec interrupteur à droite et détail au survol.
 - Interface personnalisée sombre/transparente avec bordures pixel et branding Caelestis Concilium.
 - Configuration persistante après `/reload`.
@@ -41,7 +42,14 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.2.39**
+**1.3.0**
+
+### v1.3.0
+
+#### Nouveau module : Équipement
+
+- Informations sur la fenêtre de personnage (et d'inspection) : niveau d'objet, lettre de suivi et rang d'amélioration, enchantements, bordures de rareté, taille de police réglable. Désactivé par défaut.
+- Aide à l'enchâssement, boutons Omnium et Grande Chambre forte sous la fenêtre. Nouveau fichier d'icône : redémarrez complètement WoW.
 
 ### v1.2.39
 

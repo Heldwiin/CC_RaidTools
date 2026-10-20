@@ -15,6 +15,7 @@ local MODULE_ICONS = {
     SpecReminder = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\SpecReminder.png",
     QualityOfLife = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\QualityOfLife.png",
     LustSound = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\LustSound.png",
+    GearScreen = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\GearScreen.png",
 }
 
 local function StyleModuleButton(button)
@@ -150,6 +151,14 @@ local function ApplyModuleIcons(frame)
                 local font, _, flags = button.text:GetFont()
                 if font then
                     button.text:SetFont(font, 12, flags or "OUTLINE")
+                    -- A long label (e.g. "Fenêtre d'équipement") shrinks a
+                    -- point or two rather than running off the 128px button.
+                    for size = 11, 10, -1 do
+                        if button.text:GetStringWidth() <= 114 then
+                            break
+                        end
+                        button.text:SetFont(font, size, flags or "OUTLINE")
+                    end
                 end
             end
 
