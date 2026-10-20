@@ -15,6 +15,7 @@ local MODULE_ICONS = {
     SpecReminder = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\SpecReminder.png",
     QualityOfLife = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\QualityOfLife.png",
     LustSound = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\LustSound.png",
+    GearScreen = "Interface\\AddOns\\CC_RaidTools\\TexturesGUI\\GearScreen.png",
 }
 
 local function StyleModuleButton(button)
