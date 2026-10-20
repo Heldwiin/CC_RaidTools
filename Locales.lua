@@ -329,7 +329,7 @@ local frFR = {
     lustStandaloneNote = "L'addon « Son du Lust » est aussi installé : c'est lui qui joue le son. Désinstallez-le pour utiliser celui de CC RaidTools.",
 
     gsIntro = "Ajoute des informations sur la fenêtre de personnage et d'inspection : niveau d'objet, progression d'amélioration, enchantements manquants et bordures de rareté.",
-    gsModuleName = "Fenêtre d'équipement",
+    gsModuleName = "Équipement",
     gsEnableLabel = "Activer la fenêtre d'équipement",
     gsEnableDesc = "Active toutes les options ci-dessous sur la fenêtre de personnage. Désactivé par défaut.",
     gsSectionEnchants = "Enchantements",
