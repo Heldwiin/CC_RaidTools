@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.1
+
+### Équipement
+
+- Les **gemmes** s'affichent à côté des objets sur la fenêtre de personnage et sur celle d'inspection : une petite icône par gemme, juste après le niveau d'objet, les châsses vides apparaissant grisées. Nouvelle option « Gemmes sur les objets », activée par défaut, dont la taille suit la taille de police.
+- Le module s'appelle « Équipement » dans le menu et la page, et l'option « Lettre de suivi (M, H, C…) » a été renommée pour être plus claire.
+
 ## 1.3.0
 
 ### Nouveau module : Équipement
