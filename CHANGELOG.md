@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.3.0
+
+### Nouveau module : Équipement
+
+- Ajoute des informations sur la fenêtre de personnage et sur celle d'inspection d'un autre joueur : niveau d'objet coloré selon la qualité, **lettre de suivi** (M, H, C, V, A) et **rang d'amélioration** (ex. 4/6), enchantement de chaque pièce ou « Pas d'enchant » en rouge (niveau maximum uniquement), bordures de rareté.
+- Nom de l'enchantement au choix : statistique, nom court ou nom complet, avec le rang en option. Les noms par statistique sont fournis pour un client en anglais.
+- **Aide à l'enchâssement** : une rangée de boutons sous la fenêtre, un par châsse de l'équipement. Un survol liste les gemmes de vos sacs, un clic enchâsse. Un bouton d'enchantement liste ceux de vos sacs et lance leur application. Taille, espacement et « châsses vides seulement » réglables. Refusé en combat.
+- **Boutons Omnium et Grande Chambre forte** sous la fenêtre (niveau maximum), avec taille réglable. Le bouton Omnium masque celui de la minicarte tant qu'il est actif.
+- Fenêtre de personnage plus large (+40 px), taille de police réglable, style sobre pour l'en-tête « Équipé » des infobulles de comparaison.
+- **Désactivé par défaut** : à activer dans `/ccrt`, onglet Équipement. Nouveau fichier d'icône : un redémarrage complet de WoW est nécessaire pour la voir.
+
+### Interface
+
+- La page défile quand elle dépasse la hauteur de la fenêtre ; ajout d'un curseur de réglage et du grisage des sous-options dans le kit d'interface.
+
 ## 1.2.39
 
 ### Nouveau module : Lust Sound
