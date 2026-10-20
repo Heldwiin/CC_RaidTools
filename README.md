@@ -42,7 +42,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.3.0**
+**1.3.1**
+
+### v1.3.1
+
+#### Équipement
+
+- Gemmes affichées à côté des objets sur la fenêtre de personnage et d'inspection (châsses vides grisées), option « Gemmes sur les objets ».
 
 ### v1.3.0
 

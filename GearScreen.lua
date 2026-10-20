@@ -24,6 +24,7 @@ local DEFAULTS = {
     inspectInfo = true,
     widerFrame = false,
     compareHeader = true,
+    showGems = true,              -- gem icons next to the item level
     fontSize = 13,                -- item level / enchant text on the slots
     gemHelper = true,            -- row of socket buttons under the window
     gemEnchantHelper = true,      -- "apply an enchant from your bags" button on that row
@@ -52,6 +53,9 @@ local function InitDB()
 end
 
 -- A value read from the game, or nil if it is secret.
+-- Defined with the socket helper further down; the slot overlays use it too.
+local ScanItemSockets
+
 local function Plain(value)
     if value == nil or (issecretvalue and issecretvalue(value)) then
         return nil
@@ -386,6 +390,21 @@ local function ReadSlot(unit, slotID)
             info.line2 = MISSING_COLOR .. C.L.gsNoEnchant .. "|r"
         end
     end
+
+    -- Gems: one small icon per socket (empty sockets desaturated), shown next
+    -- to the item level.
+    if db.showGems and ScanItemSockets then
+        local scan = ScanItemSockets(slotID, unit)
+        if scan then
+            info.gems = {}
+            for _, socket in ipairs(scan.sockets) do
+                if socket.icon then
+                    table.insert(info.gems, { icon = socket.icon, empty = not socket.filled })
+                end
+            end
+            info.gemsPending = scan.pending
+        end
+    end
     return info
 end
 
@@ -406,6 +425,9 @@ local function ApplyFonts()
     for _, overlay in pairs(overlays) do
         overlay.line1:SetFont(path, size, flags)
         overlay.line2:SetFont(path, size - 1, flags)
+        for _, gem in ipairs(overlay.gems) do
+            gem:SetSize(size - 1, size - 1)
+        end
     end
 end
 
@@ -435,8 +457,37 @@ local function GetOverlay(button, side)
         overlay.line2:SetPoint("TOPRIGHT", overlay.line1, "BOTTOMRIGHT", 0, -2)
         overlay.line2:SetJustifyH("RIGHT")
     end
-    overlay.line1:SetWidth(170)
+    -- Line 1 is left at its natural width: the gem icons chain off its end.
     overlay.line2:SetWidth(170)
+
+    -- Up to four gem icons (12px, 1px black border), mirrored on the right-hand
+    -- column so they always grow away from the slot.
+    overlay.gems = {}
+    for index = 1, 4 do
+        local border = button:CreateTexture(nil, "OVERLAY", nil, 1)
+        border:SetColorTexture(0, 0, 0, 0.9)
+        local gem = button:CreateTexture(nil, "OVERLAY", nil, 2)
+        gem:SetTexCoord(0.1, 0.9, 0.1, 0.9)
+        border:SetPoint("TOPLEFT", gem, "TOPLEFT", -1, 1)
+        border:SetPoint("BOTTOMRIGHT", gem, "BOTTOMRIGHT", 1, -1)
+        gem.border = border
+        if side == "left" then
+            if index == 1 then
+                gem:SetPoint("LEFT", overlay.line1, "RIGHT", 4, 0)
+            else
+                gem:SetPoint("LEFT", overlay.gems[index - 1], "RIGHT", 2, 0)
+            end
+        else
+            if index == 1 then
+                gem:SetPoint("RIGHT", overlay.line1, "LEFT", -4, 0)
+            else
+                gem:SetPoint("RIGHT", overlay.gems[index - 1], "LEFT", -2, 0)
+            end
+        end
+        gem:Hide()
+        border:Hide()
+        overlay.gems[index] = gem
+    end
 
     -- Rarity border: a thin coloured frame over the icon that lets clicks
     -- through to the button underneath.
@@ -457,6 +508,28 @@ local function HideOverlay(button)
         overlay.line1:SetText("")
         overlay.line2:SetText("")
         overlay.border:Hide()
+        for _, gem in ipairs(overlay.gems) do
+            gem:Hide()
+            gem.border:Hide()
+        end
+    end
+end
+
+local function PaintGems(overlay, gems)
+    local size = (db.fontSize or 13) - 1
+    for index, gem in ipairs(overlay.gems) do
+        local entry = gems and gems[index]
+        if entry then
+            gem:SetSize(size, size)
+            gem:SetTexture(entry.icon)
+            gem:SetDesaturated(entry.empty)
+            gem:SetAlpha(entry.empty and 0.85 or 1)
+            gem:Show()
+            gem.border:Show()
+        else
+            gem:Hide()
+            gem.border:Hide()
+        end
     end
 end
 
@@ -472,6 +545,7 @@ local function PaintSlot(button, unit, slot)
     end
     overlay.line1:SetText(info.line1 or "")
     overlay.line2:SetText(info.line2 or "")
+    PaintGems(overlay, info.gems)
 
     local r, g, b = QualityColor(info.quality)
     if db.qualityBorders and r then
@@ -710,8 +784,8 @@ end
 -- filled pass did not account for). Item data right after a reload can be
 -- missing, and then every socket would look empty; that case is returned as
 -- `pending` and drawn later, bounded by the retry below.
-local function ScanItemSockets(slotID)
-    local link = GetInventoryItemLink("player", slotID)
+ScanItemSockets = function(slotID, unit)
+    local link = GetInventoryItemLink(unit or "player", slotID)
     if not link then
         return nil
     end
@@ -1739,6 +1813,11 @@ local function BuildUI(panel)
     })
     layout:Note(C.L.gsEnchantNote)
 
+    layout:Toggle({
+        label = C.L.gsShowGemsLabel, desc = C.L.gsShowGemsDesc, parent = Enabled,
+        get = function() return db.showGems end,
+        set = function(value) db.showGems = value; Apply() end,
+    })
     layout:Slider({
         label = C.L.gsFontLabel, desc = C.L.gsFontDesc, parent = Enabled,
         min = 10, max = 20, step = 1,
