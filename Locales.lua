@@ -328,6 +328,14 @@ local frFR = {
     lustSoundDefault = "Apocalypse (par défaut)",
     lustStandaloneNote = "L'addon « Son du Lust » est aussi installé : c'est lui qui joue le son. Désinstallez-le pour utiliser celui de CC RaidTools.",
 
+    piSection = "Infusion de puissance",
+    piEnableLabel = "Son d'Infusion de puissance",
+    piEnableDesc = "Joue un son quand un prêtre (ou vous-même) vous donne Infusion de puissance. Désactivé par défaut.",
+    piSoundDesc = "Son joué à l'Infusion de puissance. Un clic sur un son de la liste l'écoute.",
+    piSoundDefault = "Bam (par défaut)",
+    piHint = "Le buff d'Infusion de puissance est lu directement : le son ne peut se déclencher que quand le jeu laisse les addons le voir. Il est possible qu'il reste muet dans certains combats restreints.",
+    lustChannelHeader = "Audio",
+
     gsIntro = "Ajoute des informations sur la fenêtre de personnage et d'inspection : niveau d'objet, progression d'amélioration, enchantements manquants et bordures de rareté.",
     gsModuleName = "Équipement",
     gsEnableLabel = "Activer la fenêtre d'équipement",
@@ -656,6 +664,14 @@ local enUS = {
 
     lustSoundDefault = "Apocalypse (default)",
     lustStandaloneNote = "The standalone \"Son du Lust\" addon is also installed and plays the sound itself. Uninstall it to use CC RaidTools' own.",
+
+    piSection = "Power Infusion",
+    piEnableLabel = "Power Infusion sound",
+    piEnableDesc = "Plays a sound when a priest (or you) gives you Power Infusion. Off by default.",
+    piSoundDesc = "Sound played on Power Infusion. Clicking a sound in the list previews it.",
+    piSoundDefault = "Bam (default)",
+    piHint = "The Power Infusion buff is read directly: the sound can only trigger when the game lets addons see it. It may stay silent in some restricted combat.",
+    lustChannelHeader = "Audio",
 
     gsIntro = "Adds information to the character and inspect windows: item level, upgrade progress, missing enchants and rarity borders.",
     gsModuleName = "Gear Window",

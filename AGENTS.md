@@ -363,6 +363,8 @@ Header artwork: `TexturesGUI/QualityOfLife.png` (golden cogwheel with a sparkle,
 - The sound lives in a new top-level **`sounds/`** folder. `release.yml` copies the TOC files and the asset folders into the zip explicitly (`find TexturesGUI sounds -type f`), so **any new asset folder must be added there too**, or the release zip silently ships without it.
 - Header artwork: `TexturesGUI/LustSound.png` (the Horde-style red/gold war emblem with sound waves, same purple/gold ring as the other module icons). Its text blocks keep a 110px right margin so nothing runs under the 100px header icon.
 
+- **Power Infusion alert** (same panel, own section): piEnabled (default off) plays sounds/Bam.ogg (copied from the user's installed M33kAuras PowerAurasMedia, the am sound they asked for as default) when C_UnitAuras.GetPlayerAuraBySpellID(10060) appears on the player, with the same ready window / full-update / freshness guards as the lust alert. Unlike lust there is no lockout debuff to watch, so it only works when the game exposes the aura (UNVERIFIED in restricted combat). The sound catalog, picker popup (`popupKind` switches its target) and audio channel are shared; fields are `piSoundSource`/`piSoundName`.
+
 ## UI kit
 
 `UIKit.lua` (loaded right after `CC_RaidTools.lua`) holds the building blocks of the module panels, taken from the Quality of Life panel the user liked so that every tab looks and lines up the same. Use it for any new settings panel; do not hand-roll checkboxes and labels again.
