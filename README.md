@@ -42,7 +42,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.3.1**
+**1.3.2**
+
+### v1.3.2
+
+#### Équipement
+
+- Ilvl équipé moyen affiché sur la fenêtre d'inspection. Correction d'une erreur Lua liée aux fonds de cadre (valeur secrète).
 
 ### v1.3.1
 
