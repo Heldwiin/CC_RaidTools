@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.2
+
+### Équipement
+
+- L'**ilvl équipé** moyen du joueur inspecté s'affiche en haut à droite de la fenêtre d'inspection, coloré selon la qualité moyenne de son équipement.
+
+### Corrections
+
+- Correction d'une erreur Lua (« arithmetic on local 'width' », valeur secrète) liée aux fonds de cadre posés sur des fenêtres Blizzard : bandeau des infobulles de comparaison, bordures de rareté, surbrillance des emplacements.
+
 ## 1.3.1
 
 ### Équipement

@@ -63,6 +63,41 @@ local function Plain(value)
     return value
 end
 
+-- A plain rectangle outline (and optional fill) made of textures. Frames that
+-- cover Blizzard frames must NOT use BackdropTemplate: its layout code does
+-- arithmetic on the covered frame's size, which can be a secret value and then
+-- raises an error taint-attributed to us. Textures anchored to the frame's
+-- corners need no size at all.
+local function MakeOutline(frame, thickness, withFill)
+    local outline = { edges = {} }
+    if withFill then
+        outline.fill = frame:CreateTexture(nil, "BACKGROUND")
+        outline.fill:SetAllPoints(frame)
+    end
+    local function Edge(p1, p2, setup)
+        local tex = frame:CreateTexture(nil, "OVERLAY")
+        tex:SetPoint(p1, frame, p1)
+        tex:SetPoint(p2, frame, p2)
+        setup(tex)
+        table.insert(outline.edges, tex)
+    end
+    Edge("TOPLEFT", "TOPRIGHT", function(t) t:SetHeight(thickness) end)
+    Edge("BOTTOMLEFT", "BOTTOMRIGHT", function(t) t:SetHeight(thickness) end)
+    Edge("TOPLEFT", "BOTTOMLEFT", function(t) t:SetWidth(thickness) end)
+    Edge("TOPRIGHT", "BOTTOMRIGHT", function(t) t:SetWidth(thickness) end)
+    function outline:SetColor(r, g, b, a)
+        for _, tex in ipairs(self.edges) do
+            tex:SetColorTexture(r, g, b, a or 1)
+        end
+    end
+    function outline:SetFill(r, g, b, a)
+        if self.fill then
+            self.fill:SetColorTexture(r, g, b, a or 1)
+        end
+    end
+    return outline
+end
+
 -- ===== Slots =====
 -- side: where the text goes relative to the slot's icon (it always extends
 -- away from the slot column, towards the middle of the window).
@@ -491,11 +526,11 @@ local function GetOverlay(button, side)
 
     -- Rarity border: a thin coloured frame over the icon that lets clicks
     -- through to the button underneath.
-    overlay.border = CreateFrame("Frame", nil, button, "BackdropTemplate")
+    overlay.border = CreateFrame("Frame", nil, button)
     overlay.border:SetAllPoints(button)
     overlay.border:SetFrameLevel(button:GetFrameLevel() + 3)
     overlay.border:EnableMouse(false)
-    overlay.border:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 2 })
+    overlay.outline = MakeOutline(overlay.border, 2)
     overlay.border:Hide()
 
     overlays[button] = overlay
@@ -549,7 +584,7 @@ local function PaintSlot(button, unit, slot)
 
     local r, g, b = QualityColor(info.quality)
     if db.qualityBorders and r then
-        overlay.border:SetBackdropBorderColor(r, g, b, 1)
+        overlay.outline:SetColor(r, g, b, 1)
         overlay.border:Show()
     else
         overlay.border:Hide()
@@ -559,6 +594,41 @@ end
 -- kind: "character" (the player's own window) or "inspect".
 local function ButtonName(kind, slot)
     return (kind == "inspect" and "Inspect" or "Character") .. slot.name .. "Slot"
+end
+
+-- Average equipped item level of the inspected player, top right of the
+-- inspect gear page, coloured by the average quality of what they wear.
+local inspectAverage
+
+local function PaintInspectAverage(unit)
+    local parent = _G.InspectPaperDollItemsFrame
+    if not parent then
+        return
+    end
+    if not inspectAverage then
+        inspectAverage = parent:CreateFontString(nil, "OVERLAY")
+        inspectAverage:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -10, -32)
+    end
+    local path = FontSettings()
+    inspectAverage:SetFont(path, 15, "OUTLINE")
+
+    local average = unit and C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel
+        and C_PaperDollInfo.GetInspectItemLevel(unit)
+    average = Plain(average)
+    if type(average) ~= "number" or average <= 0 then
+        inspectAverage:SetText("")
+        return
+    end
+    local total, count = 0, 0
+    for _, slot in ipairs(SLOTS) do
+        local quality = Plain(GetInventoryItemQuality(unit, slot.id))
+        if type(quality) == "number" then
+            total, count = total + quality, count + 1
+        end
+    end
+    local r, g, b = QualityColor(count > 0 and math.floor(total / count + 0.5) or nil)
+    inspectAverage:SetFormattedText("%siLvl|r %.1f", HexColor(C.BRAND_R, C.BRAND_G, C.BRAND_B), average)
+    inspectAverage:SetTextColor(r or 1, g or 1, b or 1)
 end
 
 local function PaintWindow(kind)
@@ -581,6 +651,9 @@ local function PaintWindow(kind)
                 HideOverlay(button)
             end
         end
+    end
+    if kind == "inspect" then
+        PaintInspectAverage(enabled and unit or nil)
     end
 end
 
@@ -697,17 +770,13 @@ local function StyleCompareHeaders()
                         region:SetAlpha(0)
                     end
                 end
-                local back = CreateFrame("Frame", nil, header, "BackdropTemplate")
+                local back = CreateFrame("Frame", nil, header)
                 back:SetAllPoints(header)
                 back:SetFrameLevel(math.max(0, header:GetFrameLevel() - 1))
                 back:EnableMouse(false)
-                back:SetBackdrop({
-                    bgFile = "Interface\\Buttons\\WHITE8X8",
-                    edgeFile = "Interface\\Buttons\\WHITE8X8",
-                    edgeSize = 1,
-                })
-                back:SetBackdropColor(0.018, 0.018, 0.024, 0.92)
-                back:SetBackdropBorderColor(0, 0, 0, 1)
+                local outline = MakeOutline(back, 1, true)
+                outline:SetFill(0.018, 0.018, 0.024, 0.92)
+                outline:SetColor(0, 0, 0, 1)
             end
         end
     end
@@ -1009,16 +1078,12 @@ local function ShowSlotHighlight(slotID)
         return
     end
     if not highlight then
-        highlight = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        highlight = CreateFrame("Frame", nil, UIParent)
         highlight:SetFrameStrata("DIALOG")
         highlight:EnableMouse(false)
-        highlight:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Buttons\\WHITE8X8",
-            edgeSize = 1,
-        })
-        highlight:SetBackdropColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 0.35)
-        highlight:SetBackdropBorderColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 1)
+        local outline = MakeOutline(highlight, 1, true)
+        outline:SetFill(C.BRAND_R, C.BRAND_G, C.BRAND_B, 0.35)
+        outline:SetColor(C.BRAND_R, C.BRAND_G, C.BRAND_B, 1)
     end
     highlight:ClearAllPoints()
     highlight:SetAllPoints(button)
@@ -1312,13 +1377,12 @@ local function PlaceContainer(container)
 end
 
 local function CreateIconButton(parent)
-    local button = CreateFrame("Button", nil, parent, "BackdropTemplate")
+    local button = CreateFrame("Button", nil, parent)
     button.icon = button:CreateTexture(nil, "ARTWORK")
     button.icon:SetPoint("TOPLEFT", 1, -1)
     button.icon:SetPoint("BOTTOMRIGHT", -1, 1)
     button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    button:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    button:SetBackdropBorderColor(0, 0, 0, 1)
+    MakeOutline(button, 1):SetColor(0, 0, 0, 1)
     local hover = button:CreateTexture(nil, "HIGHLIGHT")
     hover:SetPoint("TOPLEFT", 1, -1)
     hover:SetPoint("BOTTOMRIGHT", -1, 1)
