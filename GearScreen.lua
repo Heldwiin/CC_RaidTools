@@ -596,6 +596,41 @@ local function ButtonName(kind, slot)
     return (kind == "inspect" and "Inspect" or "Character") .. slot.name .. "Slot"
 end
 
+-- Average equipped item level of the inspected player, top right of the
+-- inspect gear page, coloured by the average quality of what they wear.
+local inspectAverage
+
+local function PaintInspectAverage(unit)
+    local parent = _G.InspectPaperDollItemsFrame
+    if not parent then
+        return
+    end
+    if not inspectAverage then
+        inspectAverage = parent:CreateFontString(nil, "OVERLAY")
+        inspectAverage:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -10, -32)
+    end
+    local path = FontSettings()
+    inspectAverage:SetFont(path, 15, "OUTLINE")
+
+    local average = unit and C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel
+        and C_PaperDollInfo.GetInspectItemLevel(unit)
+    average = Plain(average)
+    if type(average) ~= "number" or average <= 0 then
+        inspectAverage:SetText("")
+        return
+    end
+    local total, count = 0, 0
+    for _, slot in ipairs(SLOTS) do
+        local quality = Plain(GetInventoryItemQuality(unit, slot.id))
+        if type(quality) == "number" then
+            total, count = total + quality, count + 1
+        end
+    end
+    local r, g, b = QualityColor(count > 0 and math.floor(total / count + 0.5) or nil)
+    inspectAverage:SetFormattedText("%siLvl|r %.1f", HexColor(C.BRAND_R, C.BRAND_G, C.BRAND_B), average)
+    inspectAverage:SetTextColor(r or 1, g or 1, b or 1)
+end
+
 local function PaintWindow(kind)
     local unit
     if kind == "inspect" then
@@ -616,6 +651,9 @@ local function PaintWindow(kind)
                 HideOverlay(button)
             end
         end
+    end
+    if kind == "inspect" then
+        PaintInspectAverage(enabled and unit or nil)
     end
 end
 
