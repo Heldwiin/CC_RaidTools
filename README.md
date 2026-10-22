@@ -42,7 +42,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.3.2**
+**1.3.3**
+
+### v1.3.3
+
+#### Lust Sound
+
+- Son d'Infusion de puissance (Bam par défaut ou son au choix), fonctionnel aussi en combat. Désactivé par défaut. Nouveau fichier de son : redémarrez complètement WoW.
 
 ### v1.3.2
 
