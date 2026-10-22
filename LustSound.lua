@@ -204,10 +204,53 @@ local function CurrentSoundName(kind)
 end
 
 -- Falls back to the bundled sound when the addon the choice came from is gone.
-local function PlayConfigured(kind)
+local function ResolveSound(kind)
     local fields = KINDS[kind or "lust"]
     local sound = FindSound(db[fields.source], db[fields.name])
-    PlaySoundFile(sound and sound.value or fields.file, db.channel)
+    return sound and sound.value or fields.file
+end
+
+local function PlayConfigured(kind)
+    PlaySoundFile(ResolveSound(kind), db.channel)
+end
+
+-- ===== Power Infusion: engine-side aura sound =====
+-- The buff is a secret value in combat, so an addon cannot see it appear. The
+-- game can: C_UnitAuras.AddAuraSound registers a sound that the client itself
+-- plays when the aura is added, secret or not. It only needs to be registered
+-- outside combat, and again whenever the sound or channel changes. Without
+-- that API the UNIT_AURA path further down is used instead (out of combat only).
+local piSoundID
+local piPending = false       -- registration postponed until combat ends
+
+local function RemovePISound()
+    if piSoundID and C_UnitAuras.RemoveAuraSound then
+        pcall(C_UnitAuras.RemoveAuraSound, piSoundID)
+    end
+    piSoundID = nil
+end
+
+local function RegisterPISound()
+    RemovePISound()
+    piPending = false
+    if not (db and db.piEnabled and C_UnitAuras.AddAuraSound and Enum.UnitAuraSoundTrigger) then
+        return
+    end
+    if InCombatLockdown() then
+        piPending = true
+        return
+    end
+    local value = ResolveSound("pi")
+    local info = { unitToken = "player", spellID = PI_SPELL_ID, outputChannel = db.channel, throttleSeconds = 2 }
+    if type(value) == "number" then
+        info.soundFileID = value
+    else
+        info.soundFileName = value
+    end
+    local ok, id = pcall(C_UnitAuras.AddAuraSound, Enum.UnitAuraSoundTrigger.Added, info)
+    if ok and id then
+        piSoundID = id
+    end
 end
 
 -- ===== Detection =====
@@ -275,6 +318,15 @@ watcher:SetScript("OnEvent", function(_, event, _, updateInfo)
     if event == "PLAYER_LEAVING_WORLD" then
         ready = false
         generation = generation + 1
+        RemovePISound()
+        return
+    end
+
+    if event == "PLAYER_REGEN_ENABLED" then
+        -- Left combat: register the Power Infusion sound if it had to wait.
+        if piPending and ready then
+            RegisterPISound()
+        end
         return
     end
 
@@ -288,6 +340,7 @@ watcher:SetScript("OnEvent", function(_, event, _, updateInfo)
             if mine == generation then
                 SyncState()
                 ready = true
+                RegisterPISound()
             end
         end)
         return
@@ -305,10 +358,11 @@ watcher:SetScript("OnEvent", function(_, event, _, updateInfo)
     end
     wasLockedOut = locked
 
-    -- Same rule for Power Infusion appearing on the player.
+    -- Same rule for Power Infusion appearing on the player, only when the
+    -- engine-side sound is not in charge (it would play twice).
     local infusion = FindPowerInfusion()
     local infused = infusion ~= nil
-    if db.piEnabled and ready and infused and not wasInfused
+    if db.piEnabled and not piSoundID and ready and infused and not wasInfused
         and not IsFullUpdate(updateInfo) and IsFresh(infusion) then
         PlayConfigured("pi")
     end
@@ -321,9 +375,11 @@ local function ApplyEnabled(fromLogin)
     InitDB()
     watcher:UnregisterAllEvents()
     generation = generation + 1
+    RemovePISound()
     if db.enabled or db.piEnabled then
         watcher:RegisterEvent("PLAYER_ENTERING_WORLD")
         watcher:RegisterEvent("PLAYER_LEAVING_WORLD")
+        watcher:RegisterEvent("PLAYER_REGEN_ENABLED")
         watcher:RegisterUnitEvent("UNIT_AURA", "player")
         if fromLogin then
             -- PLAYER_ENTERING_WORLD follows and re-arms once loading settles.
@@ -333,6 +389,7 @@ local function ApplyEnabled(fromLogin)
             -- current state first means a lockout already running is ignored.
             SyncState()
             ready = true
+            RegisterPISound()
         end
     else
         ready = false
@@ -376,6 +433,9 @@ local function SelectSound(source, key)
         pickerTexts[popupKind]:SetText(CurrentSoundName(popupKind))
     end
     RefreshRows()
+    if popupKind == "pi" and ready then
+        RegisterPISound()
+    end
     -- Clicking a sound plays it, so the list doubles as a preview.
     PlayConfigured(popupKind)
 end
@@ -585,7 +645,12 @@ local function BuildUI(panel)
         desc = C.L.lustChannelDesc,
         values = CHANNEL_VALUES,
         get = function() return db.channel end,
-        set = function(value) db.channel = value end,
+        set = function(value)
+            db.channel = value
+            if ready then
+                RegisterPISound()
+            end
+        end,
     })
     layout:Finish()
 

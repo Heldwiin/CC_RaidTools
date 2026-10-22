@@ -333,7 +333,7 @@ local frFR = {
     piEnableDesc = "Joue un son quand un prêtre (ou vous-même) vous donne Infusion de puissance. Désactivé par défaut.",
     piSoundDesc = "Son joué à l'Infusion de puissance. Un clic sur un son de la liste l'écoute.",
     piSoundDefault = "Bam (par défaut)",
-    piHint = "Le buff d'Infusion de puissance est lu directement : le son ne peut se déclencher que quand le jeu laisse les addons le voir. Il est possible qu'il reste muet dans certains combats restreints.",
+    piHint = "Le son est enregistré auprès du jeu lui-même, qui le joue quand Infusion de puissance apparaît sur vous, y compris en combat. Il s'enregistre hors combat : un changement fait en plein combat ne s'applique qu'à la fin.",
     lustChannelHeader = "Audio",
 
     gsIntro = "Ajoute des informations sur la fenêtre de personnage et d'inspection : niveau d'objet, progression d'amélioration, enchantements manquants et bordures de rareté.",
@@ -670,7 +670,7 @@ local enUS = {
     piEnableDesc = "Plays a sound when a priest (or you) gives you Power Infusion. Off by default.",
     piSoundDesc = "Sound played on Power Infusion. Clicking a sound in the list previews it.",
     piSoundDefault = "Bam (default)",
-    piHint = "The Power Infusion buff is read directly: the sound can only trigger when the game lets addons see it. It may stay silent in some restricted combat.",
+    piHint = "The sound is registered with the game itself, which plays it when Power Infusion appears on you, in combat too. It is registered out of combat: a change made mid-fight only applies once it ends.",
     lustChannelHeader = "Audio",
 
     gsIntro = "Adds information to the character and inspect windows: item level, upgrade progress, missing enchants and rarity borders.",
