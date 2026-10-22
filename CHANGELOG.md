@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.3
+
+### Lust Sound
+
+- Nouvelle section **Infusion de puissance** : joue un son quand un prêtre (ou vous-même) vous donne Infusion de puissance. Désactivé par défaut. Son par défaut : Bam, ou au choix un son de BigWigs, EllesmereUI ou Northern Sky Raid Tools. Un clic sur un son de la liste l'écoute.
+- Le son est enregistré auprès du jeu lui-même (`C_UnitAuras.AddAuraSound`), ce qui le fait fonctionner **aussi en combat**, où le buff n'est pas lisible par les addons.
+- Le canal audio est partagé avec le son de bloodlust et regroupé sous un titre « Audio ».
+- Le logo de l'addon est estompé sur la page, comme sur les autres pages harmonisées.
+- Nouveau fichier de son : un redémarrage complet de WoW est nécessaire pour l'entendre.
+
 ## 1.3.2
 
 ### Équipement

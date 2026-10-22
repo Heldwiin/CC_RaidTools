@@ -17,6 +17,20 @@ local C = CCRT
 local db
 
 local SOUND = "Interface\\AddOns\\CC_RaidTools\\sounds\\Apocalypse.ogg"
+local SOUND_PI = "Interface\\AddOns\\CC_RaidTools\\sounds\\Bam.ogg"
+
+-- Power Infusion (priest). Its buff is read directly: unlike the lust buff
+-- there is no lockout debuff to watch instead, so this only fires when the
+-- game lets addons see the aura.
+local PI_SPELL_ID = 10060
+
+-- The two alerts share the sound catalog, the picker and the audio channel;
+-- each has its own pair of saved fields (source addon + sound key, both nil =
+-- the bundled default file).
+local KINDS = {
+    lust = { source = "soundSource", name = "soundName", file = SOUND },
+    pi = { source = "piSoundSource", name = "piSoundName", file = SOUND_PI },
+}
 
 local LOCKOUTS = {
     57723,   -- Exhaustion (Heroism, Alliance shaman)
@@ -66,8 +80,13 @@ local function InitDB()
     -- nil/nil means the bundled Apocalypse file; otherwise the sound is named
     -- by the addon it comes from and its key there. The name is stored rather
     -- than a file path, so it survives that addon moving its files around.
-    if not (SOURCES[db.soundSource] and type(db.soundName) == "string") then
-        db.soundSource, db.soundName = nil, nil
+    for _, kind in pairs(KINDS) do
+        if not (SOURCES[db[kind.source]] and type(db[kind.name]) == "string") then
+            db[kind.source], db[kind.name] = nil, nil
+        end
+    end
+    if db.piEnabled == nil then
+        db.piEnabled = false
     end
     -- Earlier development builds stored a game sound kit ID here.
     db.soundKit = nil
@@ -168,21 +187,70 @@ local function FindSound(source, key)
     end
 end
 
-local function CurrentSoundName()
-    if not db.soundSource then
-        return C.L.lustSoundDefault
+local function DefaultLabel(kind)
+    return kind == "pi" and C.L.piSoundDefault or C.L.lustSoundDefault
+end
+
+local function CurrentSoundName(kind)
+    local fields = KINDS[kind]
+    if not db[fields.source] then
+        return DefaultLabel(kind)
     end
-    local sound, group = FindSound(db.soundSource, db.soundName)
+    local sound, group = FindSound(db[fields.source], db[fields.name])
     if sound then
         return group.title .. " - " .. sound.text
     end
-    return db.soundName
+    return db[fields.name]
 end
 
 -- Falls back to the bundled sound when the addon the choice came from is gone.
-local function PlayConfigured()
-    local sound = FindSound(db.soundSource, db.soundName)
-    PlaySoundFile(sound and sound.value or SOUND, db.channel)
+local function ResolveSound(kind)
+    local fields = KINDS[kind or "lust"]
+    local sound = FindSound(db[fields.source], db[fields.name])
+    return sound and sound.value or fields.file
+end
+
+local function PlayConfigured(kind)
+    PlaySoundFile(ResolveSound(kind), db.channel)
+end
+
+-- ===== Power Infusion: engine-side aura sound =====
+-- The buff is a secret value in combat, so an addon cannot see it appear. The
+-- game can: C_UnitAuras.AddAuraSound registers a sound that the client itself
+-- plays when the aura is added, secret or not. It only needs to be registered
+-- outside combat, and again whenever the sound or channel changes. Without
+-- that API the UNIT_AURA path further down is used instead (out of combat only).
+local piSoundID
+local piPending = false       -- registration postponed until combat ends
+
+local function RemovePISound()
+    if piSoundID and C_UnitAuras.RemoveAuraSound then
+        pcall(C_UnitAuras.RemoveAuraSound, piSoundID)
+    end
+    piSoundID = nil
+end
+
+local function RegisterPISound()
+    RemovePISound()
+    piPending = false
+    if not (db and db.piEnabled and C_UnitAuras.AddAuraSound and Enum.UnitAuraSoundTrigger) then
+        return
+    end
+    if InCombatLockdown() then
+        piPending = true
+        return
+    end
+    local value = ResolveSound("pi")
+    local info = { unitToken = "player", spellID = PI_SPELL_ID, outputChannel = db.channel, throttleSeconds = 2 }
+    if type(value) == "number" then
+        info.soundFileID = value
+    else
+        info.soundFileName = value
+    end
+    local ok, id = pcall(C_UnitAuras.AddAuraSound, Enum.UnitAuraSoundTrigger.Added, info)
+    if ok and id then
+        piSoundID = id
+    end
 end
 
 -- ===== Detection =====
@@ -234,8 +302,15 @@ local ready = false        -- false while loading: observe only
 local generation = 0       -- invalidates settle timers from an earlier load
 local wasLockedOut = false
 
+local wasInfused = false
+
+local function FindPowerInfusion()
+    return C_UnitAuras.GetPlayerAuraBySpellID(PI_SPELL_ID)
+end
+
 local function SyncState()
     wasLockedOut = FindLockoutAura() ~= nil
+    wasInfused = FindPowerInfusion() ~= nil
 end
 
 local watcher = CreateFrame("Frame")
@@ -243,6 +318,15 @@ watcher:SetScript("OnEvent", function(_, event, _, updateInfo)
     if event == "PLAYER_LEAVING_WORLD" then
         ready = false
         generation = generation + 1
+        RemovePISound()
+        return
+    end
+
+    if event == "PLAYER_REGEN_ENABLED" then
+        -- Left combat: register the Power Infusion sound if it had to wait.
+        if piPending and ready then
+            RegisterPISound()
+        end
         return
     end
 
@@ -256,6 +340,7 @@ watcher:SetScript("OnEvent", function(_, event, _, updateInfo)
             if mine == generation then
                 SyncState()
                 ready = true
+                RegisterPISound()
             end
         end)
         return
@@ -266,12 +351,22 @@ watcher:SetScript("OnEvent", function(_, event, _, updateInfo)
     local locked = aura ~= nil
     -- Sound only on a fresh lockout APPEARING: never during loading, on a
     -- full aura refresh, or for an old lust (reload, relog, zone change).
-    if ready and locked and not wasLockedOut
+    if db.enabled and ready and locked and not wasLockedOut
         and not IsFullUpdate(updateInfo)
         and IsFresh(aura) and not StandaloneLoaded() then
-        PlayConfigured()
+        PlayConfigured("lust")
     end
     wasLockedOut = locked
+
+    -- Same rule for Power Infusion appearing on the player, only when the
+    -- engine-side sound is not in charge (it would play twice).
+    local infusion = FindPowerInfusion()
+    local infused = infusion ~= nil
+    if db.piEnabled and not piSoundID and ready and infused and not wasInfused
+        and not IsFullUpdate(updateInfo) and IsFresh(infusion) then
+        PlayConfigured("pi")
+    end
+    wasInfused = infused
 end)
 
 -- UNIT_AURA fires constantly in combat, so it is only registered while the
@@ -280,9 +375,11 @@ local function ApplyEnabled(fromLogin)
     InitDB()
     watcher:UnregisterAllEvents()
     generation = generation + 1
-    if db.enabled then
+    RemovePISound()
+    if db.enabled or db.piEnabled then
         watcher:RegisterEvent("PLAYER_ENTERING_WORLD")
         watcher:RegisterEvent("PLAYER_LEAVING_WORLD")
+        watcher:RegisterEvent("PLAYER_REGEN_ENABLED")
         watcher:RegisterUnitEvent("UNIT_AURA", "player")
         if fromLogin then
             -- PLAYER_ENTERING_WORLD follows and re-arms once loading settles.
@@ -292,6 +389,7 @@ local function ApplyEnabled(fromLogin)
             -- current state first means a lockout already running is ignored.
             SyncState()
             ready = true
+            RegisterPISound()
         end
     else
         ready = false
@@ -310,13 +408,17 @@ local ROW_H = 20
 local HEADER_H = 24
 local POPUP_W, POPUP_H = 300, 300
 
-local layout, standaloneNote, pickerText
+local layout, standaloneNote
+local pickerTexts = {}          -- kind -> picker button label
 local popup, catcher
+local popupKind = "lust"        -- which alert the open list is choosing for
+local defaultRow
 local rows = {}
 
 local function RefreshRows()
+    local fields = KINDS[popupKind]
     for _, row in ipairs(rows) do
-        if row.source == db.soundSource and row.key == db.soundName then
+        if row.source == db[fields.source] and row.key == db[fields.name] then
             row.text:SetTextColor(C.BRAND_R, C.BRAND_G, C.BRAND_B)
         else
             row.text:SetTextColor(0.92, 0.92, 0.92)
@@ -325,13 +427,17 @@ local function RefreshRows()
 end
 
 local function SelectSound(source, key)
-    db.soundSource, db.soundName = source, key
-    if pickerText then
-        pickerText:SetText(CurrentSoundName())
+    local fields = KINDS[popupKind]
+    db[fields.source], db[fields.name] = source, key
+    if pickerTexts[popupKind] then
+        pickerTexts[popupKind]:SetText(CurrentSoundName(popupKind))
     end
     RefreshRows()
+    if popupKind == "pi" and ready then
+        RegisterPISound()
+    end
     -- Clicking a sound plays it, so the list doubles as a preview.
-    PlayConfigured()
+    PlayConfigured(popupKind)
 end
 
 local function HidePopup()
@@ -362,6 +468,7 @@ local function AddRow(child, y, text, source, key)
         SelectSound(row.source, row.key)
     end)
     table.insert(rows, row)
+    return row
 end
 
 -- Built on first open: up to ~100 rows that are never needed unless the
@@ -392,7 +499,7 @@ local function BuildPopup()
     scroll:SetScrollChild(child)
 
     local y = 0
-    AddRow(child, y, C.L.lustSoundDefault, nil, nil)
+    defaultRow = AddRow(child, y, C.L.lustSoundDefault, nil, nil)
     y = y - ROW_H
 
     local groups = GetCatalog()
@@ -421,14 +528,17 @@ local function BuildPopup()
     RefreshRows()
 end
 
-local function TogglePopup(anchor)
-    if popup and popup:IsShown() then
+local function TogglePopup(anchor, kind)
+    -- A click on the other alert's picker switches the list to it.
+    if popup and popup:IsShown() and popupKind == kind then
         HidePopup()
         return
     end
     if not popup then
         BuildPopup()
     end
+    popupKind = kind
+    defaultRow.text:SetText(DefaultLabel(kind))
     RefreshRows()
     popup:ClearAllPoints()
     popup:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
@@ -437,7 +547,7 @@ local function TogglePopup(anchor)
 end
 
 -- Same look as the shared dropdown, but opening the scrollable list.
-local function CreatePickerButton(parent, width)
+local function CreatePickerButton(parent, width, kind)
     local button = CreateFrame("Button", nil, parent)
     button:SetSize(width, 24)
 
@@ -450,12 +560,13 @@ local function CreatePickerButton(parent, width)
     border:SetTexture("Interface\\Buttons\\WHITE8X8")
     border:SetVertexColor(0, 0, 0, 0.95)
 
-    pickerText = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    pickerText:SetPoint("LEFT", 9, 0)
-    pickerText:SetPoint("RIGHT", -24, 0)
-    pickerText:SetJustifyH("LEFT")
-    pickerText:SetWordWrap(false)
-    pickerText:SetTextColor(0.92, 0.92, 0.92)
+    local label = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    label:SetPoint("LEFT", 9, 0)
+    label:SetPoint("RIGHT", -24, 0)
+    label:SetJustifyH("LEFT")
+    label:SetWordWrap(false)
+    label:SetTextColor(0.92, 0.92, 0.92)
+    pickerTexts[kind] = label
 
     local arrow = button:CreateTexture(nil, "OVERLAY")
     arrow:SetSize(14, 10)
@@ -469,7 +580,7 @@ local function CreatePickerButton(parent, width)
         background:SetColorTexture(0.035, 0.035, 0.045, 0.96)
     end)
     button:SetScript("OnClick", function(self)
-        TogglePopup(self)
+        TogglePopup(self, kind)
     end)
     return button
 end
@@ -496,24 +607,51 @@ local function BuildUI(panel)
     -- The sound list needs a wider control than a plain dropdown, so this row
     -- hosts the picker button; the list itself opens in BuildPopup.
     local soundRow = layout:Row({ label = C.L.lustSoundLabel, desc = C.L.lustSoundDesc }, false, 268)
-    local picker = CreatePickerButton(soundRow, 250)
+    local picker = CreatePickerButton(soundRow, 250, "lust")
     picker:SetPoint("RIGHT", soundRow, "RIGHT", -6, 0)
 
+    layout:Button({
+        label = C.L.lustTestLabel,
+        text = C.L.lustTestButton,
+        onClick = function() PlayConfigured("lust") end,
+    })
+
+    layout:Note(C.L.lustHint)
+    standaloneNote = layout:Note(C.L.lustStandaloneNote, { 1, 0.7, 0.3 })
+
+    layout:Header(C.L.piSection)
+    layout:Toggle({
+        label = C.L.piEnableLabel,
+        desc = C.L.piEnableDesc,
+        get = function() return db.piEnabled end,
+        set = function(value)
+            db.piEnabled = value
+            ApplyEnabled()
+        end,
+    })
+    local piRow = layout:Row({ label = C.L.lustSoundLabel, desc = C.L.piSoundDesc, parent = function() return db.piEnabled end }, false, 268)
+    local piPicker = CreatePickerButton(piRow, 250, "pi")
+    piPicker:SetPoint("RIGHT", piRow, "RIGHT", -6, 0)
+    layout:Button({
+        label = C.L.lustTestLabel,
+        text = C.L.lustTestButton,
+        onClick = function() PlayConfigured("pi") end,
+    })
+    layout:Note(C.L.piHint)
+
+    layout:Header(C.L.lustChannelHeader)
     layout:Choice({
         label = C.L.lustChannelLabel,
         desc = C.L.lustChannelDesc,
         values = CHANNEL_VALUES,
         get = function() return db.channel end,
-        set = function(value) db.channel = value end,
+        set = function(value)
+            db.channel = value
+            if ready then
+                RegisterPISound()
+            end
+        end,
     })
-    layout:Button({
-        label = C.L.lustTestLabel,
-        text = C.L.lustTestButton,
-        onClick = PlayConfigured,
-    })
-
-    layout:Note(C.L.lustHint)
-    standaloneNote = layout:Note(C.L.lustStandaloneNote, { 1, 0.7, 0.3 })
     layout:Finish()
 
     -- Leaving the tab (or closing the window) closes an open sound list.
@@ -525,8 +663,8 @@ local function RefreshUI()
     if layout then
         layout:Refresh()
     end
-    if pickerText then
-        pickerText:SetText(CurrentSoundName())
+    for kind, label in pairs(pickerTexts) do
+        label:SetText(CurrentSoundName(kind))
     end
     if standaloneNote then
         standaloneNote:SetShown(StandaloneLoaded() and true or false)
