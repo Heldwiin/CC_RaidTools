@@ -57,7 +57,7 @@ local CHANNEL_VALUES = {
     { "Dialog", "Dialog" },
 }
 
-local SOURCES = { bigwigs = true, ellesmere = true, nsrt = true }
+local SOURCES = { bigwigs = true, ellesmere = true, nsrt = true, naowh = true }
 
 local function InitDB()
     C.InitDB()
@@ -113,11 +113,11 @@ local function ByName(a, b)
 end
 
 local function CollectSharedMedia()
-    local bigwigs, nsrt = {}, {}
+    local bigwigs, nsrt, naowh = {}, {}, {}
     local lsm = LibStub and LibStub("LibSharedMedia-3.0", true)
     local registered = lsm and lsm:HashTable("sound")
     if type(registered) ~= "table" then
-        return bigwigs, nsrt
+        return bigwigs, nsrt, naowh
     end
     for name, value in pairs(registered) do
         if type(name) == "string" and (type(value) == "string" or type(value) == "number") then
@@ -126,12 +126,16 @@ local function CollectSharedMedia()
                 table.insert(bigwigs, { key = name, text = (name:gsub("^BigWigs: ", "")), value = value })
             elseif path:find("northernskyraidtools", 1, true) then
                 table.insert(nsrt, { key = name, text = name, value = value })
+            elseif path:find("\\addons\\naowhui", 1, true) then
+                -- NaowhUI_Media and any other NaowhUI addon registering sounds.
+                table.insert(naowh, { key = name, text = name, value = value })
             end
         end
     end
     table.sort(bigwigs, ByName)
     table.sort(nsrt, ByName)
-    return bigwigs, nsrt
+    table.sort(naowh, ByName)
+    return bigwigs, nsrt, naowh
 end
 
 local function CollectEllesmere()
@@ -158,7 +162,7 @@ local function GetCatalog()
         return catalog
     end
     catalog = {}
-    local bigwigs, nsrt = CollectSharedMedia()
+    local bigwigs, nsrt, naowh = CollectSharedMedia()
     local ellesmere = CollectEllesmere()
     if #bigwigs > 0 then
         table.insert(catalog, { source = "bigwigs", title = "BigWigs", sounds = bigwigs })
@@ -168,6 +172,9 @@ local function GetCatalog()
     end
     if #nsrt > 0 then
         table.insert(catalog, { source = "nsrt", title = "Northern Sky Raid Tools", sounds = nsrt })
+    end
+    if #naowh > 0 then
+        table.insert(catalog, { source = "naowh", title = "Naowh UI", sounds = naowh })
     end
     return catalog
 end
