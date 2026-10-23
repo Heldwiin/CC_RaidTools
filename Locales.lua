@@ -312,7 +312,7 @@ local frFR = {
     srTestLabel = "Aperçu du rappel",
     srBreakTestLabel = "Aperçu de la fenêtre de pause",
 
-    lustIntro = "Joue un son quand vous recevez Furie sanguinaire, Héroïsme, Distorsion temporelle, Rage primordiale, Fureur des Aspects ou des tambours, quelle que soit votre classe.",
+    lustIntro = "Joue un son quand vous recevez Furie sanguinaire, Héroïsme, Distorsion temporelle, Rage primordiale, Fureur des Aspects ou des tambours, quelle que soit votre classe, et quand un prêtre vous donne Infusion de puissance. Sons au choix : celui du module ou ceux de BigWigs, EllesmereUI, Northern Sky Raid Tools et Naowh UI.",
     lustSoundDesc = "Cliquez sur un son pour l'écouter et le choisir. Les sons de BigWigs, d'EllesmereUI et de Northern Sky Raid Tools sont proposés quand ces addons sont installés. Apocalypse est le son par défaut.",
     lustNoSounds = "Aucun son d'addon trouvé. Installez BigWigs, EllesmereUI ou Northern Sky Raid Tools pour en avoir plus. Le son Apocalypse reste utilisable.",
     lustChannelLabel = "Canal audio",
@@ -649,7 +649,7 @@ local enUS = {
     srTestLabel = "Reminder preview",
     srBreakTestLabel = "Break window preview",
 
-    lustIntro = "Plays a sound when you receive Bloodlust, Heroism, Time Warp, Primal Rage, Fury of the Aspects or drums, whatever your class.",
+    lustIntro = "Plays a sound when you receive Bloodlust, Heroism, Time Warp, Primal Rage, Fury of the Aspects or drums, whatever your class, and when a priest gives you Power Infusion. Sounds to pick from: the module's own, or those of BigWigs, EllesmereUI, Northern Sky Raid Tools and Naowh UI.",
     lustSoundDesc = "Click a sound to hear it and pick it. Sounds from BigWigs, EllesmereUI and Northern Sky Raid Tools are offered when those addons are installed. Apocalypse is the default.",
     lustNoSounds = "No addon sounds found. Install BigWigs, EllesmereUI or Northern Sky Raid Tools to get more. The Apocalypse sound can still be used.",
     lustChannelLabel = "Audio channel",

@@ -261,7 +261,7 @@ function C.BuildMainFrame()
     local content = CreateFrame("Frame", nil, mainFrame); content:SetPoint("TOPLEFT", 133, -31); content:SetPoint("BOTTOMRIGHT", -5, 7); mainFrame.content = content
     -- VersionCheck stays last, always — add future modules before it.
     local order = { "AutoPromote", "AutoLog", "ReadyCheck", "RaidGroups", "InviteTool", "Focus", "MarksBar", "RaidInspect", "BonusRoll", "SpecReminder", "QualityOfLife", "LustSound", "GearScreen", "VersionCheck" }
-    local labels = { AutoPromote="Auto Promote", AutoLog="AutoLog", ReadyCheck="Ready Check", RaidGroups="Raid Groups", InviteTool="Invite Tool", Focus="Focus", MarksBar="Marks Bar", RaidInspect="Raid Inspect", VersionCheck="Version Check", BonusRoll="Bonus Roll", SpecReminder="Spec Reminder", QualityOfLife="Quality of Life", LustSound="Lust Sound", GearScreen=(C.L and C.L.gsModuleName) or "Gear Window" }
+    local labels = { AutoPromote="Auto Promote", AutoLog="AutoLog", ReadyCheck="Ready Check", RaidGroups="Raid Groups", InviteTool="Invite Tool", Focus="Focus", MarksBar="Marks Bar", RaidInspect="Raid Inspect", VersionCheck="Version Check", BonusRoll="Bonus Roll", SpecReminder="Spec Reminder", QualityOfLife="Quality of Life", LustSound="Sound", GearScreen=(C.L and C.L.gsModuleName) or "Gear Window" }
     -- Shared with the module panels: each tab's title is its menu label.
     C.moduleLabels = labels
     local buttons, panels = {}, {}
