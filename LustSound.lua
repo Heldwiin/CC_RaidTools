@@ -128,7 +128,9 @@ local function CollectSharedMedia()
                 table.insert(nsrt, { key = name, text = name, value = value })
             elseif path:find("\\addons\\naowhui", 1, true) then
                 -- NaowhUI_Media and any other NaowhUI addon registering sounds.
-                table.insert(naowh, { key = name, text = name, value = value })
+                -- Names come coloured and suffixed: "|cff0091edBloodlust -Naowh|r".
+                local shown = StripColor(name):gsub("%s*%-Naowh%s*$", "")
+                table.insert(naowh, { key = name, text = shown, value = value })
             end
         end
     end
