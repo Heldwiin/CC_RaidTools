@@ -112,6 +112,11 @@ local function ByName(a, b)
     return StripColor(a.text):lower() < StripColor(b.text):lower()
 end
 
+local ASIAN_CLIENT = (function()
+    local locale = GetLocale()
+    return locale == "koKR" or locale == "zhCN" or locale == "zhTW"
+end)()
+
 local function CollectSharedMedia()
     local bigwigs, nsrt, naowh = {}, {}, {}
     local lsm = LibStub and LibStub("LibSharedMedia-3.0", true)
@@ -126,8 +131,11 @@ local function CollectSharedMedia()
                 table.insert(bigwigs, { key = name, text = (name:gsub("^BigWigs: ", "")), value = value })
             elseif path:find("northernskyraidtools", 1, true) then
                 table.insert(nsrt, { key = name, text = name, value = value })
-            elseif path:find("\\addons\\naowhui", 1, true) then
+            elseif path:find("\\addons\\naowhui", 1, true)
+                and (ASIAN_CLIENT or not path:find("asia%.ogg$")) then
                 -- NaowhUI_Media and any other NaowhUI addon registering sounds.
+                -- Its "...Asia.ogg" files carry Chinese names that the client's
+                -- font cannot draw (a row of boxes) unless it is an Asian client.
                 -- Names come coloured and suffixed: "|cff0091edBloodlust -Naowh|r".
                 local shown = StripColor(name):gsub("%s*%-Naowh%s*$", "")
                 table.insert(naowh, { key = name, text = shown, value = value })
