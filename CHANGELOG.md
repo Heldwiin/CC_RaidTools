@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.4
+
+### Sound
+
+- Le module **Lust Sound** est renommé **Sound** (menu et page), car il gère désormais aussi le son d'Infusion de puissance.
+- Les sons de **Naowh UI** (addon NaowhUI_Media) rejoignent la liste de choix, pour la bloodlust comme pour l'Infusion de puissance. Les variantes en chinois, que la police d'un client non asiatique ne peut pas afficher, sont masquées.
+
 ## 1.3.3
 
 ### Lust Sound
