@@ -42,7 +42,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.3.5**
+**1.3.6**
+
+### v1.3.6
+
+#### Spec Reminder
+
+- La dernière mascotte est remplacée par une version aux lunettes « 99 ». Redémarrez complètement WoW pour la voir.
 
 ### v1.3.5
 

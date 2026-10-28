@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.6
+
+### Spec Reminder
+
+- La mascotte ajoutée en 1.3.5 est remplacée par une version aux lunettes « 99 ». Image mise à jour : un redémarrage complet de WoW est nécessaire pour la voir.
+
 ## 1.3.5
 
 ### Spec Reminder
