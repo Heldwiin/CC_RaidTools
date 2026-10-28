@@ -42,7 +42,13 @@ Addon World of Warcraft développé pour la guilde **Caelestis Concilium (CC)**.
 
 ## Version
 
-**1.3.4**
+**1.3.5**
+
+### v1.3.5
+
+#### Spec Reminder
+
+- Nouvelle mascotte dans la rotation aléatoire (rappel de spécialisation et pauses BigWigs). Redémarrez complètement WoW pour la voir.
 
 ### v1.3.4
 

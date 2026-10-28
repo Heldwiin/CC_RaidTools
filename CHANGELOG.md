@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.5
+
+### Spec Reminder
+
+- Une nouvelle mascotte rejoint la rotation aléatoire de la fenêtre de rappel de spécialisation et de pause BigWigs (`/break`). Nouveau fichier d'image : un redémarrage complet de WoW est nécessaire pour la voir.
+
 ## 1.3.4
 
 ### Sound
